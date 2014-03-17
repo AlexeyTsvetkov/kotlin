@@ -195,13 +195,13 @@ public final class ExpressionVisitor extends TranslatorVisitor<JsNode> {
             if (arguments.size() > 0) {
                 String jsCode = arguments.get(0).getArgumentExpression().getText();
                 jsCode = jsCode.replaceAll("^\"*","").replaceAll("\"*$","");
-                return parseJs(jsCode, context);
+                return translateNativeJs(jsCode, context);
             }
         }
         return CallExpressionTranslator.translate(expression, null, context).source(expression);
     }
 
-    private JsNode parseJs(@NotNull String jsCode, @NotNull TranslationContext context) {
+    private JsNode translateNativeJs(@NotNull String jsCode, @NotNull TranslationContext context) {
         List<JsStatement> statements = new ArrayList<JsStatement>();
         try {
             SourceInfoImpl info = new SourceInfoImpl(null, 0, 0, 0, 0);
