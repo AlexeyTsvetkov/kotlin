@@ -216,7 +216,11 @@ public final class ExpressionVisitor extends TranslatorVisitor<JsNode> {
             e.printStackTrace();
         }
 
-        return new JsBlock(statements);
+        for (JsStatement statement : statements) {
+            context.addStatementToCurrentBlock(statement);
+        }
+
+        return new JsEmpty();
     }
 
     @Override
