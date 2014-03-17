@@ -8,8 +8,10 @@ fun assertEquals<T>(expected: T, actual: T) {
 
 
 fun jsNativeCodeTest(): Int {
-    jsCode("return 0;")
-    return 1
+    jsCode("""
+        var a = 0;
+        var b = 0.0;
+    """)
 }
 
 fun box(): String {

@@ -194,7 +194,7 @@ public final class ExpressionVisitor extends TranslatorVisitor<JsNode> {
             List<? extends ValueArgument> arguments = expression.getValueArguments();
             if (arguments.size() > 0) {
                 String jsCode = arguments.get(0).getArgumentExpression().getText();
-                jsCode = jsCode.replaceAll("\"(.*)\"","$1");
+                jsCode = jsCode.replaceAll("^\"*","").replaceAll("\"*$","");
                 return parseJs(jsCode, context);
             }
         }
