@@ -25,7 +25,7 @@ public abstract class JsNumberLiteral extends JsLiteral.JsValueLiteral {
     public static final class JsIntLiteral extends JsNumberLiteral {
         public final int value;
 
-        JsIntLiteral(int value) {
+        public JsIntLiteral(int value) {
             this.value = value;
         }
 
