@@ -184,7 +184,20 @@ public final class ExpressionVisitor extends TranslatorVisitor<JsNode> {
     @NotNull
     public JsNode visitCallExpression(@NotNull JetCallExpression expression,
             @NotNull TranslationContext context) {
+        if (expression.getText().startsWith("jsCode")) {
+            List<? extends ValueArgument> arguments = expression.getValueArguments();
+            if (arguments.size() > 0) {
+                String jsCode = arguments.get(0).getArgumentExpression().getText();
+                jsCode = jsCode.replaceAll("\"(.*)\"","$1");
+                return parseJs(jsCode);
+            }
+        }
         return CallExpressionTranslator.translate(expression, null, context).source(expression);
+    }
+
+    //TODO: Make JsEmpty constructor private again (public for test purposes)
+    private JsNode parseJs(@NotNull String jsCode) {
+        return new JsEmpty();
     }
 
     @Override
