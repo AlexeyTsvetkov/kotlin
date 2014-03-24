@@ -216,8 +216,11 @@ public class JsParser {
         return new JsStringLiteral(node.getString());
       }
 
-      case TokenStream.NUMBER:
-        return mapNumber(node);
+      case TokenStream.NUMBER_INT:
+        return mapIntNumber(node);
+
+      case TokenStream.NUMBER_DOUBLE:
+        return mapDoubleNumber(node);
 
       case TokenStream.CALL:
         return mapCall(node);
@@ -790,8 +793,11 @@ public class JsParser {
     return newExpr;
   }
 
-  //TODO: fix int case
-  private JsExpression mapNumber(Node numberNode) {
+  private JsExpression mapIntNumber(Node numberNode) {
+    return new JsNumberLiteral.JsIntLiteral((int) numberNode.getDouble());
+  }
+
+  private JsExpression mapDoubleNumber(Node numberNode) {
     return new JsNumberLiteral.JsDoubleLiteral(numberNode.getDouble());
   }
 
@@ -1150,7 +1156,7 @@ public class JsParser {
         return mapPrefixOperation(JsUnaryOperator.TYPEOF, unOp);
 
       case TokenStream.ADD:
-        if (unOp.getFirstChild().getType() != TokenStream.NUMBER) {
+        if (!isJsNumber(unOp.getFirstChild())) {
           return mapPrefixOperation(JsUnaryOperator.POS, unOp);
         } else {
           // Pretend we didn't see it.
@@ -1226,5 +1232,14 @@ public class JsParser {
   private void pushSourceInfo(SourceInfo sourceInfo) {
     assert sourceInfo.getLine() >= 0 : "Bad SourceInfo line number";
     sourceInfoStack.push(sourceInfo);
+  }
+
+  private boolean isJsNumber(Node jsNode) {
+    int type = jsNode.getType();
+
+    if (type == TokenStream.NUMBER_INT) return true;
+    if (type == TokenStream.NUMBER_DOUBLE) return true;
+
+    return false;
   }
 }
