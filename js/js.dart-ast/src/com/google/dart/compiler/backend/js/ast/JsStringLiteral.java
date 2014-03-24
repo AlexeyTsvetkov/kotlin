@@ -9,7 +9,7 @@ public final class JsStringLiteral extends JsLiteral.JsValueLiteral {
   private final String value;
 
   // These only get created by JsProgram so that they can be interned.
-  JsStringLiteral(String value) {
+  public JsStringLiteral(String value) {
     this.value = value;
   }
 

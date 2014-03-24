@@ -18,7 +18,7 @@ public abstract class JsLiteral extends JsExpressionImpl {
     }
 
     public static final class JsThisRef extends JsValueLiteral {
-        private JsThisRef() {
+        public JsThisRef() {
             super();
         }
 

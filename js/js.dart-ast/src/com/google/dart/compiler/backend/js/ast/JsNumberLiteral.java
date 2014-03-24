@@ -8,7 +8,7 @@ public abstract class JsNumberLiteral extends JsLiteral.JsValueLiteral {
     public static final class JsDoubleLiteral extends JsNumberLiteral {
         public final double value;
 
-        JsDoubleLiteral(double value) {
+        public JsDoubleLiteral(double value) {
             this.value = value;
         }
 
