@@ -132,7 +132,7 @@ public class TokenStream {
         SETELEM     = 42,
         CALL        = 43,
         NAME        = 44,
-        NUMBER      = 45,
+        NUMBER_INT  = 45,
         STRING      = 46,
         ZERO        = 47,
         ONE         = 48,
@@ -256,6 +256,7 @@ public class TokenStream {
         SCRIPT      = 147,   // top-level node for entire script
 
         LAST_TOKEN  = 147,
+        NUMBER_DOUBLE = 148,
     
         // This value is only used as a return value for getTokenHelper,
         // which is only called from getToken and exists to avoid an excessive
@@ -314,7 +315,8 @@ public class TokenStream {
                 case SETELEM:         return "setelem";
                 case CALL:            return "call";
                 case NAME:            return "name";
-                case NUMBER:          return "number";
+                case NUMBER_INT:      return "integer";
+                case NUMBER_DOUBLE:   return "double";
                 case STRING:          return "string";
                 case ZERO:            return "zero";
                 case ONE:             return "one";
@@ -444,8 +446,10 @@ public class TokenStream {
                 case NAME:
                     return name + " `" + this.string + "'";
 
-                case NUMBER:
-                    return "NUMBER " + this.number;
+                case NUMBER_INT:
+                    return "NUMBER_INT " + (int) this.number;
+                case NUMBER_DOUBLE:
+                    return "NUMBER_DOUBLE " + this.number;
             }
 
             return name;
@@ -684,7 +688,7 @@ public class TokenStream {
             this.pushbackToken = EOF;
         return result;
     }
-    
+
     public static boolean isJSKeyword(String s) {
         return getKeywordId(s) != 0;
     }
@@ -980,7 +984,12 @@ public class TokenStream {
             }
 
             this.number = dval;
-            return NUMBER;
+
+            if (isInteger) {
+                return NUMBER_INT;
+            }
+
+            return NUMBER_DOUBLE;
         }
 
         // is it a string?
