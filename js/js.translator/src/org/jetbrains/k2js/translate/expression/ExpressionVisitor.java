@@ -207,7 +207,7 @@ public final class ExpressionVisitor extends TranslatorVisitor<JsNode> {
             SourceInfoImpl info = new SourceInfoImpl(null, 0, 0, 0, 0);
             JsScope scope = context.scope();
             StringReader reader = new StringReader(jsCode);
-            statements.addAll(JsParser.parse(info, scope, reader));
+            statements.addAll(JsParser.parse(info, scope, reader, /* insideFunction= */ true));
         }
         catch (IOException e) {
             e.printStackTrace();
