@@ -190,4 +190,8 @@ public final class MiscTest extends AbstractExpressionTest {
     public void testStringInterpolationEvaluationOrder() throws Exception {
         fooBoxTest();
     }
+
+    public void testJsNativeCode() throws Exception {
+        checkFooBoxIsOk();
+    }
 }
