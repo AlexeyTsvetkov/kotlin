@@ -16,8 +16,11 @@
 
 package org.jetbrains.k2js.test.semantics;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.k2js.translate.context.Namer;
 import org.mozilla.javascript.JavaScriptException;
+
+import java.util.List;
 
 /**
  * A messy class where all new tests go before they are sorted which never happens.
@@ -189,5 +192,46 @@ public final class MiscTest extends AbstractExpressionTest {
 
     public void testStringInterpolationEvaluationOrder() throws Exception {
         fooBoxTest();
+    }
+
+    public void testJsNativeCode() throws Exception {
+        checkFooBoxIsOk();
+    }
+
+    public void testJsCodeQuotes() throws Exception {
+        checkFooBoxIsOk();
+    }
+
+    public void testJsCodeLoops() throws Exception {
+        checkFooBoxIsOk();
+    }
+
+    public void testJsCodeLiteral() throws Exception {
+        checkFooBoxIsOk();
+    }
+
+    public void testJsCodeFunction() throws Exception {
+        checkFooBoxIsOk();
+    }
+
+    public void testJsCodeObject() throws Exception {
+        checkFooBoxIsOk();
+    }
+
+    public void testJsCodeExpression() throws Exception {
+        checkFooBoxIsOk();
+    }
+
+    public void testJsCodeControl() throws Exception {
+        checkFooBoxIsOk();
+    }
+
+    @NotNull
+    @Override
+    protected List<String> additionalKotlinFiles() {
+        List<String> kfiles = super.additionalKotlinFiles();
+        kfiles.add(getInputFilePath("asserts.kt"));
+
+        return kfiles;
     }
 }
