@@ -208,12 +208,10 @@ public final class ExpressionVisitor extends TranslatorVisitor<JsNode> {
             JsScope scope = context.scope();
             StringReader reader = new StringReader(jsCode);
             statements.addAll(JsParser.parse(info, scope, reader, /* insideFunction= */ true));
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-        catch (JsParserException e) {
-            e.printStackTrace();
+        } catch (JsParserException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
         for (JsStatement statement : statements) {
