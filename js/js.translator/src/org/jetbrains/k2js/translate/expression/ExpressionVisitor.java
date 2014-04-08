@@ -214,11 +214,7 @@ public final class ExpressionVisitor extends TranslatorVisitor<JsNode> {
             throw new RuntimeException(e);
         }
 
-        for (JsStatement statement : statements) {
-            context.addStatementToCurrentBlock(statement);
-        }
-
-        return new JsEmpty();
+        return new JsBlock(statements);
     }
 
     @Override
