@@ -16,25 +16,71 @@
 
 package org.jetbrains.k2js.translate.reference;
 
-import com.google.dart.compiler.backend.js.ast.JsExpression;
+import com.google.dart.compiler.backend.js.ast.*;
+import com.google.dart.compiler.common.SourceInfoImpl;
+import com.google.gwt.dev.js.JsParser;
+import com.google.gwt.dev.js.JsParserException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.jet.lang.psi.JetCallExpression;
+import org.jetbrains.jet.lang.psi.ValueArgument;
 import org.jetbrains.k2js.translate.callTranslator.CallTranslator;
 import org.jetbrains.k2js.translate.context.TranslationContext;
+import org.jetbrains.k2js.translate.utils.BindingUtils;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class CallExpressionTranslator extends AbstractCallExpressionTranslator {
 
     @NotNull
-    public static JsExpression translate(
+    public static JsNode translate(
             @NotNull JetCallExpression expression,
             @Nullable JsExpression receiver,
             @NotNull TranslationContext context
     ) {
+        if (matchesJsCode(expression, context)) {
+            return CallExpressionTranslator.translateNativeJs(expression, context);
+        }
         if (InlinedCallExpressionTranslator.shouldBeInlined(expression, context)) {
             return InlinedCallExpressionTranslator.translate(expression, receiver, context);
         }
         return (new CallExpressionTranslator(expression, receiver, context)).translate();
+    }
+
+    private static boolean matchesJsCode(JetCallExpression expression, TranslationContext context) {
+        if(!expression.getText().startsWith("jsCode")) {
+            return false;
+        }
+
+        List<? extends ValueArgument> arguments = expression.getValueArguments();
+        if (arguments.isEmpty()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static JsNode translateNativeJs(@NotNull JetCallExpression expression, @NotNull TranslationContext context) {
+        List<? extends ValueArgument> arguments = expression.getValueArguments();
+        String jsCode = arguments.get(0).getArgumentExpression().getText();
+        jsCode = jsCode.replaceAll("^\"*","").replaceAll("\"*$","");
+
+        List<JsStatement> statements = new ArrayList<JsStatement>();
+        try {
+            SourceInfoImpl info = new SourceInfoImpl(null, 0, 0, 0, 0);
+            JsScope scope = context.scope();
+            StringReader reader = new StringReader(jsCode);
+            statements.addAll(JsParser.parse(info, scope, reader, /* insideFunction= */ true));
+        } catch (JsParserException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return new JsBlock(statements);
     }
 
     private CallExpressionTranslator(

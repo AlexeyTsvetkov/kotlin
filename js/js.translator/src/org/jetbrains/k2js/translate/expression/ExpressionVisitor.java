@@ -190,31 +190,7 @@ public final class ExpressionVisitor extends TranslatorVisitor<JsNode> {
     @NotNull
     public JsNode visitCallExpression(@NotNull JetCallExpression expression,
             @NotNull TranslationContext context) {
-        if (expression.getText().startsWith("jsCode")) {
-            List<? extends ValueArgument> arguments = expression.getValueArguments();
-            if (arguments.size() > 0) {
-                String jsCode = arguments.get(0).getArgumentExpression().getText();
-                jsCode = jsCode.replaceAll("^\"*","").replaceAll("\"*$","");
-                return translateNativeJs(jsCode, context);
-            }
-        }
         return CallExpressionTranslator.translate(expression, null, context).source(expression);
-    }
-
-    private JsNode translateNativeJs(@NotNull String jsCode, @NotNull TranslationContext context) {
-        List<JsStatement> statements = new ArrayList<JsStatement>();
-        try {
-            SourceInfoImpl info = new SourceInfoImpl(null, 0, 0, 0, 0);
-            JsScope scope = context.scope();
-            StringReader reader = new StringReader(jsCode);
-            statements.addAll(JsParser.parse(info, scope, reader, /* insideFunction= */ true));
-        } catch (JsParserException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return new JsBlock(statements);
     }
 
     @Override

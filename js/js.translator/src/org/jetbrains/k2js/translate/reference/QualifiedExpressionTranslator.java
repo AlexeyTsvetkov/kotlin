@@ -17,6 +17,7 @@
 package org.jetbrains.k2js.translate.reference;
 
 import com.google.dart.compiler.backend.js.ast.JsExpression;
+import com.google.dart.compiler.backend.js.ast.JsNode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.jet.lang.descriptors.DeclarationDescriptor;
@@ -43,15 +44,17 @@ public final class QualifiedExpressionTranslator {
     }
 
     @NotNull
-    public static JsExpression translateQualifiedExpression(@NotNull JetQualifiedExpression expression,
-                                                            @NotNull TranslationContext context) {
+    public static JsNode translateQualifiedExpression(
+            @NotNull JetQualifiedExpression expression,
+            @NotNull TranslationContext context
+    ) {
         JsExpression receiver = translateReceiver(expression, context);
         JetExpression selector = getSelector(expression);
         return dispatchToCorrectTranslator(receiver, selector, context);
     }
 
     @NotNull
-    private static JsExpression dispatchToCorrectTranslator(
+    private static JsNode dispatchToCorrectTranslator(
             @Nullable JsExpression receiver,
             @NotNull JetExpression selector,
             @NotNull TranslationContext context
@@ -71,7 +74,7 @@ public final class QualifiedExpressionTranslator {
     }
 
     @NotNull
-    private static JsExpression invokeCallExpressionTranslator(
+    private static JsNode invokeCallExpressionTranslator(
             @Nullable JsExpression receiver,
             @NotNull JetExpression selector,
             @NotNull TranslationContext context
