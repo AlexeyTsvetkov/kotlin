@@ -22,10 +22,13 @@ import com.google.gwt.dev.js.JsParser;
 import com.google.gwt.dev.js.JsParserException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.jet.lang.descriptors.FunctionDescriptor;
 import org.jetbrains.jet.lang.psi.JetCallExpression;
 import org.jetbrains.jet.lang.psi.ValueArgument;
+import org.jetbrains.jet.lang.resolve.calls.model.ResolvedCall;
 import org.jetbrains.k2js.translate.callTranslator.CallTranslator;
 import org.jetbrains.k2js.translate.context.TranslationContext;
+import org.jetbrains.k2js.translate.intrinsic.functions.patterns.PatternBuilder;
 import org.jetbrains.k2js.translate.utils.BindingUtils;
 
 import java.io.IOException;
@@ -50,8 +53,16 @@ public final class CallExpressionTranslator extends AbstractCallExpressionTransl
         return (new CallExpressionTranslator(expression, receiver, context)).translate();
     }
 
-    private static boolean matchesJsCode(JetCallExpression expression, TranslationContext context) {
-        if(!expression.getText().startsWith("jsCode")) {
+    private static boolean matchesJsCode(
+            @NotNull JetCallExpression expression,
+            @NotNull TranslationContext context
+    ) {
+        ResolvedCall<? extends FunctionDescriptor> resolvedCall =
+                BindingUtils.getResolvedCallForCallExpression(context.bindingContext(), expression);
+
+        FunctionDescriptor descriptor = resolvedCall.getResultingDescriptor();
+
+        if (!PatternBuilder.pattern("js", "jsCode").apply(descriptor)) {
             return false;
         }
 
