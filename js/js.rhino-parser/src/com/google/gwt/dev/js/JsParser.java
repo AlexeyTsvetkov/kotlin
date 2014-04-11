@@ -48,18 +48,24 @@ public class JsParser {
   private final Stack<JsScope> scopeStack = new Stack<JsScope>();
   private final Stack<SourceInfo> sourceInfoStack = new Stack<SourceInfo>();
 
+  /**
+   * since source maps are not mapped to kotlin source maps
+   */
+  private static final String sourceNameStub = "jsCode";
+
   private JsParser() {
   }
 
   List<JsStatement> parseImpl(final SourceInfo rootSourceInfo, JsScope scope,
       Reader r, boolean insideFunction) throws JsParserException, IOException {
+
     // Create a custom error handler so that we can throw our own exceptions.
     Context.enter().setErrorReporter(new ErrorReporter() {
         //TODO: fix rootSourceInfo source usage
       @Override
       public void error(String msg, String loc, int ln, String src, int col) {
-        throw new UncheckedJsParserException(new JsParserException(msg, ln,
-            src, col, "jsCode"/*rootSourceInfo.getSource().getName()*/));
+          throw new UncheckedJsParserException(new JsParserException(msg, ln,
+            src, col, sourceNameStub/*rootSourceInfo.getSource().getName()*/));
       }
 
       @Override
@@ -67,7 +73,7 @@ public class JsParser {
           String src, int col) {
         // Never called, but just in case.
         throw new UncheckedJsParserException(new JsParserException(msg, ln,
-            src, col, "jsCode"/*rootSourceInfo.getSource().getName()*/));
+            src, col, sourceNameStub/*rootSourceInfo.getSource().getName()*/));
       }
 
       @Override
@@ -78,7 +84,7 @@ public class JsParser {
     try {
       // Parse using the Rhino parser.
       //
-      TokenStream ts = new TokenStream(r, "jsCode"/*rootSourceInfo.getSource().getName()*/,
+      TokenStream ts = new TokenStream(r, sourceNameStub/*rootSourceInfo.getSource().getName()*/,
           rootSourceInfo.getLine());
       Parser parser = new Parser(new IRFactory(ts), insideFunction);
       Node topNode = (Node) parser.parse(ts);
@@ -97,8 +103,8 @@ public class JsParser {
 
   private JsParserException createParserException(String msg, Node offender) {
       //TODO: fix source usage sourceInfoStack
-    return new JsParserException(msg, offender.getLineno(), null, 0,
-                                 "jsCode"/*sourceInfoStack.peek().getSource().getName()*/);
+    return new JsParserException(msg, offender.getLineno(), null, 0, sourceNameStub
+                                 /*sourceInfoStack.peek().getSource().getName()*/);
   }
 
   private JsScope getScope() {
