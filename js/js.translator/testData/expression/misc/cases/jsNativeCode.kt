@@ -1,6 +1,6 @@
 package foo
 
-native fun jsCode<T>(code : String): T = noImpl
+import js.jsCode
 
 fun assertEquals<T>(expected: T, actual: T) {
     if (expected != actual) throw Exception("expected: $expected, actual: $actual")
