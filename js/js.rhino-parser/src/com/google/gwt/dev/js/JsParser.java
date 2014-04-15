@@ -48,7 +48,6 @@ public class JsParser {
   }
 
   private final Stack<JsScope> scopeStack = new Stack<JsScope>();
-  private final Stack<SourceInfo> sourceInfoStack = new Stack<SourceInfo>();
 
   /**
    * since source maps are not mapped to kotlin source maps
@@ -64,11 +63,10 @@ public class JsParser {
 
     // Create a custom error handler so that we can throw our own exceptions.
     Context.enter().setErrorReporter(new ErrorReporter() {
-        //TODO: fix rootSourceInfo source usage
       @Override
       public void error(String msg, String loc, int ln, String src, int col) {
           throw new UncheckedJsParserException(new JsParserException(msg, ln,
-            src, col, sourceNameStub/*rootSourceInfo.getSource().getName()*/));
+            src, col, sourceNameStub));
       }
 
       @Override
@@ -76,7 +74,7 @@ public class JsParser {
           String src, int col) {
         // Never called, but just in case.
         throw new UncheckedJsParserException(new JsParserException(msg, ln,
-            src, col, sourceNameStub/*rootSourceInfo.getSource().getName()*/));
+            src, col, sourceNameStub));
       }
 
       @Override
@@ -87,8 +85,7 @@ public class JsParser {
     try {
       // Parse using the Rhino parser.
       //
-      TokenStream ts = new TokenStream(r, sourceNameStub/*rootSourceInfo.getSource().getName()*/,
-          rootSourceInfo.getLine());
+      TokenStream ts = new TokenStream(r, sourceNameStub, rootSourceInfo.getLine());
       Parser parser = new Parser(new IRFactory(ts), insideFunction);
       Node topNode = (Node) parser.parse(ts);
 
@@ -105,40 +102,14 @@ public class JsParser {
   }
 
   private JsParserException createParserException(String msg, Node offender) {
-      //TODO: fix source usage sourceInfoStack
-    return new JsParserException(msg, offender.getLineno(), null, 0, sourceNameStub
-                                 /*sourceInfoStack.peek().getSource().getName()*/);
+    return new JsParserException(msg, offender.getLineno(), null, 0, sourceNameStub);
   }
 
   private JsScope getScope() {
     return scopeStack.peek();
   }
 
-  /*private SourceInfo makeSourceInfo(Node node) {
-    SourceInfo parent = sourceInfoStack.peek();
-    int lineno = node.getLineno();
-    if (lineno == -1) {
-      // Rhino only reports line numbers for statement nodes, not expressions
-      return parent;
-    }
-    return parent.makeChild(SourceOrigin.create(lineno, parent.getFileName()));
-  }*/
-
-  /**
-   * Force a distinct child to be created, so correlations can be added.
-   */
-  /*private SourceInfo makeSourceInfoDistinct(Node node) {
-    SourceInfo parent = sourceInfoStack.peek();
-    int lineno = node.getLineno();
-    if (lineno == -1) {
-      // Rhino only reports line numbers for statement nodes, not expressions
-      lineno = parent.getStartLine();
-    }
-    return parent.makeChild(SourceOrigin.create(lineno, parent.getFileName()));
-  }*/
-
   private JsNode map(Node node) throws JsParserException {
-
     switch (node.getType()) {
       case TokenStream.SCRIPT: {
         JsBlock block = new JsBlock();
@@ -403,18 +374,10 @@ public class JsParser {
   private JsBlock mapBlock(Node nodeStmts) throws JsParserException {
     JsBlock block = new JsBlock();
     mapStatements(block.getStatements(), nodeStmts);
-    popSourceInfo();
     return block;
   }
 
   private JsBreak mapBreak(Node breakNode) {
-    /*Node fromLabel = breakNode.getFirstChild();
-    if (fromLabel != null) {
-      return new JsBreak( mapName(fromLabel));
-    } else {
-      return new JsBreak();
-    }*/
-
     return new JsBreak();
   }
 
@@ -456,13 +419,6 @@ public class JsParser {
   }
 
   private JsContinue mapContinue(Node contNode) {
-    /*Node fromLabel = contNode.getFirstChild();
-    if (fromLabel != null) {
-      return new JsContinue( mapName(fromLabel));
-    } else {
-      return new JsContinue();
-    }*/
-
     return new JsContinue();
   }
 
@@ -510,8 +466,6 @@ public class JsParser {
     // Map the body block.
     //
     JsStatement toBody = mapStatement(fromBody);
-
-    popSourceInfo();
 
     // Create and attach the "while" or "do" statement we're mapping to.
     //
@@ -932,7 +886,6 @@ public class JsParser {
       toReturn.setExpression(to);
     }
 
-    popSourceInfo();
     return toReturn;
   }
 
@@ -1067,7 +1020,6 @@ public class JsParser {
       fromMember = fromMember.getNext();
     }
 
-    popSourceInfo();
     return toSwitch;
   }
 
@@ -1077,7 +1029,6 @@ public class JsParser {
     Node fromExpr = throwNode.getFirstChild();
     JsThrow toThrow = new JsThrow(mapExpression(fromExpr));
 
-    popSourceInfo();
     return toThrow;
   }
 
@@ -1196,7 +1147,6 @@ public class JsParser {
       fromVar = fromVar.getNext();
     }
 
-    popSourceInfo();
     return toVars;
   }
 
@@ -1213,27 +1163,10 @@ public class JsParser {
 
   private void popScope() {
     scopeStack.pop();
-    //sourceInfoStack.pop();
-  }
-
-  private void popSourceInfo() {
-    //sourceInfoStack.pop();
   }
 
   private void pushScope(JsScope scope) {
     scopeStack.push(scope);
-  }
-
-  /**
-   * This should be called when processing any Rhino statement Node that has
-   * line number data so that enclosed expressions will have a useful source
-   * location.
-   * 
-   * @see Node#hasLineno
-   */
-  private void pushSourceInfo(SourceInfo sourceInfo) {
-    assert sourceInfo.getLine() >= 0 : "Bad SourceInfo line number";
-    sourceInfoStack.push(sourceInfo);
   }
 
   private boolean isJsNumber(Node jsNode) {
