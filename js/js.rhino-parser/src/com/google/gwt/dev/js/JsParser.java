@@ -31,7 +31,7 @@ import java.util.Stack;
  */
 public class JsParser {
 
-    private JsProgram program;
+    private final JsProgram program;
 
     public static List<JsStatement> parse(
             SourceInfo rootSourceInfo,
@@ -100,7 +100,7 @@ public class JsParser {
         }
     }
 
-    private JsParserException createParserException(String msg, Node offender) {
+    private static JsParserException createParserException(String msg, Node offender) {
         return new JsParserException(msg, offender.getLineno(), null, 0, sourceNameStub);
     }
 
@@ -377,7 +377,7 @@ public class JsParser {
         return block;
     }
 
-    private JsBreak mapBreak(Node breakNode) {
+    private static JsBreak mapBreak(Node breakNode) {
         return new JsBreak();
     }
 
@@ -418,11 +418,11 @@ public class JsParser {
         return toCond;
     }
 
-    private JsContinue mapContinue(Node contNode) {
+    private static JsContinue mapContinue(Node contNode) {
         return new JsContinue();
     }
 
-    private JsStatement mapDebuggerStatement(Node node) {
+    private static JsStatement mapDebuggerStatement(Node node) {
         // Calls an optional method to invoke the debugger.
         //
         return new JsDebugger();
@@ -735,7 +735,7 @@ public class JsParser {
      * Creates a reference to a name that may or may not be obfuscatable, based on
      * whether it matches a known name in the scope.
      */
-    private JsNameRef mapName(Node node) {
+    private static JsNameRef mapName(Node node) {
         String ident = node.getString();
         return new JsNameRef(ident);
     }
@@ -760,7 +760,7 @@ public class JsParser {
         return newExpr;
     }
 
-    private JsExpression mapIntNumber(Node numberNode) {
+    private static JsExpression mapIntNumber(Node numberNode) {
         return new JsNumberLiteral.JsIntLiteral((int) numberNode.getDouble());
     }
 
@@ -849,7 +849,7 @@ public class JsParser {
         }
     }
 
-    private JsNode mapRegExp(Node regExpNode) {
+    private static JsNode mapRegExp(Node regExpNode) {
         JsRegExp toRegExp = new JsRegExp();
 
         Node fromPattern = regExpNode.getFirstChild();
@@ -1168,7 +1168,7 @@ public class JsParser {
         return toVars;
     }
 
-    private JsNode mapWithStatement(Node withNode) throws JsParserException {
+    private static JsNode mapWithStatement(Node withNode) throws JsParserException {
         // The "with" statement is unsupported because it introduces ambiguity
         // related to whether or not a name is obfuscatable that we cannot resolve
         // statically. This is modified in our copy of the Rhino Parser to provide
@@ -1187,7 +1187,7 @@ public class JsParser {
         scopeStack.push(scope);
     }
 
-    private boolean isJsNumber(Node jsNode) {
+    private static boolean isJsNumber(Node jsNode) {
         int type = jsNode.getType();
 
         if (type == TokenStream.NUMBER_INT) return true;
