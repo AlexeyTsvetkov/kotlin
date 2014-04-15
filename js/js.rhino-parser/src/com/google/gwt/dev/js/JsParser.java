@@ -40,9 +40,11 @@ import java.util.Stack;
  */
 public class JsParser {
 
+  private JsProgram program;
+
   public static List<JsStatement> parse(SourceInfo rootSourceInfo,
       JsScope scope, Reader r, boolean insideFunction) throws IOException, JsParserException {
-    return new JsParser().parseImpl(rootSourceInfo, scope, r, insideFunction);
+    return new JsParser(scope.getProgram()).parseImpl(rootSourceInfo, scope, r, insideFunction);
   }
 
   private final Stack<JsScope> scopeStack = new Stack<JsScope>();
@@ -53,7 +55,8 @@ public class JsParser {
    */
   private static final String sourceNameStub = "jsCode";
 
-  private JsParser() {
+  private JsParser(JsProgram program) {
+      this.program = program;
   }
 
   List<JsStatement> parseImpl(final SourceInfo rootSourceInfo, JsScope scope,
@@ -212,7 +215,7 @@ public class JsParser {
 
       case TokenStream.STRING: {
         //SourceInfo info = makeSourceInfoDistinct(node);
-        return new JsStringLiteral(node.getString());
+        return getStringLiteral(node.getString());
       }
 
       case TokenStream.NUMBER_INT:
@@ -607,7 +610,7 @@ public class JsParser {
       if (bodyStmt != null) {
         toForIn.setBody(bodyStmt);
       } else {
-        toForIn.setBody(new JsEmpty());
+        toForIn.setBody(getEmptyStatement());
       }
 
       return toForIn;
@@ -632,7 +635,7 @@ public class JsParser {
       if (bodyStmt != null) {
         toFor.setBody(bodyStmt);
       } else {
-        toFor.setBody(new JsEmpty());
+        toFor.setBody(getEmptyStatement());
       }
       return toFor;
     }
@@ -797,7 +800,7 @@ public class JsParser {
   }
 
   private JsExpression mapDoubleNumber(Node numberNode) {
-    return new JsNumberLiteral.JsDoubleLiteral(numberNode.getDouble());
+    return getDoubleLiteral(numberNode.getDouble());
   }
 
   private JsExpression mapObjectLit(Node objLitNode) throws JsParserException {
@@ -860,7 +863,7 @@ public class JsParser {
   private JsExpression mapPrimary(Node node) throws JsParserException {
     switch (node.getIntDatum()) {
       case TokenStream.THIS:
-        return new JsLiteral.JsThisRef();
+        return JsLiteral.THIS;
 
       case TokenStream.TRUE:
         return JsBooleanLiteral.TRUE;
@@ -991,7 +994,7 @@ public class JsParser {
     } else {
       // When map() returns null, we return an empty statement.
       //
-      return new JsEmpty();
+      return getEmptyStatement();
     }
   }
 
@@ -1240,5 +1243,17 @@ public class JsParser {
     if (type == TokenStream.NUMBER_DOUBLE) return true;
 
     return false;
+  }
+
+  private JsStringLiteral getStringLiteral(String string) {
+    return program.getStringLiteral(string);
+  }
+
+  private JsEmpty getEmptyStatement() {
+    return program.getEmptyStatement();
+  }
+
+  private JsNumberLiteral getDoubleLiteral(double value) {
+    return program.getNumberLiteral(value);
   }
 }
