@@ -40,6 +40,15 @@
     <orderEntry type="module" module-name="descriptor.loader.java" />
     <orderEntry type="library" scope="PROVIDED" name="maven" level="project" />
     <orderEntry type="module" module-name="util" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../ideaSDK/plugins/IntelliLang/lib/IntelliLang.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>
 
