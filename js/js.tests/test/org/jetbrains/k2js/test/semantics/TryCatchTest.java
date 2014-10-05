@@ -25,4 +25,16 @@ public class TryCatchTest extends AbstractExpressionTest {
     public void testTryCatchExpr() throws Exception {
         checkFooBoxIsOk();
     }
+
+    public void testTryCatchThrowable() throws Exception {
+        checkFooBoxIsOk();
+    }
+
+    public void testTryCatchCorrectForSubclasses() throws Exception {
+        checkFooBoxIsOk();
+    }
+
+    public void testMultipleCatchBlocks() throws Exception {
+        checkFooBoxIsOk();
+    }
 }
