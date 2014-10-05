@@ -16,37 +16,39 @@
 
 package org.jetbrains.k2js.translate.expression;
 
-import com.google.dart.compiler.backend.js.ast.JsBlock;
-import com.google.dart.compiler.backend.js.ast.JsCatch;
-import com.google.dart.compiler.backend.js.ast.JsName;
-import com.google.dart.compiler.backend.js.ast.JsTry;
+import com.google.dart.compiler.backend.js.ast.*;
 import com.intellij.util.SmartList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.jet.lang.psi.*;
+import org.jetbrains.jet.lang.resolve.BindingContext;
+import org.jetbrains.jet.lang.resolve.BindingContextUtils;
+import org.jetbrains.jet.lang.resolve.DescriptorUtils;
+import org.jetbrains.jet.lang.types.JetType;
+import org.jetbrains.jet.lang.types.lang.KotlinBuiltIns;
 import org.jetbrains.k2js.translate.context.TranslationContext;
 import org.jetbrains.k2js.translate.general.AbstractTranslator;
 import org.jetbrains.k2js.translate.general.Translation;
+import org.jetbrains.k2js.translate.utils.JsAstUtils;
+import org.jetbrains.k2js.translate.utils.TranslationUtils;
 
 import java.util.List;
 
 import static org.jetbrains.k2js.translate.utils.JsAstUtils.convertToBlock;
 
-//TODO: not tested at all
-//TODO: not implemented catch logic
 public final class TryTranslator extends AbstractTranslator {
 
+    private static final String THROWABLE_CLASS_NAME = DescriptorUtils.getFqNameSafe(KotlinBuiltIns.getInstance().getThrowable()).asString();
+
     @NotNull
-    public static JsTry translate(@NotNull JetTryExpression expression,
-                                  @NotNull TranslationContext context) {
+    public static JsTry translate(@NotNull JetTryExpression expression, @NotNull TranslationContext context) {
         return (new TryTranslator(expression, context)).translate();
     }
 
     @NotNull
     private final JetTryExpression expression;
 
-    private TryTranslator(@NotNull JetTryExpression expression,
-                          @NotNull TranslationContext context) {
+    private TryTranslator(@NotNull JetTryExpression expression, @NotNull TranslationContext context) {
         super(context);
         this.expression = expression;
     }
@@ -71,21 +73,88 @@ public final class TryTranslator extends AbstractTranslator {
     @NotNull
     private List<JsCatch> translateCatches() {
         List<JsCatch> result = new SmartList<JsCatch>();
-        for (JetCatchClause catchClause : expression.getCatchClauses()) {
-            result.add(translateCatchClause(catchClause));
+
+        JsIf resultIf = null;
+        JsIf currentIf = null;
+        JsNameRef firstParameterRef = null;
+        JsStatement lastElseStatement = null;
+        JsCatch jsCatch = null;
+        PatternTranslator patternTranslator = Translation.patternTranslator(context());
+
+        for(JetCatchClause catchClause : expression.getCatchClauses()) {
+            JetTypeReference typeReference = getTypeReference(catchClause);
+            JsBlock catchBlock = translateCatchBody(catchClause);
+
+            if (resultIf == null) { // first pass
+                firstParameterRef = new JsNameRef(getParameterName(catchClause));
+                jsCatch = new JsCatch(context().scope(), firstParameterRef.getIdent());
+            }
+
+            if (isThrowableType(typeReference)) {
+                if (resultIf == null) { // first pass
+                    jsCatch.setBody(catchBlock);
+                    result.add(jsCatch);
+                } else {
+                    lastElseStatement = catchBlock;
+                }
+                break;
+            }
+
+            JsExpression jsIsCheck = patternTranslator.translateIsCheck(firstParameterRef, typeReference);
+            JsIf nextIf = new JsIf(jsIsCheck, catchBlock);
+
+            if (resultIf == null) { // first pass
+                resultIf = nextIf;
+            }
+            else {
+                JsName parameterName = getParameterName(catchClause);
+                catchBlock.getStatements().add(0, JsAstUtils.newVar(parameterName, firstParameterRef));
+                currentIf.setElseStatement(nextIf);
+            }
+            
+            currentIf = nextIf;
         }
+
+        if (resultIf == null) {
+            return result;
+        }
+
+        if (lastElseStatement == null) {
+            lastElseStatement = new JsThrow(firstParameterRef);
+        }
+        currentIf.setElseStatement(lastElseStatement);
+        jsCatch.setBody(JsAstUtils.convertToBlock(resultIf));
+        result.add(jsCatch);
+
         return result;
     }
 
+    private boolean isThrowableType(@NotNull JetTypeReference typeReference) {
+        JetType type = BindingContextUtils.getNotNull(context().bindingContext(), BindingContext.TYPE, typeReference);
+        String typeName = TranslationUtils.getJetTypeFqName(type);
+        return typeName.equals(THROWABLE_CLASS_NAME);
+    }
+
     @NotNull
-    private JsCatch translateCatchClause(@NotNull JetCatchClause catchClause) {
+    private static JetParameter getParameter(@NotNull JetCatchClause catchClause) {
         JetParameter catchParameter = catchClause.getCatchParameter();
         assert catchParameter != null : "Valid catch must have a parameter.";
 
-        JsName parameterName = context().getNameForElement(catchParameter);
-        JsCatch result = new JsCatch(context().scope(), parameterName.getIdent());
-        result.setBody(translateCatchBody(catchClause));
-        return result;
+        return catchParameter;
+    }
+
+    @NotNull
+    private JsName getParameterName(@NotNull JetCatchClause catchClause) {
+        return context().getNameForElement(getParameter(catchClause));
+    }
+
+    @NotNull
+    private static JetTypeReference getTypeReference(@NotNull JetCatchClause catchClause) {
+        JetParameter catchParameter = getParameter(catchClause);
+        JetTypeReference typeReference = catchParameter.getTypeReference();
+        assert typeReference != null : "catch parameter type reference should not be null for " + catchParameter.getText();
+
+        return typeReference;
     }
 
     @NotNull
@@ -96,5 +165,4 @@ public final class TryTranslator extends AbstractTranslator {
         }
         return convertToBlock(Translation.translateAsStatementAndMergeInBlockIfNeeded(catchBody, context()));
     }
-
 }
