@@ -2,29 +2,29 @@ package java.lang
 
 import java.io.IOException
 
-native("Error")
+library("Exception")
 open public class Exception(message: String? = null): Throwable() {}
 
 library
 open public class RuntimeException(message: String? = null) : Exception(message) {}
 
 library
-public class IllegalArgumentException(message: String? = null) : Exception() {}
+public class IllegalArgumentException(message: String? = null) : RuntimeException() {}
 
 library
-public class IllegalStateException(message: String? = null) : Exception() {}
+public class IllegalStateException(message: String? = null) : RuntimeException() {}
 
-native("RangeError")
-public class IndexOutOfBounds(message: String? = null) : Exception(message) {}
-
-native("RangeError")
-public class IndexOutOfBoundsException(message: String? = null) : Exception(message) {}
+library("IndexOutOfBoundsException")
+public class IndexOutOfBoundsException(message: String? = null) : RuntimeException(message) {}
 
 library
-public class UnsupportedOperationException(message: String? = null) : Exception() {}
+public class UnsupportedOperationException(message: String? = null) : RuntimeException() {}
 
 library
-public class NumberFormatException(message: String? = null) : Exception() {}
+public class NumberFormatException(message: String? = null) : RuntimeException() {}
+
+library
+public class NullPointerException(message: String? = null) : RuntimeException() {}
 
 library
 public trait Runnable {
