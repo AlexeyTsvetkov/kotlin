@@ -76,13 +76,13 @@ class CatchTranslator(
 
         return JsCatch(context().scope(),
                        parameterRef.getIdent(),
-                       translateCatches(parameterRef, catches))
+                       translateCatches(parameterRef, catches.iterator()))
     }
 
-    private fun translateCatches(parameterRef: JsNameRef, catches: List<JetCatchClause>): JsStatement {
-        if (catches.empty) return JsThrow(parameterRef)
+    private fun translateCatches(parameterRef: JsNameRef, catches: Iterator<JetCatchClause>): JsStatement {
+        if (!catches.hasNext()) return JsThrow(parameterRef)
 
-        val catch = catches.head!!
+        val catch = catches.next()
         val param = catch.getCatchParameter()!!
         val paramName = context().getNameForElement(param)
         val paramType = param.getTypeReference()!!
@@ -97,7 +97,7 @@ class CatchTranslator(
             translateIsCheck(parameterRef, paramType)
         }
 
-        val elseBlock = translateCatches(parameterRef, catches.tail)
+        val elseBlock = translateCatches(parameterRef, catches)
         return JsIf(typeCheck, thenBlock, elseBlock)
     }
 
