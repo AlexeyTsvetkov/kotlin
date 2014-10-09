@@ -7,6 +7,7 @@ class Ex1: Ex()
 fun box(): String {
 
     var s: String = ""
+
     try {
         throw Ex1()
     }

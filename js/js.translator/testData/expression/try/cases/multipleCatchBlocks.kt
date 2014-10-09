@@ -4,33 +4,26 @@ class UserException() : RuntimeException()
 
 fun bar(e: Exception): String {
     var s: String = ""
-    var exceptionObject: Exception? = null;
+    var exceptionObject: Exception? = null
+
     try {
         throw e
     }
     catch (e: UserException) {
-        s += "UserException"
+        s = "UserException"
         exceptionObject = e
     }
     catch (e: IllegalArgumentException) {
-        s += "IllegalArgumentException"
-        exceptionObject = e
-    }
-    catch (e: IllegalArgumentException) {
-        s += "IllegalArgumentException"
-        exceptionObject = e
-    }
-    catch (e: IllegalArgumentException) {
-        s += "IllegalArgumentException"
+        s = "IllegalArgumentException"
         exceptionObject = e
     }
     catch (e: IllegalStateException) {
-        s += "IllegalStateException"
+        s = "IllegalStateException"
         exceptionObject = e
     }
-    catch (e1: Exception) {
-        s += "Exception"
-        exceptionObject = e1
+    catch (e: Exception) {
+        s = "Exception"
+        exceptionObject = e
     }
 
     assertEquals(e, exceptionObject, "e == exceptionObject")

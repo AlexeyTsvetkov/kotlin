@@ -11,7 +11,6 @@ fun box(): String {
     }
     assertEquals("Throwable:Exception", s)
 
-    s = ""
     try {
         throw Exception("Exception")
     } catch (e: Exception) {
@@ -19,7 +18,6 @@ fun box(): String {
     }
     assertEquals("Exception:Exception", s)
 
-    s = ""
     try {
         throw RuntimeException("RuntimeException")
     } catch (e: Exception) {
@@ -27,7 +25,6 @@ fun box(): String {
     }
     assertEquals("Exception:RuntimeException", s)
 
-    s = ""
     try {
         throw NullPointerException("NullPointerException")
     } catch (e: Exception) {
@@ -35,7 +32,6 @@ fun box(): String {
     }
     assertEquals("Exception:NullPointerException", s)
 
-    s = ""
     try {
         throw IndexOutOfBoundsException("IndexOutOfBoundsException")
     } catch (e: NullPointerException) {
