@@ -43,5 +43,11 @@ fun box(): String {
     }
     assertEquals("RuntimeException:IndexOutOfBoundsException", s)
 
+    try {
+        throw RuntimeException()
+    } catch (e: Exception) {
+        assertEquals(null, e.getMessage())
+    }
+
    return "OK"
 }

@@ -170,7 +170,7 @@
         return Kotlin.createClassNow(base,
                    /** @constructs */
                    function (message) {
-                       this.message = message;
+                       this.message = (message !== undefined) ? message : null;
                    }
                );
     }
