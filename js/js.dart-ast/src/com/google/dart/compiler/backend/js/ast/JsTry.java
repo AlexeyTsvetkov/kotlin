@@ -9,7 +9,6 @@ import com.intellij.util.SmartList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -31,9 +30,11 @@ public class JsTry extends SourceInfoAwareJsNode implements JsStatement {
     }
 
     public JsTry(JsBlock tryBlock, @Nullable JsCatch jsCatch, @Nullable JsBlock finallyBlock) {
-        this.tryBlock = tryBlock;
-        this.catches = jsCatch != null ? Collections.singletonList(jsCatch) : Collections.<JsCatch>emptyList();
-        this.finallyBlock = finallyBlock;
+        this(tryBlock, new SmartList<JsCatch>(), finallyBlock);
+
+        if (jsCatch != null) {
+            catches.add(jsCatch);
+        }
     }
 
     public List<JsCatch> getCatches() {
