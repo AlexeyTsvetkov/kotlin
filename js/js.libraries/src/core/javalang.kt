@@ -2,7 +2,7 @@ package java.lang
 
 import java.io.IOException
 
-library("Exception")
+library
 open public class Exception(message: String? = null): Throwable() {}
 
 library
@@ -14,7 +14,7 @@ public class IllegalArgumentException(message: String? = null) : RuntimeExceptio
 library
 public class IllegalStateException(message: String? = null) : RuntimeException() {}
 
-library("IndexOutOfBoundsException")
+library
 public class IndexOutOfBoundsException(message: String? = null) : RuntimeException(message) {}
 
 library
