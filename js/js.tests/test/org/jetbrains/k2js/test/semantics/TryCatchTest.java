@@ -45,4 +45,8 @@ public class TryCatchTest extends AbstractExpressionTest {
     public void testTryCatchWithDifferentParameterNames() throws Exception {
         checkFooBoxIsOk();
     }
+
+    public void testRethrowExceptionIfNotCaught() throws Exception {
+        checkFooBoxIsOk();
+    }
 }
