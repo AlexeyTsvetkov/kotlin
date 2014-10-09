@@ -42,6 +42,10 @@ public class InlineBenchmarksTest extends SingleFileTranslationTest {
         lastJsNode = null;
     }
 
+    public void testBuilders() throws Exception {
+        checkFooBoxIsOkWithInlineDirectives();
+    }
+
     public void testFunktionalBenchmark() throws Exception {
         checkFooBoxIsOkWithInlineDirectives();
     }
