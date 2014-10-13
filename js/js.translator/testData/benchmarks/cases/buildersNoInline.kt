@@ -37,7 +37,7 @@ class TextElement(val text: String): Element {
 abstract class Tag(val name: String): Element {
     val children = array<Element>()
 
-    inline protected fun initTag<T: Element>(tag: T, init: T.() -> Unit): T {
+    noinline protected fun initTag<T: Element>(tag: T, init: T.() -> Unit): T {
         tag.init()
         children.push(tag)
         return tag
@@ -53,26 +53,26 @@ abstract class Tag(val name: String): Element {
 }
 
 abstract class TagWithText(name: String): Tag(name) {
-    inline fun String.plus() {
+    noinline fun String.plus() {
         children.push(TextElement(this))
     }
 }
 
 class HTML(): TagWithText("html") {
-    inline fun head(init: Head.() -> Unit) = initTag(Head(), init)
-    inline fun body(init: Body.() -> Unit) = initTag(Body(), init)
+    noinline fun head(init: Head.() -> Unit) = initTag(Head(), init)
+    noinline fun body(init: Body.() -> Unit) = initTag(Body(), init)
 }
 
 class Head(): TagWithText("head") {
-    inline fun title(init: Title.() -> Unit) = initTag(Title(), init)
+    noinline fun title(init: Title.() -> Unit) = initTag(Title(), init)
 }
 
 class Title(): TagWithText("title")
 
 abstract class BodyTag(name: String): TagWithText(name) {
-    inline fun b(init: B.() -> Unit) = initTag(B(), init)
-    inline fun p(init: P.() -> Unit) = initTag(P(), init)
-    inline fun h1(init: H1.() -> Unit) = initTag(H1(), init)
+    noinline fun b(init: B.() -> Unit) = initTag(B(), init)
+    noinline fun p(init: P.() -> Unit) = initTag(P(), init)
+    noinline fun h1(init: H1.() -> Unit) = initTag(H1(), init)
 }
 
 class Body(): BodyTag("body")
@@ -81,7 +81,7 @@ class B(): BodyTag("b")
 class P(): BodyTag("p")
 class H1(): BodyTag("h1")
 
-inline fun html(init: HTML.() -> Unit): HTML {
+noinline fun html(init: HTML.() -> Unit): HTML {
     val html = HTML()
     html.init()
     return html
