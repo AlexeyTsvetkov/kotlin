@@ -23,3 +23,5 @@ library
 public fun safeParseInt(s : String) : Int? = js.noImpl
 library
 public fun safeParseDouble(s : String) : Double? = js.noImpl
+
+native public fun jsCode<T>(code: String): T = noImpl
