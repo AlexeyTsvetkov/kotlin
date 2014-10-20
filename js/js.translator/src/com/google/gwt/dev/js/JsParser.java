@@ -41,15 +41,8 @@ import java.util.Stack;
 public class JsParser {
 
   public static List<JsStatement> parse(SourceInfo rootSourceInfo,
-      JsScope scope, Reader r) throws IOException, JsParserException {
-    return new JsParser().parseImpl(rootSourceInfo, scope, r);
-  }
-
-  public static void parseInto(SourceInfo rootSourceInfo, JsScope scope,
-      JsBlock block, Reader r) throws IOException, JsParserException {
-    List<JsStatement> childStmts = parse(rootSourceInfo, scope, r);
-    List<JsStatement> parentStmts = block.getStatements();
-    parentStmts.addAll(childStmts);
+      JsScope scope, Reader r, boolean insideFunction) throws IOException, JsParserException {
+    return new JsParser().parseImpl(rootSourceInfo, scope, r, insideFunction);
   }
 
   private final Stack<JsScope> scopeStack = new Stack<JsScope>();
@@ -59,7 +52,7 @@ public class JsParser {
   }
 
   List<JsStatement> parseImpl(final SourceInfo rootSourceInfo, JsScope scope,
-      Reader r) throws JsParserException, IOException {
+      Reader r, boolean insideFunction) throws JsParserException, IOException {
     // Create a custom error handler so that we can throw our own exceptions.
     Context.enter().setErrorReporter(new ErrorReporter() {
         //TODO: fix rootSourceInfo source usage
@@ -87,7 +80,7 @@ public class JsParser {
       //
       TokenStream ts = new TokenStream(r, "jsCode"/*rootSourceInfo.getSource().getName()*/,
           rootSourceInfo.getLine());
-      Parser parser = new Parser(new IRFactory(ts));
+      Parser parser = new Parser(new IRFactory(ts), insideFunction);
       Node topNode = (Node) parser.parse(ts);
 
       // Map the Rhino AST to ours.
