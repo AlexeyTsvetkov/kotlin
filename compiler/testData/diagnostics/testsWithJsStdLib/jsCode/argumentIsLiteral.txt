@@ -1,0 +1,5 @@
+package
+
+internal val s: kotlin.String = "1 + 1;"
+internal fun three(): kotlin.Int
+internal fun two(): kotlin.Int
