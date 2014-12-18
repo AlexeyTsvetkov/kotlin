@@ -20,10 +20,10 @@ import com.google.common.collect.Lists;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.descriptors.*;
-import org.jetbrains.kotlin.js.translate.context.Namer;
 import org.jetbrains.kotlin.js.translate.utils.JsDescriptorUtils;
 import org.jetbrains.kotlin.js.translate.utils.TranslationUtils;
 import org.jetbrains.kotlin.name.Name;
+import org.jetbrains.kotlin.idea.JetLanguage;
 import org.jetbrains.kotlin.resolve.DescriptorUtils;
 import org.jetbrains.kotlin.resolve.OverrideResolver;
 
@@ -36,7 +36,7 @@ public final class PatternBuilder {
     private static final NamePredicate KOTLIN_NAME_PREDICATE = new NamePredicate("kotlin");
 
     @NotNull
-    private static final Name KOTLIN_NAME = Name.identifier(Namer.KOTLIN_LOWER_NAME);
+    private static final Name KOTLIN_NAME = Name.identifier(JetLanguage.NAME.toLowerCase());
 
     private PatternBuilder() {
     }
