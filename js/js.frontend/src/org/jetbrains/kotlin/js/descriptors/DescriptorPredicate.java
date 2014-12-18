@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.js.translate.intrinsic.functions.patterns;
+package org.jetbrains.kotlin.js.descriptors;
 
 import com.google.common.base.Predicate;
 import org.jetbrains.annotations.Nullable;

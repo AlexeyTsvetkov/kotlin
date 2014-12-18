@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2015 JetBrains s.r.o.
+ * Copyright 2010-2013 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,11 +32,11 @@ import org.jetbrains.kotlin.builtins.InlineUtil;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory2;
 import org.jetbrains.kotlin.diagnostics.ParametrizedDiagnostic;
+import org.jetbrains.kotlin.js.descriptors.DescriptorPredicate;
+import org.jetbrains.kotlin.js.descriptors.PatternBuilder;
 import org.jetbrains.kotlin.js.resolve.diagnostics.ErrorsJs;
 import org.jetbrains.kotlin.js.translate.callTranslator.CallTranslator;
 import org.jetbrains.kotlin.js.translate.context.TranslationContext;
-import org.jetbrains.kotlin.js.translate.intrinsic.functions.patterns.DescriptorPredicate;
-import org.jetbrains.kotlin.js.translate.intrinsic.functions.patterns.PatternBuilder;
 import org.jetbrains.kotlin.psi.JetCallExpression;
 import org.jetbrains.kotlin.psi.JetExpression;
 import org.jetbrains.kotlin.psi.JetStringTemplateExpression;

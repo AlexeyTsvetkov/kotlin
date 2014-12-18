@@ -23,12 +23,12 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.builtins.PrimitiveType;
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor;
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor;
+import org.jetbrains.kotlin.js.descriptors.DescriptorPredicate;
+import org.jetbrains.kotlin.js.descriptors.NamePredicate;
 import org.jetbrains.kotlin.js.translate.callTranslator.CallInfo;
 import org.jetbrains.kotlin.js.translate.context.Namer;
 import org.jetbrains.kotlin.js.translate.context.TranslationContext;
 import org.jetbrains.kotlin.js.translate.intrinsic.functions.basic.FunctionIntrinsic;
-import org.jetbrains.kotlin.js.translate.intrinsic.functions.patterns.DescriptorPredicate;
-import org.jetbrains.kotlin.js.translate.intrinsic.functions.patterns.NamePredicate;
 import org.jetbrains.kotlin.js.translate.utils.AnnotationsUtils;
 import org.jetbrains.kotlin.js.translate.utils.BindingUtils;
 import org.jetbrains.kotlin.name.Name;
@@ -42,10 +42,10 @@ import org.jetbrains.kotlin.types.JetType;
 
 import java.util.List;
 
-import static org.jetbrains.kotlin.js.translate.intrinsic.functions.basic.FunctionIntrinsic.CallParametersAwareFunctionIntrinsic;
-import static org.jetbrains.kotlin.js.translate.intrinsic.functions.patterns.PatternBuilder.pattern;
-import static org.jetbrains.kotlin.js.translate.utils.ManglingUtils.getStableMangledNameForDescriptor;
 import static org.jetbrains.kotlin.js.descriptors.DescriptorsPackage.getNameIfStandardType;
+import static org.jetbrains.kotlin.js.descriptors.PatternBuilder.pattern;
+import static org.jetbrains.kotlin.js.translate.intrinsic.functions.basic.FunctionIntrinsic.CallParametersAwareFunctionIntrinsic;
+import static org.jetbrains.kotlin.js.translate.utils.ManglingUtils.getStableMangledNameForDescriptor;
 
 public final class TopLevelFIF extends CompositeFIF {
     public static final DescriptorPredicate EQUALS_IN_ANY = pattern("kotlin", "Any", "equals");

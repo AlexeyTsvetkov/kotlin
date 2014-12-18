@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.js.translate.intrinsic.functions.patterns;
+package org.jetbrains.kotlin.js.descriptors;
 
 import com.google.common.collect.Lists;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.descriptors.*;
-import org.jetbrains.kotlin.js.translate.utils.TranslationUtils;
 import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.idea.JetLanguage;
 import org.jetbrains.kotlin.resolve.DescriptorUtils;
