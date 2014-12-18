@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.js.translate.reference;
 
+
 import com.google.dart.compiler.backend.js.ast.*;
 import com.google.dart.compiler.backend.js.ast.metadata.MetadataPackage;
 import com.google.dart.compiler.common.SourceInfoImpl;
@@ -52,13 +53,11 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.google.gwt.dev.js.rhino.Utils.isEndOfLine;
+import static org.jetbrains.kotlin.js.descriptors.DescriptorsPackage.getJS_PATTERN;
 import static org.jetbrains.kotlin.js.translate.utils.BindingUtils.getCompileTimeValue;
 import static org.jetbrains.kotlin.resolve.calls.callUtil.CallUtilPackage.getFunctionResolvedCallWithAssert;
 
 public final class CallExpressionTranslator extends AbstractCallExpressionTranslator {
-
-    @NotNull
-    private final static DescriptorPredicate JSCODE_PATTERN = PatternBuilder.pattern("kotlin.js.js(String)");
 
     @NotNull
     public static JsNode translate(
@@ -115,7 +114,7 @@ public final class CallExpressionTranslator extends AbstractCallExpressionTransl
         FunctionDescriptor descriptor = getFunctionResolvedCallWithAssert(expression, context.bindingContext())
                                             .getResultingDescriptor();
 
-        return JSCODE_PATTERN.apply(descriptor) && expression.getValueArguments().size() == 1;
+        return getJS_PATTERN().apply(descriptor);
     }
 
     private CallExpressionTranslator(
