@@ -45,9 +45,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.jetbrains.kotlin.js.descriptors.DescriptorsPackage.getJS_PATTERN;
 import static org.jetbrains.kotlin.js.translate.utils.BindingUtils.getCompileTimeValue;
 import static org.jetbrains.kotlin.resolve.calls.callUtil.CallUtilPackage.getFunctionResolvedCallWithAssert;
+import static org.jetbrains.kotlin.resolve.diagnostics.JsCallChecker.matchesJsCode;
 
 public final class CallExpressionTranslator extends AbstractCallExpressionTranslator {
 
@@ -57,7 +57,9 @@ public final class CallExpressionTranslator extends AbstractCallExpressionTransl
             @Nullable JsExpression receiver,
             @NotNull TranslationContext context
     ) {
-        if (matchesJsCode(expression, context)) {
+        ResolvedCall<? extends FunctionDescriptor> resolvedCall = getFunctionResolvedCallWithAssert(expression, context.bindingContext());
+
+        if (matchesJsCode(resolvedCall)) {
             return (new CallExpressionTranslator(expression, receiver, context)).translateJsCode();
         }
         
@@ -97,16 +99,6 @@ public final class CallExpressionTranslator extends AbstractCallExpressionTransl
         }
 
         return false;
-    }
-
-    private static boolean matchesJsCode(
-            @NotNull JetCallExpression expression,
-            @NotNull TranslationContext context
-    ) {
-        FunctionDescriptor descriptor = getFunctionResolvedCallWithAssert(expression, context.bindingContext())
-                                            .getResultingDescriptor();
-
-        return getJS_PATTERN().apply(descriptor);
     }
 
     private CallExpressionTranslator(

@@ -24,7 +24,7 @@ import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory2
 import org.jetbrains.kotlin.diagnostics.DiagnosticSink
 import org.jetbrains.kotlin.diagnostics.ParametrizedDiagnostic
-import org.jetbrains.kotlin.js.descriptors.JS_PATTERN
+import org.jetbrains.kotlin.js.descriptors.DescriptorPredicate
 import org.jetbrains.kotlin.js.descriptors.PatternBuilder
 import org.jetbrains.kotlin.js.resolve.diagnostics.ErrorsJs
 import org.jetbrains.kotlin.psi.JetCallExpression
@@ -38,7 +38,19 @@ import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import com.intellij.openapi.util.TextRange
 import java.io.StringReader
 
+import kotlin.platform.platformStatic
+
 public class JsCallChecker : CallChecker {
+
+    class object {
+        public val JS_PATTERN: DescriptorPredicate = PatternBuilder.pattern("kotlin.js.js(String)")
+
+        platformStatic
+        public fun <F : CallableDescriptor?> ResolvedCall<F>.matchesJsCode(): Boolean {
+            val descriptor = getResultingDescriptor()
+            return descriptor is SimpleFunctionDescriptor && JS_PATTERN.apply(descriptor)
+        }
+    }
 
     override fun <F : CallableDescriptor?> check(resolvedCall: ResolvedCall<F>, context: BasicCallResolutionContext) {
         if (context.isAnnotationContext || !resolvedCall.matchesJsCode()) return
@@ -87,11 +99,6 @@ public class JsCallChecker : CallChecker {
         }
     }
 
-}
-
-private fun <F : CallableDescriptor?> ResolvedCall<F>.matchesJsCode(): Boolean {
-    val descriptor = getResultingDescriptor()
-    return descriptor is SimpleFunctionDescriptor && JS_PATTERN.apply(descriptor)
 }
 
 private class JsCodeErrorReporter(
