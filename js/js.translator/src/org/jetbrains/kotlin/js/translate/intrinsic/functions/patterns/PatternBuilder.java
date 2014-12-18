@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.jetbrains.kotlin.js.descriptors.DescriptorsPackage.getNameIfStandardType;
+import static org.jetbrains.kotlin.js.descriptors.DescriptorsPackage.getJetTypeFqName;
 
 public final class PatternBuilder {
 
@@ -242,7 +243,7 @@ public final class PatternBuilder {
             if (actualReceiver != null) {
                 if (receiverFqName == null) return false;
 
-                String actualReceiverFqName = TranslationUtils.getJetTypeFqName(actualReceiver.getType(), false);
+                String actualReceiverFqName = getJetTypeFqName(actualReceiver.getType(), false);
 
                 if (!actualReceiverFqName.equals(receiverFqName)) return false;
             }
