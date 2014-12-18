@@ -134,11 +134,7 @@ public final class CallExpressionTranslator extends AbstractCallExpressionTransl
     private JsNode translateJsCode() {
         List<? extends ValueArgument> arguments = expression.getValueArguments();
         JetExpression argumentExpression = arguments.get(0).getArgumentExpression();
-
-        if (!(argumentExpression instanceof JetStringTemplateExpression)) {
-            context().getTrace().report(ErrorsJs.JSCODE_ARGUMENT_SHOULD_BE_LITERAL.on(expression));
-            return program().getEmptyExpression();
-        }
+        assert argumentExpression instanceof JetStringTemplateExpression;
 
         List<JsStatement> statements = parseJsCode(argumentExpression);
         int size = statements.size();
