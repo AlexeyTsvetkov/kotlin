@@ -31,7 +31,6 @@ import org.jetbrains.kotlin.js.translate.intrinsic.functions.patterns.Descriptor
 import org.jetbrains.kotlin.js.translate.intrinsic.functions.patterns.NamePredicate;
 import org.jetbrains.kotlin.js.translate.utils.AnnotationsUtils;
 import org.jetbrains.kotlin.js.translate.utils.BindingUtils;
-import org.jetbrains.kotlin.js.translate.utils.JsDescriptorUtils;
 import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.psi.JetExpression;
 import org.jetbrains.kotlin.psi.JetQualifiedExpression;
@@ -46,6 +45,7 @@ import java.util.List;
 import static org.jetbrains.kotlin.js.translate.intrinsic.functions.basic.FunctionIntrinsic.CallParametersAwareFunctionIntrinsic;
 import static org.jetbrains.kotlin.js.translate.intrinsic.functions.patterns.PatternBuilder.pattern;
 import static org.jetbrains.kotlin.js.translate.utils.ManglingUtils.getStableMangledNameForDescriptor;
+import static org.jetbrains.kotlin.js.descriptors.DescriptorsPackage.getNameIfStandardType;
 
 public final class TopLevelFIF extends CompositeFIF {
     public static final DescriptorPredicate EQUALS_IN_ANY = pattern("kotlin", "Any", "equals");
@@ -233,7 +233,7 @@ public final class TopLevelFIF extends CompositeFIF {
                 @NotNull TranslationContext context
         ) {
             JetType keyType = callInfo.getResolvedCall().getTypeArguments().values().iterator().next();
-            Name keyTypeName = JsDescriptorUtils.getNameIfStandardType(keyType);
+            Name keyTypeName = getNameIfStandardType(keyType);
             String collectionClassName = null;
             if (keyTypeName != null) {
                 if (NamePredicate.PRIMITIVE_NUMBERS.apply(keyTypeName)) {

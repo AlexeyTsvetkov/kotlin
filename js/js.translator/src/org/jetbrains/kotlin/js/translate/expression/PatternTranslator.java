@@ -36,7 +36,7 @@ import org.jetbrains.kotlin.psi.JetTypeReference;
 
 import static org.jetbrains.kotlin.js.translate.utils.BindingUtils.getTypeByReference;
 import static org.jetbrains.kotlin.js.translate.utils.JsAstUtils.*;
-import static org.jetbrains.kotlin.js.translate.utils.JsDescriptorUtils.getNameIfStandardType;
+import static org.jetbrains.kotlin.js.descriptors.DescriptorsPackage.getNameIfStandardType;
 
 public final class PatternTranslator extends AbstractTranslator {
 

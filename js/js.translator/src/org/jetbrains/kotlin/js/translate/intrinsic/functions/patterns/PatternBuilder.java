@@ -20,7 +20,6 @@ import com.google.common.collect.Lists;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.descriptors.*;
-import org.jetbrains.kotlin.js.translate.utils.JsDescriptorUtils;
 import org.jetbrains.kotlin.js.translate.utils.TranslationUtils;
 import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.idea.JetLanguage;
@@ -29,6 +28,8 @@ import org.jetbrains.kotlin.resolve.OverrideResolver;
 
 import java.util.Arrays;
 import java.util.List;
+
+import static org.jetbrains.kotlin.js.descriptors.DescriptorsPackage.getNameIfStandardType;
 
 public final class PatternBuilder {
 
@@ -161,7 +162,7 @@ public final class PatternBuilder {
                     }
                     for (int i = 0; i < valueParameterDescriptors.size(); i++) {
                         ValueParameterDescriptor valueParameterDescriptor = valueParameterDescriptors.get(i);
-                        Name name = JsDescriptorUtils.getNameIfStandardType(valueParameterDescriptor.getType());
+                        Name name = getNameIfStandardType(valueParameterDescriptor.getType());
                         NamePredicate namePredicate = argumentCheckers.get(i);
                         if (!namePredicate.apply(name)) return false;
                     }
