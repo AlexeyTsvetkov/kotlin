@@ -82,6 +82,9 @@ public final class Namer {
     private static final String CLASS_OBJECT_INITIALIZER = "object_initializer$";
     private static final String PROTOTYPE_NAME = "prototype";
     public static final String CAPTURED_VAR_FIELD = "v";
+    private static final JsNameRef KOTLIN_INLINE_OBJECT = new JsNameRef("inline", Namer.KOTLIN_NAME);
+    public static final JsNameRef KOTLIN_INLINE_START_TAG = new JsNameRef("startTag", KOTLIN_INLINE_OBJECT);
+    public static final JsNameRef KOTLIN_INLINE_END_TAG = new JsNameRef("endTag", KOTLIN_INLINE_OBJECT);
 
     @NotNull
     public static final JsExpression UNDEFINED_EXPRESSION = new JsPrefixOperation(JsUnaryOperator.VOID, JsNumberLiteral.ZERO);

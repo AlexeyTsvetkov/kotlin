@@ -224,6 +224,12 @@
         return hash;
     }
 
+    Kotlin.inline = {};
+
+    Kotlin.inline.startTag = function(args) {};
+
+    Kotlin.inline.endTag = function(args) {};
+
     var lazyInitClasses = {};
 
     /**

@@ -25,3 +25,5 @@ var process = {};
 
 // common
 var console = {};
+
+Kotlin.inline;

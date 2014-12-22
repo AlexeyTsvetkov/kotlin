@@ -17,21 +17,16 @@
 package org.jetbrains.k2js.translate.expression;
 
 
-import com.google.dart.compiler.backend.js.ast.JsFunction;
-import com.google.dart.compiler.backend.js.ast.JsName;
-import com.google.dart.compiler.backend.js.ast.JsParameter;
-import com.google.dart.compiler.backend.js.ast.JsPropertyInitializer;
+import com.google.dart.compiler.backend.js.ast.*;
 import com.google.dart.compiler.backend.js.ast.metadata.MetadataPackage;
 import com.intellij.util.SmartList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.jet.lang.descriptors.DeclarationDescriptor;
-import org.jetbrains.jet.lang.descriptors.FunctionDescriptor;
-import org.jetbrains.jet.lang.descriptors.Modality;
-import org.jetbrains.jet.lang.descriptors.ValueParameterDescriptor;
+import org.jetbrains.jet.lang.descriptors.*;
 import org.jetbrains.jet.lang.psi.JetDeclarationWithBody;
 import org.jetbrains.jet.lang.psi.JetFunctionLiteralExpression;
 import org.jetbrains.jet.lang.resolve.DescriptorUtils;
+import org.jetbrains.jet.lang.types.lang.InlineStrategy;
 import org.jetbrains.k2js.translate.context.AliasingContext;
 import org.jetbrains.k2js.translate.context.Namer;
 import org.jetbrains.k2js.translate.context.TranslationContext;
@@ -41,6 +36,11 @@ import org.jetbrains.k2js.translate.utils.TranslationUtils;
 import java.util.Collections;
 import java.util.List;
 
+import static com.google.dart.compiler.backend.js.ast.metadata.MetadataPackage.getInlineStrategy;
+import static com.google.dart.compiler.backend.js.ast.metadata.MetadataPackage.setInlineStrategy;
+import static org.jetbrains.jet.lang.types.lang.InlineUtil.getInlineType;
+import static org.jetbrains.jet.lang.types.lang.KotlinBuiltIns.isFunctionOrExtensionFunctionType;
+import static org.jetbrains.k2js.translate.reference.CallExpressionTranslator.shouldBeInlined;
 import static org.jetbrains.k2js.translate.utils.BindingUtils.getFunctionDescriptor;
 import static org.jetbrains.k2js.translate.utils.ErrorReportingUtils.message;
 import static org.jetbrains.k2js.translate.utils.FunctionBodyTranslator.translateFunctionBody;
@@ -107,6 +107,7 @@ public final class FunctionTranslator extends AbstractTranslator {
     private void generateFunctionObject() {
         setParameters(functionObject, translateParameters());
         translateBody();
+        addInlineMetadataIfNeeded();
     }
 
     private void translateBody() {
@@ -133,6 +134,13 @@ public final class FunctionTranslator extends AbstractTranslator {
         for (ValueParameterDescriptor valueParameter : descriptor.getValueParameters()) {
             JsParameter jsParameter = new JsParameter(context.getNameForDescriptor(valueParameter));
             MetadataPackage.setHasDefaultValue(jsParameter, valueParameter.hasDefaultValue());
+
+            if (isFunctionOrExtensionFunctionType(valueParameter.getType()) &&
+                shouldBeInlined(valueParameter)
+            ) {
+                setInlineStrategy(jsParameter, InlineStrategy.IN_PLACE);
+            }
+
             list.add(jsParameter);
         }
     }
@@ -146,5 +154,44 @@ public final class FunctionTranslator extends AbstractTranslator {
 
     private boolean isExtensionFunction() {
         return DescriptorUtils.isExtension(descriptor) && !(functionDeclaration instanceof JetFunctionLiteralExpression);
+    }
+
+    private void addInlineMetadataIfNeeded() {
+        if (!getInlineType(descriptor).isInline() ||
+            descriptor.getVisibility() != Visibilities.PUBLIC) return;
+
+        JsNameRef qualifier = new JsNameRef("inline", Namer.KOTLIN_NAME);
+        JsNameRef startQualifier = new JsNameRef("startTag", qualifier);
+        JsNameRef endQualifier = new JsNameRef("endTag", qualifier);
+
+        String fqName = context().getNameForDescriptor(descriptor).getIdent();
+        JsExpression fqNameLiteral = program().getStringLiteral(fqName);
+        List<JsExpression> arguments = new SmartList<JsExpression>(fqNameLiteral);
+        addParametersMetadata(arguments);
+
+        JsInvocation startTag = new JsInvocation(startQualifier, arguments);
+        JsInvocation endTag = new JsInvocation(endQualifier, fqNameLiteral);
+        List<JsStatement> statements = functionObject.getBody().getStatements();
+        statements.add(0, startTag.makeStmt());
+        statements.add(endTag.makeStmt());
+    }
+
+    private void addParametersMetadata(List<JsExpression> startTagArguments) {
+        List<JsExpression> inlineParams = new SmartList<JsExpression>();
+        List<JsExpression> noinlineParams = new SmartList<JsExpression>();
+
+        for (JsParameter parameter : functionObject.getParameters()) {
+            JsNameRef parameterRef = parameter.getName().makeRef();
+            InlineStrategy inlineStrategy = getInlineStrategy(parameter);
+
+            if (inlineStrategy != null && inlineStrategy.isInline()) {
+                inlineParams.add(parameterRef);
+            } else {
+                noinlineParams.add(parameterRef);
+            }
+        }
+
+        startTagArguments.add(new JsArrayLiteral(inlineParams));
+        startTagArguments.add(new JsArrayLiteral(noinlineParams));
     }
 }
