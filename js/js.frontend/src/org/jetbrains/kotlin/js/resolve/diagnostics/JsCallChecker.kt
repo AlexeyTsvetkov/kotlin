@@ -103,61 +103,65 @@ private class JsCodeErrorReporter(
         private val code: String,
         private val trace: DiagnosticSink
 ) : ErrorReporter {
-
-    override fun error(message: String, sourceName: String, line: Int, lineSource: String, lineOffset: Int) {
-        val diagnostic = getDiagnostic(ErrorsJs.JSCODE_ERROR, message, line, lineOffset)
-        trace.report(diagnostic)
-        throw AbortParsingException()
+    {
+        assert(jsCodeExpression is JetStringTemplateExpression, "js argument is expected to be compile-time string literal")
     }
 
-    override fun warning(message: String, sourceName: String, line: Int, lineSource: String, lineOffset: Int) {
-        val diagnostic = getDiagnostic(ErrorsJs.JSCODE_WARNING, message, line, lineOffset)
+    override fun warning(message: String, startPosition: CodePosition, endPosition: CodePosition) {
+        val diagnostic = getDiagnostic(ErrorsJs.JSCODE_WARNING, message, startPosition, endPosition)
         trace.report(diagnostic)
+    }
+
+    override fun error(message: String, startPosition: CodePosition, endPosition: CodePosition) {
+        val diagnostic = getDiagnostic(ErrorsJs.JSCODE_ERROR, message, startPosition, endPosition)
+        trace.report(diagnostic)
+        throw AbortParsingException()
     }
 
     private fun getDiagnostic(
             diagnosticFactory: DiagnosticFactory2<JetExpression, String, List<TextRange>>,
             message: String,
-            line: Int,
-            lineOffset: Int
+            startPosition: CodePosition,
+            endPosition: CodePosition
     ): ParametrizedDiagnostic<JetExpression> {
-        var offset = jsCodeExpression.getTextOffset() + offsetFromStart(code, line, lineOffset)
-
-        assert(jsCodeExpression is JetStringTemplateExpression, "js argument is expected to be compile-time string literal")
-        val quotesLength = jsCodeExpression.getFirstChild().getTextLength()
-        offset += quotesLength
-
-        val textRange = TextRange(offset, offset + 1)
+        val textRange = TextRange(startPosition.absoluteOffset, endPosition.absoluteOffset)
         return diagnosticFactory.on(jsCodeExpression, message, listOf(textRange))
     }
 
-    /**
-     * Calculates an offset from the start of a text for a position,
-     * defined by line and offset in that line.
-     */
-    private fun offsetFromStart(text: String, line: Int, offset: Int): Int {
-        var i = 0
-        var lineCount = 0
-        var offsetInLine = 0
+    private val CodePosition.absoluteOffset: Int
+        get() {
+            val offset = jsCodeExpression.getTextOffset() + code.offsetOf(this)
+            val quotesLength = jsCodeExpression.getFirstChild().getTextLength()
+            return offset + quotesLength
+        }
+}
 
-        while (i < text.length()) {
-            val c = text.charAt(i)
+/**
+ * Calculates an offset from the start of a text for a position,
+ * defined by line and offset in that line.
+ */
+private fun String.offsetOf(position: CodePosition): Int {
+    var i = 0
+    var lineCount = 0
+    var offsetInLine = 0
 
-            if (lineCount == line && offsetInLine == offset) {
-                return i
-            }
+    while (i < length()) {
+        val c = charAt(i)
 
-            if (isEndOfLine(c.toInt())) {
-                offsetInLine = 0
-                lineCount++
-                assert(lineCount <= line)
-            }
-
-            i++
-            offsetInLine++
+        if (lineCount == position.line && offsetInLine == position.offset) {
+            return i
         }
 
-        return text.length()
+        if (isEndOfLine(c.toInt())) {
+            offsetInLine = 0
+            lineCount++
+            assert(lineCount <= position.line)
+        }
+
+        i++
+        offsetInLine++
     }
+
+    return length()
 }
 

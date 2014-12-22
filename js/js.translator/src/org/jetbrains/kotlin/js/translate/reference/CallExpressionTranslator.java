@@ -22,6 +22,7 @@ import com.google.dart.compiler.common.SourceInfoImpl;
 import com.google.gwt.dev.js.AbortParsingException;
 import com.google.gwt.dev.js.JsParser;
 import com.google.gwt.dev.js.JsParserException;
+import com.google.gwt.dev.js.rhino.CodePosition;
 import com.google.gwt.dev.js.rhino.ErrorReporter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -152,11 +153,17 @@ public final class CallExpressionTranslator extends AbstractCallExpressionTransl
         List<JsStatement> statements = new ArrayList<JsStatement>();
         ErrorReporter errorReporter = new ErrorReporter() {
             @Override
-            public void warning(String message, String sourceName, int line, String lineSource, int lineOffset) {}
+            public void warning(
+                    @NotNull String message, @NotNull CodePosition startPosition, @NotNull CodePosition endPosition
+            ) {
+
+            }
 
             @Override
-            public void error(String message, String sourceName, int line, String lineSource, int lineOffset) {
-                throw new RuntimeException("Encountered js error in backend: " + message);
+            public void error(
+                    @NotNull String message, @NotNull CodePosition startPosition, @NotNull CodePosition endPosition
+            ) {
+                throw new RuntimeException("JS parser error in backend (must have been checked in frontend): " + message);
             }
         };
 
