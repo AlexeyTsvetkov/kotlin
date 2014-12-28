@@ -5,15 +5,15 @@ package foo
 // CHECK_CONTAINS_NO_CALLS: doNothing3
 
 class Inline {
-    public inline fun <T> identity1 (x: T): T {
+    inline fun <T> identity1 (x: T): T {
         return x
     }
 
-    public inline fun <T> identity2 (x: T, inline f: (T) -> T): T {
+    inline fun <T> identity2 (x: T, inline f: (T) -> T): T {
         return f(x)
     }
 
-    public inline fun <T> identity3 (inline f: () -> T): T {
+    inline fun <T> identity3 (inline f: () -> T): T {
         return f()
     }
 }

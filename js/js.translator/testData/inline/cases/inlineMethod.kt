@@ -3,11 +3,11 @@ package foo
 // CHECK_CONTAINS_NO_CALLS: add
 
 data class IntPair(public var fst: Int, public var snd: Int) {
-    inline public fun getFst(): Int { return fst }
-    inline public fun setFst(v: Int) { fst = v }
+    inline fun getFst(): Int { return fst }
+    inline fun setFst(v: Int) { fst = v }
 
-    inline public fun getSnd(): Int { return this.snd }
-    inline public fun setSnd(v: Int) { this.snd = v }
+    inline fun getSnd(): Int { return this.snd }
+    inline fun setSnd(v: Int) { this.snd = v }
 }
 
 fun add(p: IntPair, toFst: Int, toSnd: Int) {
