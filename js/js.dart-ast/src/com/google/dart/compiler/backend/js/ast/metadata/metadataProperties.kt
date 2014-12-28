@@ -24,6 +24,8 @@ public var JsName.staticRef: JsNode? by MetadataProperty(default = null)
 
 public var JsInvocation.inlineStrategy: InlineStrategy? by MetadataProperty(default = null)
 
+public var JsInvocation.libraryJarFilePath: String? by MetadataProperty(default = null)
+
 public var JsParameter.inlineStrategy: InlineStrategy? by MetadataProperty(default = null)
 
 public var JsFunction.isLocal: Boolean by MetadataProperty(default = false)

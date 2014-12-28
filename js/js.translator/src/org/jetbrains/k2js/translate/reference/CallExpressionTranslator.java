@@ -17,7 +17,6 @@
 package org.jetbrains.k2js.translate.reference;
 
 import com.google.dart.compiler.backend.js.ast.*;
-import com.google.dart.compiler.backend.js.ast.metadata.MetadataPackage;
 import com.google.dart.compiler.common.SourceInfoImpl;
 import com.google.gwt.dev.js.JsParser;
 import com.google.gwt.dev.js.JsParserException;
@@ -32,8 +31,10 @@ import org.jetbrains.jet.lang.psi.*;
 import org.jetbrains.jet.lang.resolve.calls.callUtil.CallUtilPackage;
 import org.jetbrains.jet.lang.resolve.calls.model.ResolvedCall;
 import org.jetbrains.jet.lang.resolve.calls.model.VariableAsFunctionResolvedCall;
+import org.jetbrains.jet.lang.resolve.descriptorUtil.DescriptorUtilPackage;
 import org.jetbrains.jet.lang.types.lang.InlineStrategy;
 import org.jetbrains.jet.lang.types.lang.InlineUtil;
+import org.jetbrains.jet.utils.PathUtil;
 import org.jetbrains.k2js.translate.callTranslator.CallTranslator;
 import org.jetbrains.k2js.translate.context.TranslationContext;
 import org.jetbrains.k2js.translate.intrinsic.functions.patterns.DescriptorPredicate;
@@ -43,12 +44,15 @@ import org.jetbrains.k2js.resolve.diagnostics.ErrorsJs;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static com.google.dart.compiler.backend.js.ast.metadata.MetadataPackage.setInlineStrategy;
+import static com.google.dart.compiler.backend.js.ast.metadata.MetadataPackage.setLibraryJarFilePath;
 import static com.google.gwt.dev.js.rhino.Utils.isEndOfLine;
 import static org.jetbrains.jet.lang.resolve.calls.callUtil.CallUtilPackage.getFunctionResolvedCallWithAssert;
 import static org.jetbrains.k2js.translate.utils.BindingUtils.getCompileTimeValue;
@@ -69,31 +73,14 @@ public final class CallExpressionTranslator extends AbstractCallExpressionTransl
         }
         
         JsExpression callExpression = (new CallExpressionTranslator(expression, receiver, context)).translate();
+        if (!(callExpression instanceof JsInvocation)) return callExpression;
 
-        if (shouldBeInlined(expression, context)
-            && callExpression instanceof JsInvocation) {
-
-            MetadataPackage.setInlineStrategy((JsInvocation) callExpression, InlineStrategy.IN_PLACE);
-        }
-
+        setMetadataIfNeeded((JsInvocation) callExpression, expression, context);
         return callExpression;
     }
 
     public static boolean shouldBeInlined(@NotNull JetCallExpression expression, @NotNull TranslationContext context) {
-        if (!context.getConfig().isInlineEnabled()) return false;
-
-        ResolvedCall<?> resolvedCall = CallUtilPackage.getResolvedCall(expression, context.bindingContext());
-        assert resolvedCall != null;
-
-        CallableDescriptor descriptor;
-
-        if (resolvedCall instanceof VariableAsFunctionResolvedCall) {
-            descriptor = ((VariableAsFunctionResolvedCall) resolvedCall).getVariableCall().getCandidateDescriptor();
-        } else {
-            descriptor = resolvedCall.getCandidateDescriptor();
-        }
-
-        return shouldBeInlined(descriptor);
+        return shouldBeInlined(getDescriptor(expression, context));
     }
 
     public static boolean shouldBeInlined(@NotNull CallableDescriptor descriptor) {
@@ -108,6 +95,36 @@ public final class CallExpressionTranslator extends AbstractCallExpressionTransl
         }
 
         return false;
+    }
+
+    private static void setMetadataIfNeeded(@NotNull JsInvocation callExpression, @NotNull JetCallExpression expression, @NotNull TranslationContext context) {
+        CallableDescriptor descriptor = getDescriptor(expression, context);
+
+        if (!context.getConfig().isInlineEnabled() ||
+            !shouldBeInlined(descriptor)) return;
+
+        setInlineStrategy(callExpression, InlineStrategy.IN_PLACE);
+
+        if (DescriptorUtilPackage.getModule(descriptor) == context.getConfig().getLibraryModule()) {
+            // TODO: testing temporary hack
+            File jarPath = PathUtil.getKotlinPathsForDistDirectory().getJsStdLibJarPath();
+            setLibraryJarFilePath(callExpression, jarPath.getAbsolutePath());
+        }
+    }
+
+    @NotNull
+    private static CallableDescriptor getDescriptor(JetCallExpression expression, TranslationContext context) {
+        ResolvedCall<?> resolvedCall = CallUtilPackage.getResolvedCall(expression, context.bindingContext());
+        assert resolvedCall != null;
+
+        CallableDescriptor descriptor;
+
+        if (resolvedCall instanceof VariableAsFunctionResolvedCall) {
+            descriptor = ((VariableAsFunctionResolvedCall) resolvedCall).getVariableCall().getCandidateDescriptor();
+        } else {
+            descriptor = resolvedCall.getCandidateDescriptor();
+        }
+        return descriptor;
     }
 
     private static boolean matchesJsCode(
