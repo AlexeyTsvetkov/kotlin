@@ -237,4 +237,8 @@ public final class InlineTest extends SingleFileTranslationWithDirectivesTest {
     public void testSimpleReturnFunctionWithResultUnused() throws Exception {
         checkFooBoxIsOkWithDirectives();
     }
+
+    public void testWithStdlib() throws Exception {
+        checkFooBoxIsOkWithDirectives();
+    }
 }
