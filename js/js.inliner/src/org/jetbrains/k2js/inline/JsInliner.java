@@ -42,6 +42,7 @@ public class JsInliner extends JsVisitorWithContextImpl {
     private final Stack<JsInliningContext> inliningContexts = new Stack<JsInliningContext>();
     private final Set<JsFunction> processedFunctions = IdentitySet();
     private final Set<JsFunction> inProcessFunctions = IdentitySet();
+    private final FunctionReader functionReader = new FunctionReader();
 
     /**
      * A statement can contain more, than one inlineable sub-expressions.
@@ -194,6 +195,12 @@ public class JsInliner extends JsVisitorWithContextImpl {
 
         JsInliningContext(JsFunction function) {
             functionContext = new FunctionContext(function, this) {
+                @NotNull
+                @Override
+                protected FunctionReader getFunctionReader() {
+                    return functionReader;
+                }
+
                 @Nullable
                 @Override
                 protected JsFunction lookUpStaticFunction(@Nullable JsName functionName) {

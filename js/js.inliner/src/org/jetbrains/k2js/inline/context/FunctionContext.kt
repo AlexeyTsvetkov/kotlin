@@ -35,6 +35,8 @@ import org.jetbrains.k2js.inline.util.isFunctionCreator
 
 import com.intellij.util.containers.ContainerUtil
 import java.util.IdentityHashMap
+import org.jetbrains.k2js.inline.FunctionReader
+import com.google.dart.compiler.backend.js.ast.metadata.libraryJarFilePath
 
 abstract class FunctionContext(
         private val function: JsFunction,
@@ -46,6 +48,8 @@ abstract class FunctionContext(
      * @see getFunctionWithClosure
      */
     private val functionsWithClosure = IdentityHashMap<JsInvocation, JsFunction?>()
+
+    protected abstract val functionReader: FunctionReader
 
     protected abstract fun lookUpStaticFunction(functionName: JsName?): JsFunction?
 
@@ -117,6 +121,8 @@ abstract class FunctionContext(
      *    in case of local function with closure.
      */
     private fun getFunctionDefinitionImpl(call: JsInvocation): JsFunction? {
+        if (call.libraryJarFilePath != null) return functionReader.getFunctionDefinition(call)
+
         /** remove ending `()` */
         var callQualifier = call.getQualifier()
 
