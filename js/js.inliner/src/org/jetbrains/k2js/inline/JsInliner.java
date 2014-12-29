@@ -42,7 +42,7 @@ public class JsInliner extends JsVisitorWithContextImpl {
     private final Stack<JsInliningContext> inliningContexts = new Stack<JsInliningContext>();
     private final Set<JsFunction> processedFunctions = IdentitySet();
     private final Set<JsFunction> inProcessFunctions = IdentitySet();
-    private final FunctionReader functionReader = new FunctionReader();
+    private final FunctionReader functionReader;
 
     /**
      * A statement can contain more, than one inlineable sub-expressions.
@@ -74,16 +74,21 @@ public class JsInliner extends JsVisitorWithContextImpl {
      */
     private boolean lastStatementWasShifted = false;
 
-    public static JsProgram process(JsProgram program) {
+    @NotNull
+    public static JsProgram process(@NotNull JsProgram program) {
         IdentityHashMap<JsName, JsFunction> functions = collectNamedFunctions(program);
-        JsInliner inliner = new JsInliner(functions);
+        JsInliner inliner = new JsInliner(functions, program);
         inliner.accept(program);
         removeUnusedFunctionDefinitions(program, functions);
         return program;
     }
 
-    JsInliner(IdentityHashMap<JsName, JsFunction> functions) {
+    JsInliner(
+            @NotNull IdentityHashMap<JsName, JsFunction> functions,
+            @NotNull JsProgram program
+    ) {
         this.functions = functions;
+        this.functionReader = new FunctionReader(program);
     }
 
     @Override
