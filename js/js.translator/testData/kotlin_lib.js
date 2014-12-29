@@ -227,13 +227,20 @@
     Kotlin.inline = {};
 
     Kotlin.inline.startTag = function(fqName) {
-        var InlineTagBuilder = function() {
-            var self = this;
-            self.inlineArgs = function(argsArray) { return self; };
-            self.noInlineArgs = function(argsArray) { return self; };
+
+        var noinlineArgsBuilder = {
+            noinlineArgs: function(argsArray) {
+                return undefined;
+            }
         };
 
-        return new InlineTagBuilder()
+        var inlineArgsBuilder = {
+            inlineArgs: function(argsArray) {
+                return noinlineArgsBuilder;
+            }
+        };
+
+        return inlineArgsBuilder;
     };
 
     Kotlin.inline.endTag = function(fqName) {};
