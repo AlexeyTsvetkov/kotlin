@@ -160,38 +160,30 @@ public final class FunctionTranslator extends AbstractTranslator {
         if (!getInlineType(descriptor).isInline() ||
             descriptor.getVisibility() != Visibilities.PUBLIC) return;
 
-        JsNameRef qualifier = new JsNameRef("inline", Namer.KOTLIN_NAME);
-        JsNameRef startQualifier = new JsNameRef("startTag", qualifier);
-        JsNameRef endQualifier = new JsNameRef("endTag", qualifier);
-
-        String fqName = context().getNameForDescriptor(descriptor).getIdent();
-        JsExpression fqNameLiteral = program().getStringLiteral(fqName);
-        List<JsExpression> arguments = new SmartList<JsExpression>(fqNameLiteral);
-        addParametersMetadata(arguments);
-
-        JsInvocation startTag = new JsInvocation(startQualifier, arguments);
-        JsInvocation endTag = new JsInvocation(endQualifier, fqNameLiteral);
-        List<JsStatement> statements = functionObject.getBody().getStatements();
-        statements.add(0, startTag.makeStmt());
-        statements.add(endTag.makeStmt());
-    }
-
-    private void addParametersMetadata(List<JsExpression> startTagArguments) {
-        List<JsExpression> inlineParams = new SmartList<JsExpression>();
-        List<JsExpression> noinlineParams = new SmartList<JsExpression>();
+        List<JsExpression> inlineArgs = new SmartList<JsExpression>();
+        List<JsExpression> noinlineArgs = new SmartList<JsExpression>();
 
         for (JsParameter parameter : functionObject.getParameters()) {
             JsNameRef parameterRef = parameter.getName().makeRef();
             InlineStrategy inlineStrategy = getInlineStrategy(parameter);
 
             if (inlineStrategy != null && inlineStrategy.isInline()) {
-                inlineParams.add(parameterRef);
+                inlineArgs.add(parameterRef);
             } else {
-                noinlineParams.add(parameterRef);
+                noinlineArgs.add(parameterRef);
             }
         }
 
-        startTagArguments.add(new JsArrayLiteral(inlineParams));
-        startTagArguments.add(new JsArrayLiteral(noinlineParams));
+        String functionName = context().getNameForDescriptor(descriptor).getIdent();
+        JsStringLiteral functionNameLiteral = program().getStringLiteral(functionName);
+        JsInvocation startTag = Namer.getInlineStartTag(functionNameLiteral);
+        JsInvocation endTag = Namer.getInlineEndTag(functionNameLiteral);
+
+        startTag = Namer.setInlineArgs(startTag, inlineArgs);
+        startTag = Namer.setNoinlineArgs(startTag, noinlineArgs);
+
+        List<JsStatement> statements = functionObject.getBody().getStatements();
+        statements.add(0, startTag.makeStmt());
+        statements.add(endTag.makeStmt());
     }
 }

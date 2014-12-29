@@ -23,9 +23,14 @@ import org.jetbrains.jet.lang.resolve.DescriptorUtils;
 import org.jetbrains.jet.lang.resolve.name.FqName;
 import org.jetbrains.jet.lang.types.lang.KotlinBuiltIns;
 import org.jetbrains.jet.plugin.JetLanguage;
+import org.jetbrains.k2js.translate.general.Translation;
+import org.jetbrains.k2js.translate.utils.JsAstUtils;
+
+import java.util.List;
 
 import static com.google.dart.compiler.backend.js.ast.AstPackage.JsObjectScope;
 import static org.jetbrains.k2js.translate.utils.ManglingUtils.getStableMangledNameForDescriptor;
+import static org.jetbrains.k2js.translate.utils.ast.AstPackage.getIdent;
 
 /**
  * Encapuslates different types of constants and naming conventions.
@@ -82,12 +87,63 @@ public final class Namer {
     private static final String CLASS_OBJECT_INITIALIZER = "object_initializer$";
     private static final String PROTOTYPE_NAME = "prototype";
     public static final String CAPTURED_VAR_FIELD = "v";
-    private static final JsNameRef KOTLIN_INLINE_OBJECT = new JsNameRef("inline", Namer.KOTLIN_NAME);
-    public static final JsNameRef KOTLIN_INLINE_START_TAG = new JsNameRef("startTag", KOTLIN_INLINE_OBJECT);
-    public static final JsNameRef KOTLIN_INLINE_END_TAG = new JsNameRef("endTag", KOTLIN_INLINE_OBJECT);
+
+    private static final JsNameRef KOTLIN_INLINE_OBJECT = new JsNameRef("inline", KOTLIN_NAME);
+    private static final JsNameRef KOTLIN_INLINE_START_TAG = new JsNameRef("startTag", KOTLIN_INLINE_OBJECT);
+    private static final JsNameRef KOTLIN_INLINE_END_TAG = new JsNameRef("endTag", KOTLIN_INLINE_OBJECT);
+    private static final String KOTLIN_INLINE_TAG_INLINE_ARGS = "inlineArgs";
+    private static final String KOTLIN_INLINE_TAG_NOINLINE_ARGS = "noinlineArgs";
 
     @NotNull
     public static final JsExpression UNDEFINED_EXPRESSION = new JsPrefixOperation(JsUnaryOperator.VOID, JsNumberLiteral.ZERO);
+
+    @NotNull
+    public static JsInvocation getInlineStartTag(@NotNull JsStringLiteral functionName) {
+        return new JsInvocation(KOTLIN_INLINE_START_TAG, functionName);
+    }
+
+    @NotNull
+    public static JsInvocation setInlineArgs(@NotNull JsInvocation call, @NotNull List<JsExpression> args) {
+        return new JsInvocation(new JsNameRef(KOTLIN_INLINE_TAG_INLINE_ARGS, call), args);
+    }
+
+    @NotNull
+    public static JsInvocation setNoinlineArgs(@NotNull JsInvocation call, @NotNull List<JsExpression> args) {
+        return new JsInvocation(new JsNameRef(KOTLIN_INLINE_TAG_NOINLINE_ARGS, call), args);
+    }
+
+    @NotNull
+    public static List<JsExpression> getInlineArgs(@NotNull JsInvocation call) {
+        return getArgumentsOfNamedCall(call, KOTLIN_INLINE_TAG_INLINE_ARGS);
+    }
+
+    @NotNull
+    public static List<JsExpression> getNoinlineArgs(@NotNull JsInvocation call) {
+        return getArgumentsOfNamedCall(call, KOTLIN_INLINE_TAG_NOINLINE_ARGS);
+    }
+
+    @NotNull
+    private static List<JsExpression> getArgumentsOfNamedCall(@NotNull JsInvocation call, @NotNull String callName) {
+        JsExpression partOfCall = call;
+
+        while (partOfCall instanceof JsInvocation) {
+            JsInvocation partOfCallInvocation = (JsInvocation) partOfCall;
+            String ident = getIdent(partOfCallInvocation);
+
+            if (callName.equals(ident)) {
+                return partOfCallInvocation.getArguments();
+            }
+
+            partOfCall = partOfCallInvocation.getQualifier();
+        }
+
+        throw new AssertionError("Could not find " + callName + " arguments in " + call.toString());
+    }
+
+    @NotNull
+    public static JsInvocation getInlineEndTag(@NotNull JsStringLiteral functionName) {
+        return new JsInvocation(KOTLIN_INLINE_END_TAG, functionName);
+    }
 
     public static boolean isUndefined(@NotNull JsExpression expr) {
         if (expr instanceof JsPrefixOperation) {

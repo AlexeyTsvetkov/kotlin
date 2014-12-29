@@ -19,6 +19,8 @@ package org.jetbrains.k2js.translate.utils.ast
 import com.google.dart.compiler.backend.js.ast.JsFunction
 import com.google.dart.compiler.backend.js.ast.JsStatement
 import com.google.dart.compiler.backend.js.ast.JsParameter
+import com.google.dart.compiler.backend.js.ast.JsInvocation
+import com.google.dart.compiler.backend.js.ast.JsNameRef
 
 public fun JsFunction.addStatement(stmt: JsStatement) {
     getBody().getStatements().add(stmt)
@@ -36,3 +38,13 @@ public fun JsFunction.addParameter(identifier: String, index: Int? = null): JsPa
 
     return parameter
 }
+
+public val JsInvocation.ident: String?
+    get() {
+        val qualifier = getQualifier()
+
+        return when (qualifier) {
+            is JsNameRef -> qualifier.getIdent()
+            else -> null
+        }
+    }

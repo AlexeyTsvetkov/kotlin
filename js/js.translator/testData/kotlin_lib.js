@@ -226,9 +226,17 @@
 
     Kotlin.inline = {};
 
-    Kotlin.inline.startTag = function(args) {};
+    Kotlin.inline.startTag = function(fqName) {
+        var InlineTagBuilder = function() {
+            var self = this;
+            self.inlineArgs = function(argsArray) { return self; };
+            self.noInlineArgs = function(argsArray) { return self; };
+        };
 
-    Kotlin.inline.endTag = function(args) {};
+        return new InlineTagBuilder()
+    };
+
+    Kotlin.inline.endTag = function(fqName) {};
 
     var lazyInitClasses = {};
 
