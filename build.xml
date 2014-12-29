@@ -257,6 +257,7 @@
 
     <macrodef name="new-kotlin2js">
         <attribute name="output"/>
+        <attribute name="meta"/>
         <element name="src"/>
 
         <sequential>
@@ -280,6 +281,8 @@
                 <arg value="-output"/>
                 <arg value="@{output}"/>
                 <arg value="-no-stdlib"/>
+                <arg value="-meta"/>
+                <arg value="@{meta}"/>
                 <arg line="-main noCall"/>
             </java>
         </sequential>
@@ -287,16 +290,18 @@
 
     <target name="js-stdlib">
         <property name="compiled.builtins.js" value="builtins.js"/>
+        <property name="compiled.builtins.js.meta" value="builtins.meta.js"/>
         <property name="compiled.stdlib.js" value="stdlib.js"/>
+        <property name="compiled.stdlib.js.meta" value="stdlib.meta.js"/>
         <property name="stdlib.js.dir" value="${basedir}/js/js.translator/testData"/>
 
-        <new-kotlin2js output="${output}/${compiled.builtins.js}">
+        <new-kotlin2js output="${output}/${compiled.builtins.js}" meta="${output}/${compiled.builtins.js.meta}">
             <src>
                 <fileset refid="kotlin.builtin.files"/>
             </src>
         </new-kotlin2js>
 
-        <new-kotlin2js output="${output}/${compiled.stdlib.js}">
+        <new-kotlin2js output="${output}/${compiled.stdlib.js}" meta="${output}/${compiled.stdlib.js.meta}">
             <src>
                 <resources refid="js.lib.files"/>
             </src>
@@ -343,9 +348,9 @@
         </closure-compiler>
 
         <jar jarfile="${kotlin-home}/lib/kotlin-jslib.jar" duplicate="fail">
-            <resources refid="js.lib.files" />
             <zipfileset file="${kotlin-home}/build.txt" prefix="META-INF"/>
             <zipfileset file="${output}/kotlin.js" prefix=""/>
+            <zipfileset file="${output}/${compiled.stdlib.js.meta}" prefix=""/>
 
             <manifest>
                 <attribute name="Built-By" value="${manifest.impl.vendor}"/>
