@@ -39,6 +39,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static org.jetbrains.jet.lang.resolve.util.UtilPackage.resolveTopLevelClass;
+
 public abstract class AbstractSdkAnnotationsValidityTest extends UsefulTestCase {
 
     private static final int CLASSES_IN_CHUNK = 100;
@@ -80,7 +82,7 @@ public abstract class AbstractSdkAnnotationsValidityTest extends UsefulTestCase 
 
                 int chunkStart = chunkIndex * CLASSES_IN_CHUNK;
                 for (FqName javaClass : affectedClasses.subList(chunkStart, Math.min(chunkStart + CLASSES_IN_CHUNK, affectedClasses.size()))) {
-                    ClassDescriptor topLevelClass = ResolvePackage.resolveTopLevelClass(injector.getModule(), javaClass);
+                    ClassDescriptor topLevelClass = resolveTopLevelClass(injector.getModule(), javaClass);
                     PackageViewDescriptor topLevelPackage = injector.getModule().getPackage(javaClass);
                     if (topLevelClass == null) {
                         continue;

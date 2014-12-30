@@ -56,7 +56,7 @@ import org.jetbrains.jet.lang.descriptors.annotations.Annotations
 import org.jetbrains.jet.lang.resolve.DescriptorUtils
 import org.jetbrains.jet.lang.resolve.java.mapping.KotlinToJavaTypesMap
 import org.jetbrains.jet.lang.descriptors.ModuleDescriptor
-import org.jetbrains.jet.lang.resolve.resolveTopLevelClass
+import org.jetbrains.jet.lang.resolve.util.resolveTopLevelClass
 import org.jetbrains.jet.lang.types.TypeProjectionImpl
 import org.jetbrains.jet.lang.types.Variance
 import org.jetbrains.jet.lang.psi.JetDeclaration
