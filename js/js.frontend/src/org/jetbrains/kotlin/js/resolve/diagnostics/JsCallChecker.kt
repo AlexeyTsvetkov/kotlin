@@ -39,6 +39,7 @@ import com.intellij.openapi.util.TextRange
 import java.io.StringReader
 
 import kotlin.platform.platformStatic
+import org.jetbrains.kotlin.resolve.bindingContextUtil.getCompileTimeValueAsString
 
 public class JsCallChecker : CallChecker {
 
@@ -81,12 +82,11 @@ public class JsCallChecker : CallChecker {
             argument: JetExpression,
             context: BasicCallResolutionContext
     ): Boolean {
-        val bindingContext = context.trace.getBindingContext()
-        val codeConstant = bindingContext.get(BindingContext.COMPILE_TIME_VALUE, argument);
-        val code = codeConstant.getValue() as String
+        val bindingTrace = context.trace
+        val code = argument.getCompileTimeValueAsString(bindingTrace.getBindingContext())!!
         val reader = StringReader(code)
 
-        val errorReporter = JsCodeErrorReporter(argument, code, context.trace)
+        val errorReporter = JsCodeErrorReporter(argument, code, bindingTrace)
         Context.enter().setErrorReporter(errorReporter)
 
         try {

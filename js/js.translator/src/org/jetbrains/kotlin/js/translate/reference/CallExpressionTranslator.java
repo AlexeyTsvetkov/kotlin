@@ -45,7 +45,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.jetbrains.kotlin.js.translate.utils.BindingUtils.getCompileTimeValue;
+import static org.jetbrains.kotlin.resolve.bindingContextUtil.BindingContextUtilPackage.getCompileTimeValueAsString;
 import static org.jetbrains.kotlin.resolve.calls.callUtil.CallUtilPackage.getFunctionResolvedCallWithAssert;
 import static org.jetbrains.kotlin.resolve.diagnostics.JsCallChecker.matchesJsCode;
 
@@ -139,8 +139,8 @@ public final class CallExpressionTranslator extends AbstractCallExpressionTransl
 
     @NotNull
     private List<JsStatement> parseJsCode(@NotNull JetStringTemplateExpression jsCodeExpression) {
-        Object jsCode = getCompileTimeValue(bindingContext(), jsCodeExpression);
-        assert jsCode instanceof String: "jsCode must be compile time string";
+        String jsCode = getCompileTimeValueAsString(jsCodeExpression, bindingContext());
+        assert jsCode != null: "jsCode must be compile time string";
 
         List<JsStatement> statements = new ArrayList<JsStatement>();
         ErrorReporter errorReporter = new ErrorReporter() {
