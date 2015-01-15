@@ -29,7 +29,6 @@ import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.psi.JetExpression
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
 import org.jetbrains.kotlin.resolve.calls.context.ResolutionContext
-import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 
 public fun JetReturnExpression.getTargetFunctionDescriptor(context: BindingContext): FunctionDescriptor? {
     val targetLabel = getTargetLabel()
@@ -62,11 +61,3 @@ public fun BindingContext.getDataFlowInfo(expression: JetExpression?): DataFlowI
 
 public fun JetExpression.isUnreachableCode(context: BindingContext): Boolean = context[BindingContext.UNREACHABLE_CODE, this]!!
 
-public fun JetExpression.getCompileTimeValueAsString(context: BindingContext): String? {
-    val value = context.get(BindingContext.COMPILE_TIME_VALUE, this)
-    val type = value?.getType(KotlinBuiltIns.getInstance())
-
-    if (!KotlinBuiltIns.isString(type)) return null;
-
-    return value!!.getValue() as String
-}
