@@ -58,34 +58,35 @@ public class JsCallChecker : CallChecker {
         val expression = resolvedCall.getCall().getCallElement()
         if (expression !is JetCallExpression) return
 
-        val codeArgument = checkArgumentIsStringLiteral(expression, context)
-        if (codeArgument == null) return
+        val arguments = expression.getValueArgumentList()?.getArguments()
+        val argument = arguments?.firstOrNull()?.getArgumentExpression()!!
 
-        checkSyntax(codeArgument, context)
+        val checks = listOf(::checkArgumentIsStringLiteral, ::checkSyntax)
+        checks.all { it(argument, context) }
     }
 
     fun checkArgumentIsStringLiteral(
-            call: JetCallExpression,
+            argument: JetExpression,
             context: BasicCallResolutionContext
-    ): JetStringTemplateExpression? {
-        val arguments = call.getValueArgumentList()?.getArguments()
-        val argument = arguments?.first?.getArgumentExpression()
-
+    ): Boolean {
         if (argument !is JetStringTemplateExpression) {
-            context.trace.report(ErrorsJs.JSCODE_ARGUMENT_SHOULD_BE_LITERAL.on(call))
-            return null
+            context.trace.report(ErrorsJs.JSCODE_ARGUMENT_SHOULD_BE_LITERAL.on(argument))
+            return false
         }
 
-        return argument
+        return true
     }
 
-    fun checkSyntax(jsCodeExpression: JetStringTemplateExpression, context: BasicCallResolutionContext) {
+    fun checkSyntax(
+            argument: JetExpression,
+            context: BasicCallResolutionContext
+    ): Boolean {
         val bindingContext = context.trace.getBindingContext()
-        val codeConstant = bindingContext.get(BindingContext.COMPILE_TIME_VALUE, jsCodeExpression);
+        val codeConstant = bindingContext.get(BindingContext.COMPILE_TIME_VALUE, argument);
         val code = codeConstant.getValue() as String
         val reader = StringReader(code)
 
-        val errorReporter = JsCodeErrorReporter(jsCodeExpression, code, context.trace)
+        val errorReporter = JsCodeErrorReporter(argument, code, context.trace)
         Context.enter().setErrorReporter(errorReporter)
 
         try {
@@ -93,16 +94,18 @@ public class JsCallChecker : CallChecker {
             val parser = Parser(IRFactory(ts), /* insideFunction = */ true)
             parser.parse(ts)
         } catch (e: AbortParsingException) {
-            // ignore
+            return false
         } finally {
             Context.exit()
         }
+
+        return true
     }
 
 }
 
 private class JsCodeErrorReporter(
-        private val jsCodeExpression: JetStringTemplateExpression,
+        private val jsCodeExpression: JetExpression,
         private val code: String,
         private val trace: DiagnosticSink
 ) : ErrorReporter {
