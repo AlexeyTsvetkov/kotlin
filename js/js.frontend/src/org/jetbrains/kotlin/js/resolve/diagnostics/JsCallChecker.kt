@@ -105,12 +105,12 @@ public class JsCallChecker : CallChecker {
 }
 
 private class JsCodeErrorReporter(
-        private val jsCodeExpression: JetExpression,
+        private val nodeToReport: JetExpression,
         private val code: String,
         private val trace: DiagnosticSink
 ) : ErrorReporter {
     {
-        assert(jsCodeExpression is JetStringTemplateExpression, "js argument is expected to be compile-time string literal")
+        assert(nodeToReport is JetStringTemplateExpression, "js argument is expected to be compile-time string literal")
     }
 
     override fun warning(message: String, startPosition: CodePosition, endPosition: CodePosition) {
@@ -131,13 +131,13 @@ private class JsCodeErrorReporter(
             endPosition: CodePosition
     ): ParametrizedDiagnostic<JetExpression> {
         val textRange = TextRange(startPosition.absoluteOffset, endPosition.absoluteOffset)
-        return diagnosticFactory.on(jsCodeExpression, message, listOf(textRange))
+        return diagnosticFactory.on(nodeToReport, message, listOf(textRange))
     }
 
     private val CodePosition.absoluteOffset: Int
         get() {
-            val quotesLength = jsCodeExpression.getFirstChild().getTextLength()
-            return jsCodeExpression.getTextOffset() + quotesLength + code.offsetOf(this)
+            val quotesLength = nodeToReport.getFirstChild().getTextLength()
+            return nodeToReport.getTextOffset() + quotesLength + code.offsetOf(this)
         }
 }
 
