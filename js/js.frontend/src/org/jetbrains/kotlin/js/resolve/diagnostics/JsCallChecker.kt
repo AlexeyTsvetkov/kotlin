@@ -126,9 +126,8 @@ private class JsCodeErrorReporter(
 
     private val CodePosition.absoluteOffset: Int
         get() {
-            val offset = jsCodeExpression.getTextOffset() + code.offsetOf(this)
             val quotesLength = jsCodeExpression.getFirstChild().getTextLength()
-            return offset + quotesLength
+            return jsCodeExpression.getTextOffset() + quotesLength + code.offsetOf(this)
         }
 }
 
