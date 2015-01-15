@@ -1,3 +1,15 @@
-val s = "1 + 1;"
-fun two(): Int = <!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>js<!>(s)
-fun three(): Int = <!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>js<!>("1" + "+ 2;")
+val a = "a"
+
+fun test() {
+    val b = "b+b +"
+
+    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>a<!>)
+    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>b<!>)
+    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>"$a"<!>)
+    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>"$b;"<!>)
+    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>"$b bb"<!>)
+    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>a + a<!>)
+    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>"a" + "a"<!>)
+
+    js("ccc")
+}

@@ -1,5 +1,4 @@
 package
 
-internal val s: kotlin.String = "1 + 1;"
-internal fun three(): kotlin.Int
-internal fun two(): kotlin.Int
+internal val a: kotlin.String = "a"
+internal fun test(): kotlin.Unit
