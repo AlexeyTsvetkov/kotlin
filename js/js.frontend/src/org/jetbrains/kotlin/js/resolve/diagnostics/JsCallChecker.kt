@@ -70,12 +70,14 @@ public class JsCallChecker : CallChecker {
             argument: JetExpression,
             context: BasicCallResolutionContext
     ): Boolean {
-        if (argument !is JetStringTemplateExpression) {
+        val bindingContext = context.trace.getBindingContext()
+        val code = argument.getCompileTimeValueAsString(bindingContext)
+
+        if (code == null) {
             context.trace.report(ErrorsJs.JSCODE_ARGUMENT_SHOULD_BE_LITERAL.on(argument))
-            return false
         }
 
-        return true
+        return code != null
     }
 
     fun checkSyntax(

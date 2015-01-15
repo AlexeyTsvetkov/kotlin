@@ -41,7 +41,7 @@ public interface ErrorsJs {
     DiagnosticFactory2<JetElement, Integer, String> NATIVE_INDEXER_WRONG_PARAMETER_COUNT = DiagnosticFactory2.create(ERROR, DECLARATION_SIGNATURE_OR_DEFAULT);
     DiagnosticFactory2<JetExpression, String, List<TextRange>> JSCODE_ERROR = DiagnosticFactory2.create(ERROR, JsCodePositioningStrategy.INSTANCE$);
     DiagnosticFactory2<JetExpression, String, List<TextRange>> JSCODE_WARNING = DiagnosticFactory2.create(WARNING, JsCodePositioningStrategy.INSTANCE$);
-    DiagnosticFactory0<JetExpression> JSCODE_ARGUMENT_SHOULD_BE_LITERAL = DiagnosticFactory0.create(ERROR, CALL_EXPRESSION);
+    DiagnosticFactory0<JetExpression> JSCODE_ARGUMENT_SHOULD_BE_LITERAL = DiagnosticFactory0.create(ERROR, DEFAULT);
 
     @SuppressWarnings("UnusedDeclaration")
     Object _initializer = new Object() {
