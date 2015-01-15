@@ -91,11 +91,7 @@ public class JsCallChecker : CallChecker {
 
 private fun <F : CallableDescriptor?> ResolvedCall<F>.matchesJsCode(): Boolean {
     val descriptor = getResultingDescriptor()
-
-    return when (descriptor) {
-        is SimpleFunctionDescriptor -> JS_PATTERN.apply(descriptor)
-        else -> false
-    }
+    return descriptor is SimpleFunctionDescriptor && JS_PATTERN.apply(descriptor)
 }
 
 private class JsCodeErrorReporter(
