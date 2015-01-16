@@ -16,7 +16,9 @@
 
 package org.jetbrains.kotlin.serialization;
 
+import kotlin.Function1;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.descriptors.annotations.Annotated;
@@ -377,6 +379,11 @@ public class DescriptorSerializer {
 
     @NotNull
     public ProtoBuf.Package.Builder packageProto(@NotNull Collection<PackageFragmentDescriptor> fragments) {
+        return packageProto(fragments, null);
+    }
+
+    @NotNull
+    public ProtoBuf.Package.Builder packageProto(@NotNull Collection<PackageFragmentDescriptor> fragments, @Nullable Function1<DeclarationDescriptor, Boolean> skip) {
         ProtoBuf.Package.Builder builder = ProtoBuf.Package.newBuilder();
 
         Collection<DeclarationDescriptor> members = new ArrayList<DeclarationDescriptor>();
@@ -385,6 +392,8 @@ public class DescriptorSerializer {
         }
 
         for (DeclarationDescriptor declaration : sort(members)) {
+            if (skip != null && skip.invoke(declaration)) continue;
+
             if (declaration instanceof PropertyDescriptor || declaration instanceof FunctionDescriptor) {
                 builder.addMember(callableProto((CallableMemberDescriptor) declaration));
             }
