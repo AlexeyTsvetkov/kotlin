@@ -34,12 +34,14 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.context.BasicCallResolutionContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluator
 
 import com.intellij.openapi.util.TextRange
 import java.io.StringReader
 
 import kotlin.platform.platformStatic
-import org.jetbrains.kotlin.resolve.bindingContextUtil.getCompileTimeValueAsString
+import org.jetbrains.kotlin.types.JetType
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 
 public class JsCallChecker : CallChecker {
 
@@ -70,25 +72,26 @@ public class JsCallChecker : CallChecker {
             argument: JetExpression,
             context: BasicCallResolutionContext
     ): Boolean {
-        val bindingContext = context.trace.getBindingContext()
-        val code = argument.getCompileTimeValueAsString(bindingContext)
+        val stringType = KotlinBuiltIns.getInstance().getStringType()
+        val evaluationResult = ConstantExpressionEvaluator.evaluate(argument, context.trace, stringType)
 
-        if (code == null) {
+        if (evaluationResult == null) {
             context.trace.report(ErrorsJs.JSCODE_ARGUMENT_SHOULD_BE_LITERAL.on(argument))
         }
 
-        return code != null
+        return evaluationResult != null
     }
 
     fun checkSyntax(
             argument: JetExpression,
             context: BasicCallResolutionContext
     ): Boolean {
-        val bindingTrace = context.trace
-        val code = argument.getCompileTimeValueAsString(bindingTrace.getBindingContext())!!
+        val stringType = KotlinBuiltIns.getInstance().getStringType()
+        val evaluationResult = ConstantExpressionEvaluator.evaluate(argument, context.trace, stringType)!!
+        val code = evaluationResult.getValue() as String
         val reader = StringReader(code)
 
-        val errorReporter = JsCodeErrorReporter(argument, code, bindingTrace)
+        val errorReporter = JsCodeErrorReporter(argument, code, context.trace)
         Context.enter().setErrorReporter(errorReporter)
 
         try {
