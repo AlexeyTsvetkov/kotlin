@@ -116,7 +116,7 @@ public class JsCallChecker : CallChecker {
 private class JsCodeErrorReporter(
         private val nodeToReport: JetExpression,
         private val code: String,
-        private val trace: DiagnosticSink
+        private val trace: BindingTrace
 ) : ErrorReporter {
     override fun warning(message: String, startPosition: CodePosition, endPosition: CodePosition) {
         report(ErrorsJs.JSCODE_WARNING, message, startPosition, endPosition)
