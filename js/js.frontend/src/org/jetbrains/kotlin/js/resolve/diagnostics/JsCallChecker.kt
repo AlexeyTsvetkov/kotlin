@@ -19,6 +19,8 @@ package org.jetbrains.kotlin.resolve.diagnostics
 import com.google.gwt.dev.js.AbortParsingException
 import com.google.gwt.dev.js.rhino.*
 import com.google.gwt.dev.js.rhino.Utils.*
+import org.jetbrains.annotations.TestOnly
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory2
@@ -29,20 +31,20 @@ import org.jetbrains.kotlin.js.patterns.PatternBuilder
 import org.jetbrains.kotlin.js.resolve.diagnostics.ErrorsJs
 import org.jetbrains.kotlin.psi.JetCallExpression
 import org.jetbrains.kotlin.psi.JetExpression
+import org.jetbrains.kotlin.psi.JetLiteralStringTemplateEntry
 import org.jetbrains.kotlin.psi.JetStringTemplateExpression
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.context.BasicCallResolutionContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluator
+import org.jetbrains.kotlin.types.JetType
 
 import com.intellij.openapi.util.TextRange
 import java.io.StringReader
 
 import kotlin.platform.platformStatic
-import org.jetbrains.kotlin.types.JetType
-import org.jetbrains.kotlin.builtins.KotlinBuiltIns
-import org.jetbrains.kotlin.psi.JetLiteralStringTemplateEntry
 
 public class JsCallChecker : CallChecker {
 
