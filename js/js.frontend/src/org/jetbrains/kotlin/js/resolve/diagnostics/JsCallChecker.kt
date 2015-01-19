@@ -232,3 +232,10 @@ private fun String.underline(from: Int, to: Int): String {
 
     return lines.toString()
 }
+
+public object TestStringUtils {
+    TestOnly
+    public fun underlineString(string: String, from: Int, to: Int): String =
+            string.underline(from, to)
+}
+
