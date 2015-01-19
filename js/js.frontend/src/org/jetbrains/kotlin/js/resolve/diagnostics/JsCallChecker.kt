@@ -133,15 +133,19 @@ private class JsCodeErrorReporter(
             startPosition: CodePosition,
             endPosition: CodePosition
     ) {
+        val errorMessage: String
         val textRange: TextRange
 
         if (nodeToReport.isConstantStringLiteral) {
+            errorMessage = message
             textRange = TextRange(startPosition.absoluteOffset, endPosition.absoluteOffset)
         } else {
+            val underlined = code.underline(code.offsetOf(startPosition), code.offsetOf(endPosition))
+            errorMessage = "%s%nEvaluated code:%n%s".format(message, underlined)
             textRange = nodeToReport.getTextRange()
         }
 
-        val parametrizedDiagnostic = diagnosticFactory.on(nodeToReport, message, listOf(textRange))
+        val parametrizedDiagnostic = diagnosticFactory.on(nodeToReport, errorMessage, listOf(textRange))
         trace.report(parametrizedDiagnostic)
     }
 
@@ -188,3 +192,43 @@ private val JetExpression.isConstantStringLiteral: Boolean
                getEntries().first() is JetLiteralStringTemplateEntry
     }
 
+/**
+ * Underlines string in given rage.
+ *
+ * For example:
+ * var  = 10;
+ *    ^~~^
+ */
+private fun String.underline(from: Int, to: Int): String {
+    val lines = StringBuilder()
+    var marks = StringBuilder()
+    var lineWasMarked = false
+
+    for (i in indices) {
+        val c = charAt(i)
+        val mark: Char
+
+        mark = when (i) {
+            from, to -> '^'
+            in from..to -> '~'
+            else -> ' '
+        }
+
+        lines.append(c)
+        marks.append(mark)
+        lineWasMarked = lineWasMarked || mark != ' '
+
+        if (isEndOfLine(c.toInt()) && lineWasMarked) {
+            lines.appendln(marks.toString())
+            marks = StringBuilder()
+            lineWasMarked = false
+        }
+    }
+
+    if (lineWasMarked) {
+        lines.appendln()
+        lines.append(marks.toString())
+    }
+
+    return lines.toString()
+}
