@@ -1,15 +1,23 @@
-val a = "a"
+val a = "1"
 
 fun test() {
-    val b = "b+b +"
+    val b = "b"
 
-    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>a<!>)
-    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>b<!>)
-    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>"$a"<!>)
-    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>"$b;"<!>)
-    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>"$b bb"<!>)
-    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>a + a<!>)
-    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>"a" + "a"<!>)
-
+    js(a)
+    js(b)
+    js("$a")
+    js("${1}")
+    js("$b;")
+    js("${b}bb")
+    js(a + a)
+    js("a" + "a")
     js("ccc")
+
+    var notConst = ""
+
+    for (i in 1..10) {
+        notConst += "$i;"
+    }
+
+    js(<!JSCODE_ARGUMENT_SHOULD_BE_LITERAL!>notConst<!>)
 }
