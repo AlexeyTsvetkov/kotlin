@@ -42,6 +42,7 @@ import java.io.StringReader
 import kotlin.platform.platformStatic
 import org.jetbrains.kotlin.types.JetType
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.psi.JetLiteralStringTemplateEntry
 
 public class JsCallChecker : CallChecker {
 
@@ -115,10 +116,6 @@ private class JsCodeErrorReporter(
         private val code: String,
         private val trace: DiagnosticSink
 ) : ErrorReporter {
-    {
-        assert(nodeToReport is JetStringTemplateExpression, "js argument is expected to be compile-time string literal")
-    }
-
     override fun warning(message: String, startPosition: CodePosition, endPosition: CodePosition) {
         val diagnostic = getDiagnostic(ErrorsJs.JSCODE_WARNING, message, startPosition, endPosition)
         trace.report(diagnostic)
@@ -136,7 +133,14 @@ private class JsCodeErrorReporter(
             startPosition: CodePosition,
             endPosition: CodePosition
     ): ParametrizedDiagnostic<JetExpression> {
-        val textRange = TextRange(startPosition.absoluteOffset, endPosition.absoluteOffset)
+        val textRange: TextRange
+
+        if (nodeToReport.isConstantStringLiteral) {
+            textRange = TextRange(startPosition.absoluteOffset, endPosition.absoluteOffset)
+        } else {
+            textRange = nodeToReport.getTextRange()
+        }
+
         return diagnosticFactory.on(nodeToReport, message, listOf(textRange))
     }
 
@@ -175,4 +179,11 @@ private fun String.offsetOf(position: CodePosition): Int {
 
     return length()
 }
+
+private val JetExpression.isConstantStringLiteral: Boolean
+    get() {
+        return this is JetStringTemplateExpression &&
+               getEntries().size() == 1 &&
+               getEntries().first() is JetLiteralStringTemplateEntry
+    }
 
