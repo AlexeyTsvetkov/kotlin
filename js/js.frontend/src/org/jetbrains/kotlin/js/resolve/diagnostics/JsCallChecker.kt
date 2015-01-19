@@ -218,10 +218,13 @@ private fun String.underline(from: Int, to: Int): String {
         marks.append(mark)
         lineWasMarked = lineWasMarked || mark != ' '
 
-        if (isEndOfLine(c.toInt()) && lineWasMarked) {
-            lines.appendln(marks.toString())
+        if (isEndOfLine(c.toInt())) {
+            if (lineWasMarked) {
+                lines.appendln(marks.toString().trimTrailing())
+                lineWasMarked = false
+            }
+
             marks = StringBuilder()
-            lineWasMarked = false
         }
     }
 
