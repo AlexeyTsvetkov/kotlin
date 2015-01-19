@@ -64,8 +64,9 @@ public class JsCallChecker : CallChecker {
         val arguments = expression.getValueArgumentList()?.getArguments()
         val argument = arguments?.firstOrNull()?.getArgumentExpression()!!
 
-        val checks = listOf(::checkArgumentIsStringLiteral, ::checkSyntax)
-        checks.all { it(argument, context) }
+        if (!(checkArgumentIsStringLiteral(argument, context))) return
+
+        checkSyntax(argument, context)
     }
 
     fun checkArgumentIsStringLiteral(
