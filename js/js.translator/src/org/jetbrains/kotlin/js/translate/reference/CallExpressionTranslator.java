@@ -164,7 +164,7 @@ public final class CallExpressionTranslator extends AbstractCallExpressionTransl
             public void error(
                     @NotNull String message, @NotNull CodePosition startPosition, @NotNull CodePosition endPosition
             ) {
-                throw new RuntimeException("JS parser error in backend (must have been checked in frontend): " + message);
+                throw new IllegalStateException("JS parser error in backend (must have been checked in frontend): " + message);
             }
         };
 
