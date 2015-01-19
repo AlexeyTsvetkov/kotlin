@@ -117,22 +117,20 @@ private class JsCodeErrorReporter(
         private val trace: DiagnosticSink
 ) : ErrorReporter {
     override fun warning(message: String, startPosition: CodePosition, endPosition: CodePosition) {
-        val diagnostic = getDiagnostic(ErrorsJs.JSCODE_WARNING, message, startPosition, endPosition)
-        trace.report(diagnostic)
+        report(ErrorsJs.JSCODE_WARNING, message, startPosition, endPosition)
     }
 
     override fun error(message: String, startPosition: CodePosition, endPosition: CodePosition) {
-        val diagnostic = getDiagnostic(ErrorsJs.JSCODE_ERROR, message, startPosition, endPosition)
-        trace.report(diagnostic)
+        report(ErrorsJs.JSCODE_ERROR, message, startPosition, endPosition)
         throw AbortParsingException()
     }
 
-    private fun getDiagnostic(
+    private fun report(
             diagnosticFactory: DiagnosticFactory2<JetExpression, String, List<TextRange>>,
             message: String,
             startPosition: CodePosition,
             endPosition: CodePosition
-    ): ParametrizedDiagnostic<JetExpression> {
+    ) {
         val textRange: TextRange
 
         if (nodeToReport.isConstantStringLiteral) {
@@ -141,7 +139,8 @@ private class JsCodeErrorReporter(
             textRange = nodeToReport.getTextRange()
         }
 
-        return diagnosticFactory.on(nodeToReport, message, listOf(textRange))
+        val parametrizedDiagnostic = diagnosticFactory.on(nodeToReport, message, listOf(textRange))
+        trace.report(parametrizedDiagnostic)
     }
 
     private val CodePosition.absoluteOffset: Int
