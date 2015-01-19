@@ -25,7 +25,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor;
 import org.jetbrains.kotlin.js.translate.context.TranslationContext;
 import org.jetbrains.kotlin.js.translate.general.AbstractTranslator;
 import org.jetbrains.kotlin.js.translate.general.Translation;
-import org.jetbrains.kotlin.js.descriptors.NamePredicate;
+import org.jetbrains.kotlin.js.patterns.NamePredicate;
 import org.jetbrains.kotlin.js.translate.utils.BindingUtils;
 import org.jetbrains.kotlin.js.translate.utils.JsAstUtils;
 import org.jetbrains.kotlin.js.translate.utils.TranslationUtils;
@@ -36,7 +36,7 @@ import org.jetbrains.kotlin.psi.JetTypeReference;
 
 import static org.jetbrains.kotlin.js.translate.utils.BindingUtils.getTypeByReference;
 import static org.jetbrains.kotlin.js.translate.utils.JsAstUtils.*;
-import static org.jetbrains.kotlin.js.descriptors.DescriptorsPackage.getNameIfStandardType;
+import static org.jetbrains.kotlin.js.patterns.PatternsPackage.getNameIfStandardType;
 
 public final class PatternTranslator extends AbstractTranslator {
 

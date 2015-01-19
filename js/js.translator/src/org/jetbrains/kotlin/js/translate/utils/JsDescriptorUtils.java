@@ -20,7 +20,7 @@ import com.intellij.openapi.util.Condition;
 import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.kotlin.js.descriptors.DescriptorsPackage;
+import org.jetbrains.kotlin.js.patterns.PatternsPackage;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.js.translate.context.TranslationContext;
@@ -159,6 +159,6 @@ public final class JsDescriptorUtils {
     @Nullable
     public static Name getNameIfStandardType(@NotNull JetExpression expression, @NotNull TranslationContext context) {
         JetType type = context.bindingContext().get(BindingContext.EXPRESSION_TYPE, expression);
-        return type != null ? DescriptorsPackage.getNameIfStandardType(type) : null;
+        return type != null ? PatternsPackage.getNameIfStandardType(type) : null;
     }
 }

@@ -18,7 +18,7 @@ package org.jetbrains.kotlin.js.translate.intrinsic.functions.factories
 
 import com.google.common.base.Predicates
 import com.google.dart.compiler.backend.js.ast.JsExpression
-import org.jetbrains.kotlin.js.descriptors.PatternBuilder.pattern
+import org.jetbrains.kotlin.js.patterns.PatternBuilder.pattern
 import org.jetbrains.kotlin.js.translate.context.TranslationContext
 import org.jetbrains.kotlin.js.translate.intrinsic.functions.basic.FunctionIntrinsic
 import org.jetbrains.kotlin.js.translate.utils.ID

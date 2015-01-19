@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.js.descriptors;
+package org.jetbrains.kotlin.js.patterns;
 
 import com.google.common.collect.Lists;
 import org.jetbrains.annotations.NotNull;
@@ -28,8 +28,8 @@ import org.jetbrains.kotlin.resolve.OverrideResolver;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.jetbrains.kotlin.js.descriptors.DescriptorsPackage.getNameIfStandardType;
-import static org.jetbrains.kotlin.js.descriptors.DescriptorsPackage.getJetTypeFqName;
+import static org.jetbrains.kotlin.js.patterns.PatternsPackage.getNameIfStandardType;
+import static org.jetbrains.kotlin.js.patterns.PatternsPackage.getJetTypeFqName;
 
 public final class PatternBuilder {
 

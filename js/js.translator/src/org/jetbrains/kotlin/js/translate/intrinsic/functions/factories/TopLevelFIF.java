@@ -23,8 +23,8 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.builtins.PrimitiveType;
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor;
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor;
-import org.jetbrains.kotlin.js.descriptors.DescriptorPredicate;
-import org.jetbrains.kotlin.js.descriptors.NamePredicate;
+import org.jetbrains.kotlin.js.patterns.DescriptorPredicate;
+import org.jetbrains.kotlin.js.patterns.NamePredicate;
 import org.jetbrains.kotlin.js.translate.callTranslator.CallInfo;
 import org.jetbrains.kotlin.js.translate.context.Namer;
 import org.jetbrains.kotlin.js.translate.context.TranslationContext;
@@ -42,8 +42,8 @@ import org.jetbrains.kotlin.types.JetType;
 
 import java.util.List;
 
-import static org.jetbrains.kotlin.js.descriptors.DescriptorsPackage.getNameIfStandardType;
-import static org.jetbrains.kotlin.js.descriptors.PatternBuilder.pattern;
+import static org.jetbrains.kotlin.js.patterns.PatternsPackage.getNameIfStandardType;
+import static org.jetbrains.kotlin.js.patterns.PatternBuilder.pattern;
 import static org.jetbrains.kotlin.js.translate.intrinsic.functions.basic.FunctionIntrinsic.CallParametersAwareFunctionIntrinsic;
 import static org.jetbrains.kotlin.js.translate.utils.ManglingUtils.getStableMangledNameForDescriptor;
 

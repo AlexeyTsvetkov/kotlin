@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.js.descriptors;
+package org.jetbrains.kotlin.js.patterns;
 
 import com.google.common.base.Predicate;
 import org.jetbrains.annotations.Nullable;

@@ -25,8 +25,8 @@ import com.google.dart.compiler.backend.js.ast.JsExpression;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor;
-import org.jetbrains.kotlin.js.descriptors.DescriptorPredicate;
-import org.jetbrains.kotlin.js.descriptors.NamePredicate;
+import org.jetbrains.kotlin.js.patterns.DescriptorPredicate;
+import org.jetbrains.kotlin.js.patterns.NamePredicate;
 import org.jetbrains.kotlin.js.translate.context.TranslationContext;
 import org.jetbrains.kotlin.js.translate.intrinsic.functions.basic.FunctionIntrinsic;
 import org.jetbrains.kotlin.js.translate.operation.OperatorTable;
@@ -38,7 +38,7 @@ import org.jetbrains.kotlin.types.expressions.OperatorConventions;
 
 import java.util.List;
 
-import static org.jetbrains.kotlin.js.descriptors.PatternBuilder.pattern;
+import static org.jetbrains.kotlin.js.patterns.PatternBuilder.pattern;
 
 public enum PrimitiveBinaryOperationFIF implements FunctionIntrinsicFactory {
     INSTANCE;

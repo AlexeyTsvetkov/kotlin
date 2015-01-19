@@ -18,8 +18,8 @@ package org.jetbrains.kotlin.js.translate.intrinsic.operation
 
 import com.google.dart.compiler.backend.js.ast.*
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.js.descriptors.NamePredicate
-import org.jetbrains.kotlin.js.descriptors.PatternBuilder.pattern
+import org.jetbrains.kotlin.js.patterns.NamePredicate
+import org.jetbrains.kotlin.js.patterns.PatternBuilder.pattern
 import org.jetbrains.kotlin.js.translate.context.TranslationContext
 import org.jetbrains.kotlin.js.translate.intrinsic.functions.factories.TopLevelFIF
 import org.jetbrains.kotlin.js.translate.utils.JsAstUtils

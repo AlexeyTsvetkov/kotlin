@@ -24,8 +24,8 @@ import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory2
 import org.jetbrains.kotlin.diagnostics.DiagnosticSink
 import org.jetbrains.kotlin.diagnostics.ParametrizedDiagnostic
-import org.jetbrains.kotlin.js.descriptors.DescriptorPredicate
-import org.jetbrains.kotlin.js.descriptors.PatternBuilder
+import org.jetbrains.kotlin.js.patterns.DescriptorPredicate
+import org.jetbrains.kotlin.js.patterns.PatternBuilder
 import org.jetbrains.kotlin.js.resolve.diagnostics.ErrorsJs
 import org.jetbrains.kotlin.psi.JetCallExpression
 import org.jetbrains.kotlin.psi.JetExpression
