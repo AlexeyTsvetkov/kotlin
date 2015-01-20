@@ -28,6 +28,14 @@ import java.util.jar.JarFile
 import java.util.jar.Manifest
 import java.util.zip.ZipFile
 import kotlin.platform.platformStatic
+import com.intellij.openapi.util.text.StringUtil
+import javax.xml.bind.DatatypeConverter.parseBase64Binary
+import javax.xml.bind.DatatypeConverter.printBase64Binary
+import java.util.zip.GZIPOutputStream
+import javax.xml.bind.DatatypeConverter
+import java.util.zip.GZIPInputStream
+import java.util.regex.Pattern
+import java.util.ArrayList
 
 public object LibraryUtils {
     private val LOG = Logger.getInstance(javaClass<LibraryUtils>())
@@ -39,7 +47,9 @@ public object LibraryUtils {
     private val METAINF = "META-INF/"
     private val MANIFEST_PATH = "${METAINF}MANIFEST.MF"
     private val METAINF_RESOURCES = "${METAINF}resources/"
-    private val KOTLIN_JS_MODULE_ATTRIBUTE_NAME = Attributes.Name(KOTLIN_JS_MODULE_NAME);
+    private val KOTLIN_JS_MODULE_ATTRIBUTE_NAME = Attributes.Name(KOTLIN_JS_MODULE_NAME)
+    private val METADATA_PATTERN = Pattern.compile("(?m)Kotlin\\.metadata\\((\\d+),\\s*\"([^\"]*)\",\\s*\"([^\"]*)\"\\)")
+    private val ABI_VERSION = 1
 
     {
         var jsStdLib = ""
@@ -107,41 +117,131 @@ public object LibraryUtils {
         }
     }
 
-    private fun copyJsFilesFromDirectory(dir: File, outputLibraryJsPath: String) {
+    platformStatic
+    public fun writeMetadata(moduleName: String, content: ByteArray, metaFile: File) {
+        val stringBuilder = StringBuilder()
+        stringBuilder.append("(function (Kotlin) {\n")
+        stringBuilder.append("    Kotlin.metadata(")
+        stringBuilder.append(ABI_VERSION)
+        stringBuilder.append(",")
+        stringBuilder.append("\"$moduleName\"")
+        stringBuilder.append(",")
+        stringBuilder.append("\"${printBase64Binary(content)}\"")
+        stringBuilder.append(");\n")
+        stringBuilder.append("}(Kotlin));\n")
+        FileUtil.writeToFile(metaFile, stringBuilder.toString())
+    }
+
+    public class Metadata(val moduleName: String, val body: ByteArray)
+
+    platformStatic
+    public fun haveMetadata(text: String): Boolean = METADATA_PATTERN.matcher(text).find()
+
+    platformStatic
+    public fun loadMetadataFromLibrary(library: String): List<Metadata> {
+        val file = File(library)
+        assert(file.exists()) { "Library " + library + " not found" }
+
+        var result: MutableList<Metadata> = arrayListOf()
+        if (file.isDirectory()) {
+            loadMetadataFromDirectory(file, result)
+        }
+        else {
+            loadMetadataFromZip(file, result)
+        }
+        return result
+    }
+
+    platformStatic
+    public fun loadMetadata(file: File): List<Metadata> {
+        val result: MutableList<Metadata> = arrayListOf()
+        loadMetadataFromFile(file, result)
+        return result
+    }
+
+    private fun parseMetadata(text: String, metadataList: MutableList<Metadata>) {
+        val matcher = METADATA_PATTERN.matcher(text)
+        while (matcher.find()) {
+            var abiVersion = Integer.parseInt(matcher.group(1));
+            if (abiVersion != ABI_VERSION) LOG.error("Unsupported abi version, expected $ABI_VERSION, but $abiVersion")
+
+            var moduleName = matcher.group(2)
+            val data = matcher.group(3)
+            metadataList.add(loadMetadata(moduleName, data))
+        }
+    }
+
+    private fun loadMetadata(moduleName: String, data: String): Metadata =
+        Metadata(moduleName, parseBase64Binary(data))
+
+    private fun processDirectory(dir: File, action: (File, String) -> Unit) {
         FileUtil.processFilesRecursively(dir, object : Processor<File> {
             override fun process(file: File): Boolean {
-                var relativePath = FileUtil.getRelativePath(dir, file)
-                assert(relativePath != null) { "relativePath should not be null " + dir + " " + file }
-                if (file.isFile() && relativePath!!.endsWith(JS_EXT)) {
-                    relativePath = getSuggestedPath(relativePath)
-                    if (relativePath == null) return true
+                val relativePath = FileUtil.getRelativePath(dir, file) ?: throw IllegalArgumentException("relativePath should not be null " + dir + " " + file)
+                if (file.isFile() && relativePath.endsWith(JS_EXT)) {
+                    val suggestedRelativePath = getSuggestedPath(relativePath)
+                    if (suggestedRelativePath == null) return true
 
-                    try {
-                        val copyFile = File(outputLibraryJsPath, relativePath)
-                        FileUtil.copy(file, copyFile)
-                    }
-                    catch (ex: IOException) {
-                        LOG.error("Could not copy " + relativePath + " from " + dir + ": " + ex.getMessage())
-                    }
-
+                    action(file, suggestedRelativePath)
                 }
                 return true
             }
         })
     }
 
-    private fun copyJsFilesFromZip(file: File, outputLibraryJsPath: String) {
+    private fun loadMetadataFromFile(file: File, metadataList: MutableList<Metadata>) {
         try {
-            traverseArchive(file, outputLibraryJsPath)
+            val content = FileUtil.loadFile(file)
+            parseMetadata(content, metadataList)
         }
         catch (ex: IOException) {
-            LOG.error("Could not extract javascript files from  " + file.getName() + ": " + ex.getMessage())
+            LOG.error("Could not read ${file.getAbsolutePath()}: ${ex.getMessage()}")
         }
-
     }
 
-    throws(javaClass<IOException>())
-    private fun traverseArchive(file: File, outputLibraryJsPath: String) {
+    private fun loadMetadataFromDirectory(dir: File, metadataList: MutableList<Metadata>) {
+        traverseDirectoryWithReportingIOException(dir) {
+            file, relativePath -> parseMetadata(FileUtil.loadFile(file), metadataList)
+        }
+    }
+
+    private fun copyJsFilesFromDirectory(dir: File, outputLibraryJsPath: String) {
+        traverseDirectoryWithReportingIOException(dir) {
+            file, relativePath -> FileUtil.copy(file, File(outputLibraryJsPath, relativePath))
+        }
+    }
+
+    private fun traverseDirectoryWithReportingIOException(dir: File, action: (File, String) -> Unit) {
+        try {
+            processDirectory(dir, action)
+        }
+        catch (ex: IOException) {
+            LOG.error("Could not read files from directory ${dir.getName()}: ${ex.getMessage()}")
+        }
+    }
+
+    private fun loadMetadataFromZip(file: File, metadataList: MutableList<Metadata>) {
+        traverseArchiveWithReportingIOException(file) { content, relativePath ->
+            parseMetadata(content, metadataList)
+        }
+    }
+
+    private fun copyJsFilesFromZip(file: File, outputLibraryJsPath: String) {
+        traverseArchiveWithReportingIOException(file) { content, relativePath ->
+            FileUtil.writeToFile(File(outputLibraryJsPath, relativePath), content)
+        }
+    }
+
+    private fun traverseArchiveWithReportingIOException(file: File, action: (String, String) -> Unit) {
+        try {
+            traverseArchive(file, action)
+        }
+        catch (ex: IOException) {
+            LOG.error("Could not extract files from archive ${file.getName()}: ${ex.getMessage()}")
+        }
+    }
+
+    private fun traverseArchive(file: File, action: (String, String) -> Unit) {
         val zipFile = ZipFile(file.getPath())
         try {
             val zipEntries = zipFile.entries()
@@ -154,8 +254,7 @@ public object LibraryUtils {
 
                     val stream = zipFile.getInputStream(entry)
                     val content = FileUtil.loadTextAndClose(stream)
-                    val outputFile = File(outputLibraryJsPath, relativePath)
-                    FileUtil.writeToFile(outputFile, content)
+                    action(content, relativePath)
                 }
             }
         }
