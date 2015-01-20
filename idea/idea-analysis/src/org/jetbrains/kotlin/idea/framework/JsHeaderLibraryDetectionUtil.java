@@ -21,7 +21,9 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.CommonProcessors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.idea.JetFileType;
+import org.jetbrains.kotlin.utils.LibraryUtils;
 
+import java.io.IOException;
 import java.util.List;
 
 public class JsHeaderLibraryDetectionUtil {
@@ -36,7 +38,19 @@ public class JsHeaderLibraryDetectionUtil {
                 @Override
                 protected boolean accept(VirtualFile file) {
                     String extension = file.getExtension();
-                    return extension != null && extension.equals(JetFileType.EXTENSION);
+                    if (JetFileType.EXTENSION.equals(extension)) return true;
+
+                    if ("js".equals(extension)) {
+                        try {
+                            String fileContent = new String(file.contentsToByteArray(false), file.getCharset());
+                            return LibraryUtils.haveMetadata(fileContent);
+                        }
+                        catch (IOException ex) {
+                            return false;
+                        }
+                    }
+
+                    return false;
                 }
             };
 
