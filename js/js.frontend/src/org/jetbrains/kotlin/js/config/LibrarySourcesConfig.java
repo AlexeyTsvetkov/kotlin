@@ -22,21 +22,26 @@ import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.*;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
+import com.intellij.util.PathUtil;
 import com.intellij.util.io.URLUtil;
 import kotlin.Function1;
 import kotlin.Function2;
 import kotlin.Unit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
+import org.jetbrains.kotlin.descriptors.PackageFragmentProvider;
+import org.jetbrains.kotlin.descriptors.impl.CompositePackageFragmentProvider;
+import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl;
 import org.jetbrains.kotlin.js.JavaScript;
 import org.jetbrains.kotlin.idea.JetFileType;
+import org.jetbrains.kotlin.js.analyze.TopDownAnalyzerFacadeForJS;
 import org.jetbrains.kotlin.psi.JetFile;
+import org.jetbrains.kotlin.serialization.js.KotlinJavascriptSerializationUtil;
 import org.jetbrains.kotlin.utils.LibraryUtils;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.io.*;
+import java.util.*;
 
 import static org.jetbrains.kotlin.utils.LibraryUtils.isKotlinJavascriptLibrary;
 import static org.jetbrains.kotlin.utils.LibraryUtils.isKotlinJavascriptStdLibrary;
@@ -54,6 +59,21 @@ public class LibrarySourcesConfig extends Config {
 
     @NotNull
     private final List<String> files;
+    private final boolean isUnitTestConfig;
+
+    public LibrarySourcesConfig(
+            @NotNull Project project,
+            @NotNull String moduleId,
+            @NotNull List<String> files,
+            @NotNull EcmaVersion ecmaVersion,
+            boolean sourcemap,
+            boolean inlineEnabled,
+            boolean isUnitTestConfig
+    ) {
+        super(project, moduleId, ecmaVersion, sourcemap, inlineEnabled);
+        this.files = files;
+        this.isUnitTestConfig = isUnitTestConfig;
+    }
 
     public LibrarySourcesConfig(
             @NotNull Project project,
@@ -65,15 +85,23 @@ public class LibrarySourcesConfig extends Config {
     ) {
         super(project, moduleId, ecmaVersion, sourcemap, inlineEnabled);
         this.files = files;
+        this.isUnitTestConfig = false;
+    }
+
+    @Override
+    public boolean isTestConfig() {
+        return isUnitTestConfig;
     }
 
     @NotNull
     @Override
     protected List<JetFile> generateLibFiles() {
         if (files.isEmpty()) {
+            moduleDescriptors = Collections.emptyList();
             return Collections.emptyList();
         }
 
+        moduleDescriptors = new ArrayList<ModuleDescriptorImpl>();
         final List<JetFile> jetFiles = new ArrayList<JetFile>();
         final PsiManager psiManager = PsiManager.getInstance(getProject());
 
@@ -87,6 +115,12 @@ public class LibrarySourcesConfig extends Config {
         Function2<String, VirtualFile, Unit> action = new Function2<String, VirtualFile, Unit>() {
             @Override
             public Unit invoke(String moduleName, VirtualFile file) {
+                loadMetadata(PathUtil.getLocalPath(file));
+                if (hasModuleName(moduleName)) {
+                    // TODO report an error?
+                    return Unit.INSTANCE$;
+                }
+
                 JetFileCollector jetFileCollector = new JetFileCollector(jetFiles, moduleName, psiManager);
                 VfsUtilCore.visitChildrenRecursively(file, jetFileCollector);
                 return Unit.INSTANCE$;
@@ -97,6 +131,38 @@ public class LibrarySourcesConfig extends Config {
         assert !hasErrors : "hasErrors should be false";
 
         return jetFiles;
+    }
+
+    private boolean hasModuleName(String moduleName) {
+        String specialModuleName = "<" + moduleName + ">";
+
+        assert moduleDescriptors != null;
+        for(ModuleDescriptorImpl moduleDescriptor : moduleDescriptors) {
+            if (specialModuleName.equals(moduleDescriptor.getName().asString())) return true;
+        }
+        return false;
+    }
+
+    private void loadMetadata(String libraryPath) {
+        List<LibraryUtils.Metadata> metadataList = LibraryUtils.loadMetadataFromLibrary(libraryPath);
+        for(LibraryUtils.Metadata metadata : metadataList) {
+            loadModuleDescriptor(metadata);
+        }
+    }
+
+    private void loadModuleDescriptor(LibraryUtils.Metadata metadata) {
+        ModuleDescriptorImpl moduleDescriptor = TopDownAnalyzerFacadeForJS.createJsModule("<" + metadata.getModuleName() + ">");
+
+        List<PackageFragmentProvider> providers = KotlinJavascriptSerializationUtil.getPackageFragmentProviders(moduleDescriptor, metadata.getBody());
+        CompositePackageFragmentProvider compositePackageFragmentProvider = new CompositePackageFragmentProvider(providers);
+
+        moduleDescriptor.initialize(compositePackageFragmentProvider);
+        moduleDescriptor.addDependencyOnModule(moduleDescriptor);
+        moduleDescriptor.addDependencyOnModule(KotlinBuiltIns.getInstance().getBuiltInsModule());
+        moduleDescriptor.seal();
+
+        assert moduleDescriptors != null : "moduleDescriptors should not be null";
+        moduleDescriptors.add(moduleDescriptor);
     }
 
     @Override

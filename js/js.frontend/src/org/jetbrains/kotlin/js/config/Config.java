@@ -23,12 +23,12 @@ import kotlin.Unit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor;
+import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.resolve.BindingContext;
-import org.jetbrains.kotlin.resolve.BindingTrace;
-import org.jetbrains.kotlin.resolve.BindingTraceContext;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -48,6 +48,9 @@ public abstract class Config {
     private final String moduleId;
 
     private final boolean sourcemap;
+
+    @Nullable
+    protected List<ModuleDescriptorImpl> moduleDescriptors;
 
     public Config(
             @NotNull Project project,
@@ -90,6 +93,18 @@ public abstract class Config {
 
     @NotNull
     protected abstract List<JetFile> generateLibFiles();
+
+    @NotNull
+    public List<ModuleDescriptorImpl> getModuleDescriptors() {
+        if (moduleDescriptors == null) {
+            assert libFiles == null;
+            libFiles = generateLibFiles();
+        }
+        if (moduleDescriptors == null) return Collections.emptyList();
+
+        assert moduleDescriptors != null;
+        return moduleDescriptors;
+    }
 
     @NotNull
     public final List<JetFile> getLibFiles() {
