@@ -28,28 +28,28 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.analyzer.AnalysisResult;
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor;
+import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl;
 import org.jetbrains.kotlin.js.analyze.TopDownAnalyzerFacadeForJS;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.psi.JetPsiFactory;
 import org.jetbrains.kotlin.resolve.BindingContext;
+import org.jetbrains.kotlin.resolve.BindingTraceContext;
 import org.jetbrains.kotlin.utils.PathUtil;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 public class LibrarySourcesConfigWithCaching extends LibrarySourcesConfig {
     public static final List<String> JS_STDLIB =
-            Arrays.asList(PathUtil.getKotlinPathsForDistDirectory().getJsStdLibJarPath().getAbsolutePath());
+            Collections.singletonList(PathUtil.getKotlinPathsForDistDirectory().getJsStdLibJarPath().getAbsolutePath());
 
-    private static List<JetFile> jsLibFiles;
-    private static AnalysisResult result;
+    private static List<ModuleDescriptorImpl> modules;
+    private static ModuleDescriptorImpl libraryStaticModule;
+    private static BindingContext libraryBindingContext;
 
     private BindingContext libraryContext;
-    private ModuleDescriptor libraryModule;
-
-    private final boolean isUnitTestConfig;
+    private ModuleDescriptorImpl libraryModule;
 
     public LibrarySourcesConfigWithCaching(
             @NotNull Project project,
@@ -59,29 +59,51 @@ public class LibrarySourcesConfigWithCaching extends LibrarySourcesConfig {
             boolean inlineEnabled,
             boolean isUnitTestConfig
     ) {
-        super(project, moduleId, JS_STDLIB, ecmaVersion, sourcemap, inlineEnabled);
-        this.isUnitTestConfig = isUnitTestConfig;
+        super(project, moduleId, JS_STDLIB, ecmaVersion, sourcemap, inlineEnabled, isUnitTestConfig);
     }
 
     @NotNull
     @Override
     public List<JetFile> generateLibFiles() {
-        if (jsLibFiles == null) {
+        if (modules == null) {
+            List<JetFile> filesToTranslate = super.generateLibFiles();
             //noinspection AssignmentToStaticFieldFromInstanceMethod
-            jsLibFiles = super.generateLibFiles();
+            modules = moduleDescriptors;
+            assert modules != null : "modules should not be null";
+            if (modules.size() == 0) {
+                AnalysisResult analysisResult = getResult(filesToTranslate);
+                ModuleDescriptor moduleDescriptor = analysisResult.getModuleDescriptor();
+                assert moduleDescriptor instanceof ModuleDescriptorImpl;
+                modules.add((ModuleDescriptorImpl)moduleDescriptor);
+            }
+            else {
+                assert modules.size() == 1 : "expected modules.size=1, but " + modules.size();
+            }
+
+            //noinspection AssignmentToStaticFieldFromInstanceMethod
+            libraryStaticModule = modules.get(0);
         }
-        return jsLibFiles;
+        return Collections.emptyList();
     }
 
-
+    @NotNull
+    @Override
+    public List<ModuleDescriptorImpl> getModuleDescriptors() {
+        if (modules == null) {
+            generateLibFiles();
+        }
+        return modules;
+    }
 
     @Nullable
     @Override
     public ModuleDescriptor getLibraryModule() {
         if (libraryModule == null) {
-            libraryModule = getResult().getModuleDescriptor();
+            if (libraryStaticModule == null) {
+                generateLibFiles();
+            }
+            libraryModule = libraryStaticModule;
         }
-
         return libraryModule;
     }
 
@@ -91,15 +113,14 @@ public class LibrarySourcesConfigWithCaching extends LibrarySourcesConfig {
         if (libraryContext == null) {
             //TODO check errors?
             // TopDownAnalyzerFacadeForJS.checkForErrors(allLibFiles, result.getBindingContext());
-            libraryContext = getResult().getBindingContext();
+            if (libraryBindingContext == null) {
+                //noinspection AssignmentToStaticFieldFromInstanceMethod
+                libraryBindingContext = (new BindingTraceContext()).getBindingContext();
+            }
+            libraryContext = libraryBindingContext;
         }
 
         return libraryContext;
-    }
-
-    @Override
-    public boolean isTestConfig() {
-        return isUnitTestConfig;
     }
 
     @Override
@@ -118,17 +139,12 @@ public class LibrarySourcesConfigWithCaching extends LibrarySourcesConfig {
         return jetFile;
     }
 
-    private AnalysisResult getResult() {
-        if (result == null) {
-            //noinspection AssignmentToStaticFieldFromInstanceMethod
-            result = TopDownAnalyzerFacadeForJS.analyzeFiles(
-                    generateLibFiles(),
-                    Predicates.<PsiFile>alwaysFalse(),
-                    createConfigWithoutLibFiles(getProject(), getModuleId(), getTarget())
-            );
-        }
-
-        return result;
+    private AnalysisResult getResult(@NotNull List<JetFile> filesToTranslate) {
+        return TopDownAnalyzerFacadeForJS.analyzeFiles(
+                filesToTranslate,
+                Predicates.<PsiFile>alwaysFalse(),
+                createConfigWithoutLibFiles(getProject(), getModuleId(), getTarget())
+        );
     }
 
     @NotNull

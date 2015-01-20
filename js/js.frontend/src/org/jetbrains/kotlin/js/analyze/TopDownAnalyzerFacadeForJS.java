@@ -23,11 +23,9 @@ import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.kotlin.analyzer.AnalysisResult;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.context.ContextPackage;
 import org.jetbrains.kotlin.context.GlobalContextImpl;
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor;
 import org.jetbrains.kotlin.descriptors.PackageFragmentProvider;
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl;
 import org.jetbrains.kotlin.di.InjectorForTopDownAnalyzerForJs;
@@ -75,10 +73,11 @@ public final class TopDownAnalyzerFacadeForJS {
         ModuleDescriptorImpl module = createJsModule("<module>");
         module.addDependencyOnModule(module);
         module.addDependencyOnModule(KotlinBuiltIns.getInstance().getBuiltInsModule());
-        ModuleDescriptor libraryModule = config.getLibraryModule();
-        if (libraryModule != null) {
-            module.addDependencyOnModule((ModuleDescriptorImpl) libraryModule); // "import" analyzed library module
+
+        for(ModuleDescriptorImpl moduleDescriptor : config.getModuleDescriptors()) {
+            module.addDependencyOnModule(moduleDescriptor);
         }
+
         module.seal();
 
         return analyzeFilesWithGivenTrace(files, trace, module, filesToAnalyzeCompletely, config);
@@ -140,5 +139,4 @@ public final class TopDownAnalyzerFacadeForJS {
     public static ModuleDescriptorImpl createJsModule(@NotNull String name) {
         return new ModuleDescriptorImpl(Name.special(name), DEFAULT_IMPORTS, PlatformToKotlinClassMap.EMPTY);
     }
-
 }
