@@ -165,6 +165,12 @@ public class KotlincExecutableTestGenerated extends AbstractKotlincExecutableTes
             JetTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/cli/js"), Pattern.compile("^(.+)\\.args$"), false);
         }
 
+        @TestMetadata("createMetadata.args")
+        public void testCreateMetadata() throws Exception {
+            String fileName = JetTestUtils.navigationMetadata("compiler/testData/cli/js/createMetadata.args");
+            doJsTest(fileName);
+        }
+
         @TestMetadata("jsExtraHelp.args")
         public void testJsExtraHelp() throws Exception {
             String fileName = JetTestUtils.navigationMetadata("compiler/testData/cli/js/jsExtraHelp.args");
