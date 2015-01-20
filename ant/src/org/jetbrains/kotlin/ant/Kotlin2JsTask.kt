@@ -26,6 +26,7 @@ public class Kotlin2JsTask : KotlinCompilerBaseTask() {
     public var outputPrefix: File? = null
     public var outputPostfix: File? = null
     public var sourceMap: Boolean = false
+    public var metaInfo: File? = null
 
     /**
      * {@link K2JsArgumentConstants.CALL} (default) if need generate a main function call (main function will be auto detected)
@@ -71,5 +72,9 @@ public class Kotlin2JsTask : KotlinCompilerBaseTask() {
 
         if (noStdlib) args.add("-no-stdlib")
         if (sourceMap) args.add("-source-map")
+        if (metaInfo != null) {
+            args.add("-meta")
+            args.add(metaInfo!!.canonicalPath)
+        }
     }
 }
