@@ -141,7 +141,7 @@ private class JsCodeErrorReporter(
             textRange = TextRange(startPosition.absoluteOffset, endPosition.absoluteOffset)
         } else {
             val underlined = code.underline(code.offsetOf(startPosition), code.offsetOf(endPosition))
-            errorMessage = "%s%nEvaluated code:%n%s".format(message, underlined)
+            errorMessage = "%s<br>Evaluated code:<br>%s".format(message, underlined)
             textRange = nodeToReport.getTextRange()
         }
 
@@ -201,39 +201,19 @@ private val JetExpression.isConstantStringLiteral: Boolean
  */
 private fun String.underline(from: Int, to: Int): String {
     val lines = StringBuilder()
-    var marks = StringBuilder()
-    var lineWasMarked = false
 
     for (i in indices) {
         val c = charAt(i)
-        val mark: Char
 
-        mark = when (i) {
-            from, to -> '^'
-            in from..to -> '~'
-            else -> ' '
+        when (i) {
+            from -> lines.append("<u style=\"color: red;\">")
+            to -> lines.append("</u>")
         }
 
         lines.append(c)
-        marks.append(mark)
-        lineWasMarked = lineWasMarked || mark != ' '
-
-        if (isEndOfLine(c.toInt())) {
-            if (lineWasMarked) {
-                lines.appendln(marks.toString().trimTrailing())
-                lineWasMarked = false
-            }
-
-            marks = StringBuilder()
-        }
     }
 
-    if (lineWasMarked) {
-        lines.appendln()
-        lines.append(marks.toString())
-    }
-
-    return lines.toString()
+    return "<pre>$lines</pre>"
 }
 
 public object TestStringUtils {
