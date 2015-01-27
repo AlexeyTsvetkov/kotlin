@@ -14,54 +14,54 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.idea.framework;
+package org.jetbrains.kotlin.idea.framework
 
-import com.intellij.openapi.vfs.VfsUtilCore;
-import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.util.CommonProcessors;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.kotlin.idea.JetFileType;
-import org.jetbrains.kotlin.utils.LibraryUtils;
+import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.CommonProcessors
+import org.jetbrains.kotlin.idea.JetFileType
+import org.jetbrains.kotlin.utils.LibraryUtils
 
-import java.io.IOException;
-import java.util.List;
+import java.io.IOException
 
 public class JsHeaderLibraryDetectionUtil {
-    public static boolean isJsHeaderLibraryDetected(@NotNull List<VirtualFile> classesRoots) {
-        if (JavaRuntimeDetectionUtil.getJavaRuntimeVersion(classesRoots) != null) {
-            // Prevent clashing with java runtime
-            return false;
-        }
-
-        for (VirtualFile file : classesRoots) {
-            CommonProcessors.FindFirstProcessor<VirtualFile> findKTProcessor = new CommonProcessors.FindFirstProcessor<VirtualFile>() {
-                @Override
-                protected boolean accept(VirtualFile file) {
-                    String extension = file.getExtension();
-                    if (JetFileType.EXTENSION.equals(extension)) return true;
-
-                    if ("js".equals(extension)) {
-                        try {
-                            String fileContent = new String(file.contentsToByteArray(false), file.getCharset());
-                            return LibraryUtils.haveMetadata(fileContent);
-                        }
-                        catch (IOException ex) {
-                            return false;
-                        }
-                    }
-
-                    return false;
-                }
-            };
-
-            VfsUtilCore.processFilesRecursively(file, findKTProcessor);
-
-            if (findKTProcessor.isFound()) {
-                return true;
+    class object {
+        public fun isJsHeaderLibraryDetected(classesRoots: List<VirtualFile>): Boolean {
+            if (JavaRuntimeDetectionUtil.getJavaRuntimeVersion(classesRoots) != null) {
+                // Prevent clashing with java runtime
+                return false
             }
+
+            for (file in classesRoots) {
+                val findKTProcessor = object : CommonProcessors.FindFirstProcessor<VirtualFile>() {
+                    override fun accept(file: VirtualFile?): Boolean {
+                        val extension = file!!.getExtension()
+                        if (JetFileType.EXTENSION == extension) return true
+
+                        if ("js" == extension) {
+                            try {
+                                val fileContent = String(file.contentsToByteArray(false), file.getCharset())
+                                return LibraryUtils.haveMetadata(fileContent)
+                            }
+                            catch (ex: IOException) {
+                                return false
+                            }
+
+                        }
+
+                        return false
+                    }
+                }
+
+                VfsUtilCore.processFilesRecursively(file, findKTProcessor)
+
+                if (findKTProcessor.isFound()) {
+                    return true
+                }
+            }
+
+            return false
+
         }
-
-        return false;
-
     }
 }
