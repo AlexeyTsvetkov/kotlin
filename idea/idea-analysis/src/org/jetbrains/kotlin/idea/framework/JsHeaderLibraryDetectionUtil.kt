@@ -22,46 +22,30 @@ import com.intellij.util.CommonProcessors
 import org.jetbrains.kotlin.idea.JetFileType
 import org.jetbrains.kotlin.utils.LibraryUtils
 
-import java.io.IOException
+import kotlin.platform.platformStatic
 
-public class JsHeaderLibraryDetectionUtil {
-    class object {
-        public fun isJsHeaderLibraryDetected(classesRoots: List<VirtualFile>): Boolean {
-            if (JavaRuntimeDetectionUtil.getJavaRuntimeVersion(classesRoots) != null) {
-                // Prevent clashing with java runtime
-                return false
-            }
+public object JsHeaderLibraryDetectionUtil {
 
-            for (file in classesRoots) {
-                val findKTProcessor = object : CommonProcessors.FindFirstProcessor<VirtualFile>() {
-                    override fun accept(file: VirtualFile?): Boolean {
-                        val extension = file!!.getExtension()
-                        if (JetFileType.EXTENSION == extension) return true
-
-                        if ("js" == extension) {
-                            try {
-                                val fileContent = String(file.contentsToByteArray(false), file.getCharset())
-                                return LibraryUtils.haveMetadata(fileContent)
-                            }
-                            catch (ex: IOException) {
-                                return false
-                            }
-
-                        }
-
-                        return false
-                    }
-                }
-
-                VfsUtilCore.processFilesRecursively(file, findKTProcessor)
-
-                if (findKTProcessor.isFound()) {
-                    return true
-                }
-            }
-
+    platformStatic
+    public fun isJsHeaderLibraryDetected(classesRoots: List<VirtualFile>): Boolean {
+        if (JavaRuntimeDetectionUtil.getJavaRuntimeVersion(classesRoots) != null) {
+            // Prevent clashing with java runtime
             return false
-
         }
+
+        for (file in classesRoots) {
+            val findKTProcessor = object : CommonProcessors.FindFirstProcessor<VirtualFile>() {
+                override fun accept(file: VirtualFile?): Boolean {
+                    val extension = file!!.getExtension()
+                    return JetFileType.EXTENSION == extension || "js" == extension && LibraryUtils.haveMetadata(String(file.contentsToByteArray(false), file.getCharset()))
+                }
+            }
+
+            VfsUtilCore.processFilesRecursively(file, findKTProcessor)
+
+            if (findKTProcessor.isFound()) return true;
+        }
+
+        return false
     }
 }
