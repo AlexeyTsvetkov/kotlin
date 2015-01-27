@@ -967,5 +967,8 @@
         return obj1;
     };
 
+    Kotlin.metadata = function (abiVersion, moduleName, data) {
+    };
+
     Kotlin.createDefinition(lazyInitClasses, Kotlin);
 })(Kotlin);
