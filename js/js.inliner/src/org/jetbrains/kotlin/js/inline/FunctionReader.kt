@@ -59,7 +59,8 @@ public class FunctionReader(private val context: TranslationContext) {
     public fun contains(descriptor: CallableDescriptor): Boolean =
             context.getConfig().getModuleId() != LibrarySourcesConfig.STDLIB_JS_MODULE_NAME &&
             descriptor.isInStdlib
-    public fun get(descriptor: CallableDescriptor): JsFunction? = functionCache.get(descriptor)
+
+    public fun get(descriptor: CallableDescriptor): JsFunction = functionCache.get(descriptor)
 
     private fun readSourceFile(path: String): String? {
         var reader: BufferedReader? = null

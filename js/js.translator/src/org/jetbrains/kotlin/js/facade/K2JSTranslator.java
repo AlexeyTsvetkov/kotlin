@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.js.analyzer.JsAnalysisResult;
 import org.jetbrains.kotlin.js.config.Config;
 import org.jetbrains.kotlin.js.facade.exceptions.TranslationException;
 import org.jetbrains.kotlin.js.inline.JsInliner;
+import org.jetbrains.kotlin.js.translate.context.TranslationContext;
 import org.jetbrains.kotlin.js.translate.general.Translation;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.resolve.BindingTrace;
@@ -72,12 +73,12 @@ public final class K2JSTranslator {
         BindingTrace bindingTrace = analysisResult.getBindingTrace();
         TopDownAnalyzerFacadeForJS.checkForErrors(Config.withJsLibAdded(files, config), bindingTrace.getBindingContext());
         ModuleDescriptor moduleDescriptor = analysisResult.getModuleDescriptor();
-        JsProgram program = Translation.generateAst(bindingTrace, files, mainCallParameters, moduleDescriptor, config);
+        TranslationContext context = Translation.generateAst(bindingTrace, files, mainCallParameters, moduleDescriptor, config);
         Diagnostics diagnostics = bindingTrace.getBindingContext().getDiagnostics();
 
         if (hasError(diagnostics)) return new TranslationResult.Fail(diagnostics);
 
-        program = JsInliner.process(program);
+        JsProgram program = JsInliner.process(context);
         return new TranslationResult.Success(config, files, program, diagnostics);
     }
 }
