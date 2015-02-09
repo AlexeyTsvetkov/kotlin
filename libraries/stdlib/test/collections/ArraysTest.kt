@@ -33,7 +33,7 @@ class ArraysTest {
         assertEquals("4", arr2[arr2.lastIndex])
     }
 
-    test fun byteArray() {
+    test fun byteArrayTest() {
         val arr = ByteArray(2)
 
         val expected: Byte = 0
@@ -42,7 +42,7 @@ class ArraysTest {
         assertEquals(expected, arr[1])
     }
 
-    test fun shortArray() {
+    test fun shortArrayTest() {
         val arr = ShortArray(2)
 
         val expected: Short = 0
@@ -51,7 +51,7 @@ class ArraysTest {
         assertEquals(expected, arr[1])
     }
 
-    test fun intArray() {
+    test fun intArrayTest() {
         val arr = IntArray(2)
 
         assertEquals(arr.size(), 2)
@@ -59,7 +59,7 @@ class ArraysTest {
         assertEquals(0, arr[1])
     }
 
-    test fun longArray() {
+    test fun longArrayTest() {
         val arr = LongArray(2)
 
         val expected: Long = 0
@@ -68,7 +68,7 @@ class ArraysTest {
         assertEquals(expected, arr[1])
     }
 
-    test fun floatArray() {
+    test fun floatArrayTest() {
         val arr = FloatArray(2)
 
         val expected: Float = 0.0.toFloat()
@@ -77,7 +77,7 @@ class ArraysTest {
         assertEquals(expected, arr[1])
     }
 
-    test fun doubleArray() {
+    test fun doubleArrayTest() {
         val arr = DoubleArray(2)
 
         assertEquals(arr.size(), 2)
@@ -85,7 +85,7 @@ class ArraysTest {
         assertEquals(0.0, arr[1])
     }
 
-    test fun charArray() {
+    test fun charArrayTest() {
         val arr = CharArray(2)
 
         val expected: Char = '\u0000'
@@ -94,7 +94,7 @@ class ArraysTest {
         assertEquals(expected, arr[1])
     }
 
-    test fun booleanArray() {
+    test fun booleanArrayTest() {
         val arr = BooleanArray(2)
         assertEquals(arr.size(), 2)
         assertEquals(false, arr[0])
@@ -214,52 +214,46 @@ class ArraysTest {
         assertEquals(listOf("aab", "aba", "ac"), array("ac", "aab", "aba").toSortedList())
     }
 
-    /*
-
-    TODO FIXME ASAP: These currently fail on JS due to missing upto() method on numbers
-
     test fun reduce() {
         expect(-4) { intArray(1, 2, 3) reduce { a, b -> a - b } }
-        // Fails in JS: expect(-4.toLong()) { longArray(1, 2, 3) reduce { a, b -> a - b } }
+        expect(-4.toLong()) { longArray(1, 2, 3) reduce { a, b -> a - b } }
         expect(-4.toFloat()) { floatArray(1.toFloat(), 2.toFloat(), 3.toFloat()) reduce { a, b -> a - b } }
         expect(-4.0) { doubleArray(1.0, 2.0, 3.0) reduce { a, b -> a - b } }
         expect('3') { charArray('1', '3', '2') reduce { a, b -> if(a > b) a else b } }
         expect(false) { booleanArray(true, true, false) reduce { a, b -> a && b } }
         expect(true) { booleanArray(true, true) reduce { a, b -> a && b } }
-        //  Fails in JS: expect(0.toByte()) { byteArray(3, 2, 1) reduce { a, b -> (a - b).toByte() } }
-        //  Fails in JS: expect(0.toShort()) { shortArray(3, 2, 1) reduce { a, b -> (a - b).toShort() } }
+        expect(0.toByte()) { byteArray(3, 2, 1) reduce { a, b -> (a - b).toByte() } }
+        expect(0.toShort()) { shortArray(3, 2, 1) reduce { a, b -> (a - b).toShort() } }
 
-        failsWith(javaClass<UnsupportedOperationException>()) {
+        fails {
             intArray().reduce { a, b -> a + b}
         }
     }
 
     test fun reduceRight() {
         expect(2) { intArray(1, 2, 3) reduceRight { a, b -> a - b } }
-        //  Fails in JS: expect(2.toLong()) { longArray(1, 2, 3) reduceRight { a, b -> a - b } }
+        expect(2.toLong()) { longArray(1, 2, 3) reduceRight { a, b -> a - b } }
         expect(2.toFloat()) { floatArray(1.toFloat(), 2.toFloat(), 3.toFloat()) reduceRight { a, b -> a - b } }
         expect(2.0) { doubleArray(1.0, 2.0, 3.0) reduceRight { a, b -> a - b } }
         expect('3') { charArray('1', '3', '2') reduceRight { a, b -> if(a > b) a else b } }
         expect(false) { booleanArray(true, true, false) reduceRight { a, b -> a && b } }
         expect(true) { booleanArray(true, true) reduceRight { a, b -> a && b } }
-        //  Fails in JS: expect(2.toByte()) { byteArray(1, 2, 3) reduceRight { a, b -> (a - b).toByte() } }
-        //  Fails in JS: expect(2.toShort()) { shortArray(1, 2, 3) reduceRight { a, b -> (a - b).toShort() } }
+        expect(2.toByte()) { byteArray(1, 2, 3) reduceRight { a, b -> (a - b).toByte() } }
+        expect(2.toShort()) { shortArray(1, 2, 3) reduceRight { a, b -> (a - b).toShort() } }
 
-        failsWith(javaClass<UnsupportedOperationException>()) {
+        fails {
             intArray().reduceRight { a, b -> a + b}
         }
     }
 
     test fun reverse() {
         expect(arrayList(3, 2, 1)) { intArray(1, 2, 3).reverse() }
-        //  Fails in JS: expect(arrayList<Byte>(3, 2, 1)) { byteArray(1, 2, 3).reverse() }
-        //  Fails in JS: expect(arrayList<Short>(3, 2, 1)) { shortArray(1, 2, 3).reverse() }
-        //  Fails in JS: expect(arrayList<Long>(3, 2, 1)) { longArray(1, 2, 3).reverse() }
+        expect(arrayList<Byte>(3, 2, 1)) { byteArray(1, 2, 3).reverse() }
+        expect(arrayList<Short>(3, 2, 1)) { shortArray(1, 2, 3).reverse() }
+        expect(arrayList<Long>(3, 2, 1)) { longArray(1, 2, 3).reverse() }
         expect(arrayList(3.toFloat(), 2.toFloat(), 1.toFloat())) { floatArray(1.toFloat(), 2.toFloat(), 3.toFloat()).reverse() }
         expect(arrayList(3.0, 2.0, 1.0)) { doubleArray(1.0, 2.0, 3.0).reverse() }
         expect(arrayList('3', '2', '1')) { charArray('1', '2', '3').reverse() }
         expect(arrayList(false, false, true)) { booleanArray(true, false, false).reverse() }
     }
-
-    */
 }
