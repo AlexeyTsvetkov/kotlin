@@ -25,9 +25,11 @@ import com.google.gwt.dev.js.rhino.ErrorReporter
 import com.google.gwt.dev.js.rhino.EvaluatorException
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.js.config.LibrarySourcesConfig
 import org.jetbrains.kotlin.js.translate.context.Namer
 import org.jetbrains.kotlin.js.translate.context.TranslationContext
 import org.jetbrains.kotlin.js.translate.expression.InlineMetadata
+import org.jetbrains.kotlin.js.translate.utils.JsDescriptorUtils.*
 import org.jetbrains.kotlin.utils.PathUtil
 
 import com.intellij.util.containers.SLRUCache
@@ -45,6 +47,9 @@ public class FunctionReader(private val context: TranslationContext) {
                 requireNotNull(readFunction(descriptor), "Could not read function: $descriptor")
     }
 
+    public fun contains(descriptor: CallableDescriptor): Boolean =
+            context.getConfig().getModuleId() != LibrarySourcesConfig.STDLIB_JS_MODULE_NAME &&
+            descriptor.isInStdlib
     public fun get(descriptor: CallableDescriptor): JsFunction? = functionCache.get(descriptor)
 
     private fun readSourceFile(path: String): String? {
@@ -62,6 +67,8 @@ public class FunctionReader(private val context: TranslationContext) {
     }
 
     private fun readFunction(descriptor: CallableDescriptor): JsFunction? {
+        if (descriptor !in this) return null
+
         val jarPath = PathUtil.getKotlinPathsForDistDirectory().getJsStdLibJarPath();
         val sourcePath = jarPath.getAbsolutePath()
         val source = sourceFileCache[sourcePath]
@@ -107,6 +114,10 @@ public class FunctionReader(private val context: TranslationContext) {
         }
     }
 }
+
+
+private val CallableDescriptor.isInStdlib: Boolean
+    get() = getExternalModuleName(this) == LibrarySourcesConfig.STDLIB_JS_MODULE_NAME
 
 private object MutedErrorReporter : ErrorReporter {
     override fun warning(message: String?, sourceName: String?, line: Int, lineSource: String?, lineOffset: Int) {}
