@@ -16,7 +16,19 @@
 
 package org.jetbrains.kotlin.js.inline
 
+import com.google.dart.compiler.backend.js.ast.*
+import com.google.dart.compiler.common.SourceInfoImpl
+import com.google.gwt.dev.js.JsParser
+import com.google.gwt.dev.js.ThrowExceptionOnErrorReporter
+import com.google.gwt.dev.js.parserExceptions.AbortParsingException
+import com.google.gwt.dev.js.parserExceptions.JsParserException
+import com.google.gwt.dev.js.rhino.ErrorReporter
+import com.google.gwt.dev.js.rhino.EvaluatorException
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.js.translate.context.Namer
 import org.jetbrains.kotlin.js.translate.context.TranslationContext
+import org.jetbrains.kotlin.js.translate.expression.InlineMetadata
 import org.jetbrains.kotlin.utils.PathUtil
 
 import com.intellij.util.containers.SLRUCache
@@ -29,6 +41,13 @@ public class FunctionReader(private val context: TranslationContext) {
                 requireNotNull(readSourceFile(path), "Could not read file: $path")
     }
 
+    private val functionCache = object : SLRUCache<CallableDescriptor, JsFunction>(50, 50) {
+        override fun createValue(descriptor: CallableDescriptor): JsFunction =
+                requireNotNull(readFunction(descriptor), "Could not read function: $descriptor")
+    }
+
+    public fun get(descriptor: CallableDescriptor): JsFunction? = functionCache.get(descriptor)
+
     private fun readSourceFile(path: String): String? {
         var reader: BufferedReader? = null
 
@@ -40,6 +59,53 @@ public class FunctionReader(private val context: TranslationContext) {
             return reader?.readText()
         } finally {
             reader?.close()
+        }
+    }
+
+    private fun readFunction(descriptor: CallableDescriptor): JsFunction? {
+        val jarPath = PathUtil.getKotlinPathsForDistDirectory().getJsStdLibJarPath();
+        val sourcePath = jarPath.getAbsolutePath()
+        val source = sourceFileCache[sourcePath]
+
+        val function = readFunctionFromSource(descriptor, source)
+        return function
+    }
+
+    private fun readFunctionFromSource(descriptor: CallableDescriptor, source: String): JsFunction? {
+        val startTag = Namer.getInlineStartTag(descriptor)
+        val endTag = Namer.getInlineEndTag(descriptor)
+
+        val startIndex = source.indexOf(startTag)
+        if (startIndex < 0) return null
+
+        val endIndex = source.indexOf(endTag, startIndex)
+        if (endIndex < 0) return null
+
+        val metadataString = source.substring(startIndex - 1, endIndex + endTag.length() + 1)
+        val statements = parseJavaScript(metadataString)
+        val statement = statements.firstOrNull()
+
+        if (statement !is JsExpressionStatement) throw IllegalStateException("Expected JsExpressionStatement, got: $statement")
+        val expression = statement.getExpression()
+
+        val metadata = InlineMetadata.decompose(expression)
+        if (metadata == null) {
+            throw IllegalStateException("Could not get inline metadata from expression: $expression")
+        }
+
+        val function = metadata.function
+        return function
+    }
+
+    private fun parseJavaScript(source: String): List<JsStatement> {
+        try {
+            val info = SourceInfoImpl(null, 0, 0, 0, 0)
+            val scope = JsRootScope(context.program())
+            val reader = StringReader(source)
+            return JsParser.parse(info, scope, reader, ThrowExceptionOnErrorReporter, /* insideFunction= */ false)
+        }
+        catch (e: Exception) {
+            throw RuntimeException(e)
         }
     }
 }
