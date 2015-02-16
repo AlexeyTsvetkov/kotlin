@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.js.config.LibrarySourcesConfig
 import org.jetbrains.kotlin.js.translate.context.Namer
 import org.jetbrains.kotlin.js.translate.context.TranslationContext
 import org.jetbrains.kotlin.js.translate.expression.InlineMetadata
+import org.jetbrains.kotlin.js.translate.utils.JsAstUtils
 import org.jetbrains.kotlin.js.translate.utils.JsDescriptorUtils.*
 import org.jetbrains.kotlin.utils.PathUtil
 
@@ -99,6 +100,7 @@ public class FunctionReader(private val context: TranslationContext) {
         }
 
         val function = metadata.function
+        replaceRootPackageVarWithModuleName(function, metadata.moduleName)
         return function
     }
 
@@ -115,6 +117,22 @@ public class FunctionReader(private val context: TranslationContext) {
     }
 }
 
+
+private fun replaceRootPackageVarWithModuleName(node: JsNode, moduleName: String) {
+    val program = JsProgram("<fake>")
+    val scope = JsRootScope(program)
+    val namer = Namer.newInstance(scope)
+
+    val visitor = object: JsVisitorWithContextImpl() {
+        override fun endVisit(x: JsNameRef?, ctx: JsContext?) {
+            if (x?.getQualifier() != null || Namer.getRootPackageName() != x?.getIdent()) return
+
+            ctx?.replaceMe(JsAstUtils.moduleReference(moduleName, namer, program))
+        }
+    }
+
+    visitor.accept(node)
+}
 
 private val CallableDescriptor.isInStdlib: Boolean
     get() = getExternalModuleName(this) == LibrarySourcesConfig.STDLIB_JS_MODULE_NAME
