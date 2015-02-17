@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.js.test;
 
 import com.google.common.collect.Lists;
 import com.google.dart.compiler.backend.js.ast.JsNode;
+import com.google.dart.compiler.backend.js.ast.JsProgram;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.StandardFileSystems;
@@ -82,6 +83,7 @@ public abstract class BasicTest extends KotlinTestWithEnvironment {
 
     @NotNull
     private String relativePathToTestDir = "";
+    private JsProgram program = null;
 
     @SuppressWarnings("JUnitTestCaseWithNonTrivialConstructors")
     public BasicTest(@NotNull String relativePathToTestDir) {
@@ -181,7 +183,7 @@ public abstract class BasicTest extends KotlinTestWithEnvironment {
         if (!(translationResult instanceof TranslationResult.Success)) return;
 
         TranslationResult.Success successResult = (TranslationResult.Success) translationResult;
-        getConsumer().consume(successResult.getProgram());
+        program = successResult.getProgram();
 
         OutputFileCollection outputFiles = successResult.getOutputFiles(outputFile, getOutputPrefixFile(), getOutputPostfixFile());
         File outputDir = outputFile.getParentFile();
@@ -205,9 +207,10 @@ public abstract class BasicTest extends KotlinTestWithEnvironment {
         return false;
     }
 
-    protected Consumer<JsNode> getConsumer() {
-        //noinspection unchecked
-        return Consumer.EMPTY_CONSUMER;
+    @NotNull
+    protected JsProgram getProgram() {
+        assert program != null: "Program was not compiled";
+        return program;
     }
 
     protected void runRhinoTests(

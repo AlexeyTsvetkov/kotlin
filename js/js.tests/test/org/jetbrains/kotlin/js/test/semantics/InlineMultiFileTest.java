@@ -28,8 +28,6 @@ import java.util.List;
 import static org.jetbrains.kotlin.js.test.utils.JsTestUtils.getAllFilesInDir;
 
 public final class InlineMultiFileTest extends MultipleFilesTranslationTest {
-    private final MemoizeConsumer<JsNode> nodeConsumer = new MemoizeConsumer<JsNode>();
-
     public InlineMultiFileTest() {
         super("inlineMultiFile/");
     }
@@ -37,7 +35,6 @@ public final class InlineMultiFileTest extends MultipleFilesTranslationTest {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        nodeConsumer.consume(null);
     }
 
     public void testInlineMultiFileSimple() throws Exception {
@@ -160,17 +157,7 @@ public final class InlineMultiFileTest extends MultipleFilesTranslationTest {
 
         for (String fileName : fileNames) {
             String fileText = JsTestUtils.readFile(fileName);
-
-            JsNode lastJsNode = nodeConsumer.getLastValue();
-            assert lastJsNode != null;
-
-            DirectiveTestUtils.processDirectives(lastJsNode, fileText);
+            DirectiveTestUtils.processDirectives(getProgram(), fileText);
         }
     }
-
-    @Override
-    protected Consumer<JsNode> getConsumer() {
-        return nodeConsumer;
-    }
-
 }
