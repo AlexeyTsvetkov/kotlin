@@ -24,6 +24,8 @@ import org.jetbrains.kotlin.js.test.utils.JsTestUtils;
 import org.jetbrains.kotlin.js.test.utils.MemoizeConsumer;
 
 public abstract class SingleFileTranslationWithDirectivesTest extends SingleFileTranslationTest {
+    private final MemoizeConsumer<JsNode> nodeConsumer = new MemoizeConsumer<JsNode>();
+
     public SingleFileTranslationWithDirectivesTest(@NotNull String main) {
         super(main);
     }
@@ -31,6 +33,7 @@ public abstract class SingleFileTranslationWithDirectivesTest extends SingleFile
     @Override
     public void setUp() throws Exception {
         super.setUp();
+        nodeConsumer.consume(null);
     }
 
     protected void checkFooBoxIsOkWithDirectives() throws Exception {
@@ -41,6 +44,15 @@ public abstract class SingleFileTranslationWithDirectivesTest extends SingleFile
     protected void processDirectives() throws Exception {
         String fileName = getInputFilePath(getTestName(true) + ".kt");
         String fileText = JsTestUtils.readFile(fileName);
-        DirectiveTestUtils.processDirectives(getProgram(), fileText);
+
+        JsNode lastJsNode = nodeConsumer.getLastValue();
+        assert lastJsNode != null;
+
+        DirectiveTestUtils.processDirectives(lastJsNode, fileText);
+    }
+
+    @Override
+    protected Consumer<JsNode> getConsumer() {
+        return nodeConsumer;
     }
 }
