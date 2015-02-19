@@ -18,11 +18,16 @@ package org.jetbrains.kotlin.js.inline;
 
 import com.google.dart.compiler.backend.js.ast.*;
 import com.google.dart.compiler.backend.js.ast.metadata.MetadataPackage;
+import com.intellij.psi.PsiElement;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.builtins.InlineStrategy;
+import org.jetbrains.kotlin.diagnostics.DiagnosticSink;
+import org.jetbrains.kotlin.js.config.Config;
 import org.jetbrains.kotlin.js.inline.context.*;
 import org.jetbrains.kotlin.js.inline.exception.InlineRecursionException;
+import org.jetbrains.kotlin.js.resolve.diagnostics.ErrorsJs;
+import org.jetbrains.kotlin.js.translate.context.TranslationContext;
 
 import java.util.IdentityHashMap;
 import java.util.Set;
@@ -38,8 +43,10 @@ public class JsInliner extends JsVisitorWithContextImpl {
 
     private final IdentityHashMap<JsName, JsFunction> functions;
     private final Stack<JsInliningContext> inliningContexts = new Stack<JsInliningContext>();
+    private final Stack<JsInvocation> calls = new Stack<JsInvocation>();
     private final Set<JsFunction> processedFunctions = IdentitySet();
     private final Set<JsFunction> inProcessFunctions = IdentitySet();
+    private final DiagnosticSink trace;
 
     /**
      * A statement can contain more, than one inlineable sub-expressions.
@@ -71,25 +78,52 @@ public class JsInliner extends JsVisitorWithContextImpl {
      */
     private boolean lastStatementWasShifted = false;
 
-    public static JsProgram process(JsProgram program) {
+    public static JsProgram process(@NotNull TranslationContext context) {
+        JsProgram program = context.program();
+        Config config = context.getConfig();
+
+        if (!config.isInlineEnabled()) return program;
+
         IdentityHashMap<JsName, JsFunction> functions = collectNamedFunctions(program);
-        JsInliner inliner = new JsInliner(functions);
-        inliner.accept(program);
+        DiagnosticSink trace = context.bindingTrace();
+        JsInliner inliner = new JsInliner(functions, trace);
+
+        try {
+            inliner.accept(program);
+        } catch (InlineRecursionException e) {
+            return program;
+        }
+
+        assert inliner.inliningContexts.empty(): "InliningContext stack is not empty";
+        assert inliner.calls.empty(): "Calls stack is not empty";
+
         removeUnusedFunctionDefinitions(program, functions);
         return program;
     }
 
-    JsInliner(IdentityHashMap<JsName, JsFunction> functions) {
+    JsInliner(
+            @NotNull IdentityHashMap<JsName, JsFunction> functions,
+            @NotNull DiagnosticSink trace
+    ) {
         this.functions = functions;
+        this.trace = trace;
     }
 
     @Override
     public boolean visit(JsFunction function, JsContext context) {
-        inliningContexts.push(new JsInliningContext(function));
+        JsInliningContext inliningContext = new JsInliningContext(function);
+        inliningContexts.push(inliningContext);
 
-        if (inProcessFunctions.contains(function)) throw new InlineRecursionException();
+        if (inProcessFunctions.contains(function)) {
+            JsInvocation call = getCurrentCall();
+            Object source = call.getSource();
+            assert source instanceof PsiElement: "Source info has not been setup, got: " + source;
+            PsiElement psiSource = (PsiElement) source;
+            trace.report(ErrorsJs.RECURSIVE_CALL_TO_INLINE_FUNCTION.on(psiSource));
+            throw new InlineRecursionException();
+        }
+
         inProcessFunctions.add(function);
-
         return super.visit(function, context);
     }
 
@@ -109,9 +143,8 @@ public class JsInliner extends JsVisitorWithContextImpl {
 
     @Override
     public boolean visit(JsInvocation call, JsContext context) {
-        if (call == null) {
-            return false;
-        }
+        if (call == null) return false;
+        calls.push(call);
 
         if (shouldInline(call) && canInline(call)) {
             JsFunction definition = getFunctionContext().getFunctionDefinition(call);
@@ -123,6 +156,12 @@ public class JsInliner extends JsVisitorWithContextImpl {
         }
 
         return !lastStatementWasShifted;
+    }
+
+    @Override
+    public void endVisit(JsInvocation x, JsContext ctx) {
+        super.endVisit(x, ctx);
+        calls.pop();
     }
 
     private void inline(@NotNull JsInvocation call, @NotNull JsContext context) {
@@ -174,6 +213,12 @@ public class JsInliner extends JsVisitorWithContextImpl {
 
     @NotNull FunctionContext getFunctionContext() {
         return getInliningContext().getFunctionContext();
+    }
+
+    @NotNull
+    private JsInvocation getCurrentCall() {
+        assert !calls.empty(): "No calls are being processed";
+        return calls.peek();
     }
 
     private boolean canInline(@NotNull JsInvocation call) {

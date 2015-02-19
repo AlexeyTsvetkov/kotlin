@@ -4,7 +4,7 @@ inline fun f() { g() }
 
 inline fun g() { h() }
 
-inline fun h() { f() }
+inline fun h() { dsadsaadsf() }
 
 fun box(): String {
     f()

@@ -30,6 +30,7 @@ import com.intellij.util.Consumer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.backend.common.output.OutputFileCollection;
+import org.jetbrains.kotlin.cli.common.messages.*;
 import org.jetbrains.kotlin.cli.common.output.outputUtils.OutputUtilsPackage;
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles;
 import org.jetbrains.kotlin.cli.jvm.compiler.JetCoreEnvironment;
@@ -58,6 +59,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static com.google.common.base.Predicates.in;
+import static com.google.common.base.Predicates.not;
 import static org.jetbrains.kotlin.js.test.rhino.RhinoUtils.runRhinoTest;
 import static org.jetbrains.kotlin.js.test.utils.JsTestUtils.convertFileNameToDotJsFile;
 
@@ -178,7 +181,14 @@ public abstract class BasicTest extends KotlinTestWithEnvironment {
         K2JSTranslator translator = new K2JSTranslator(config);
         TranslationResult translationResult = translator.translate(jetFiles, mainCallParameters);
 
-        if (!(translationResult instanceof TranslationResult.Success)) return;
+        if (translationResult instanceof TranslationResult.Fail) {
+
+            //TranslationResult.Fail fail = (TranslationResult.Fail) translationResult;
+            //MessageCollectorToString messageCollector = new MessageCollectorToString();
+            //MessageCollector collector = new FilteringMessageCollector(messageCollector, not(in(CompilerMessageSeverity.ERRORS)));
+            //AnalyzerWithCompilerReport.reportDiagnostics(fail.getDiagnostics(), collector);
+            //throw new AssertionError("\n" + messageCollector.getString());
+        }
 
         TranslationResult.Success successResult = (TranslationResult.Success) translationResult;
         getConsumer().consume(successResult.getProgram());

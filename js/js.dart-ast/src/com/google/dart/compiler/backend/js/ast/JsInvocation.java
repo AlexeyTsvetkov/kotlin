@@ -59,6 +59,8 @@ public final class JsInvocation extends JsExpressionImpl.JsExpressionHasArgument
     public JsInvocation deepCopy() {
         JsExpression qualifierCopy = AstUtil.deepCopy(qualifier);
         List<JsExpression> argumentsCopy = AstUtil.deepCopy(arguments);
-        return new JsInvocation(qualifierCopy, argumentsCopy).withMetadataFrom(this);
+        JsInvocation invocation = new JsInvocation(qualifierCopy, argumentsCopy).withMetadataFrom(this);
+        invocation.source(getSource());
+        return invocation;
     }
 }

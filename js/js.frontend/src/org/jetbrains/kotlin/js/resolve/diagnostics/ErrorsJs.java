@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.js.resolve.diagnostics;
 
 import com.intellij.openapi.util.TextRange;
+import com.intellij.psi.PsiElement;
 import org.jetbrains.kotlin.diagnostics.*;
 import org.jetbrains.kotlin.psi.JetDeclaration;
 import org.jetbrains.kotlin.psi.JetElement;
@@ -40,6 +41,7 @@ public interface ErrorsJs {
     DiagnosticFactory1<JetExpression, JsCallData> JSCODE_ERROR = DiagnosticFactory1.create(ERROR, JsCodePositioningStrategy.INSTANCE$);
     DiagnosticFactory1<JetExpression, JsCallData> JSCODE_WARNING = DiagnosticFactory1.create(WARNING, JsCodePositioningStrategy.INSTANCE$);
     DiagnosticFactory0<JetExpression> JSCODE_ARGUMENT_SHOULD_BE_CONSTANT = DiagnosticFactory0.create(ERROR, DEFAULT);
+    DiagnosticFactory0<PsiElement> RECURSIVE_CALL_TO_INLINE_FUNCTION = DiagnosticFactory0.create(ERROR, DEFAULT);
 
     @SuppressWarnings("UnusedDeclaration")
     Object _initializer = new Object() {
