@@ -14,14 +14,14 @@ class A(var value: Int) {
     fun f(): Int = value
 }
 
-fun doWork(a: A): Int =
+fun test(a: A): Int =
         // TODO: check that with second parameter is named f?
         with (a) {
             f(f() + A.f()).f()
         }
 
 fun box(): String {
-    assertEquals(90, doWork(A(10)))
+    assertEquals(90, test(A(10)))
 
     return "OK"
 }

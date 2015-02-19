@@ -1,8 +1,8 @@
 package foo
 
-// CHECK_CONTAINS_NO_CALLS: sumX2
+// CHECK_CONTAINS_NO_CALLS: test
 
-fun sumX2(x: Int, y: Int): Int =
+fun test(x: Int, y: Int): Int =
         with (x + x) {
             val xx = this
 
@@ -12,8 +12,8 @@ fun sumX2(x: Int, y: Int): Int =
         }
 
 fun box(): String {
-    assertEquals(10, sumX2(2, 3))
-    assertEquals(18, sumX2(4, 5))
+    assertEquals(10, test(2, 3))
+    assertEquals(18, test(4, 5))
 
     return "OK"
 }

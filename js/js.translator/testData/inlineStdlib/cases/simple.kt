@@ -1,10 +1,10 @@
 package foo
 
-// CHECK_CONTAINS_NO_CALLS: count
+// CHECK_CONTAINS_NO_CALLS: test
 
 var counter = 0
 
-fun count(a: Int) {
+fun test(a: Int) {
     a.times {
         counter += 1
     }
@@ -12,7 +12,7 @@ fun count(a: Int) {
 
 fun box(): String {
     assertEquals(0, counter)
-    count(5)
+    test(5)
     assertEquals(5, counter)
 
     return "OK"
