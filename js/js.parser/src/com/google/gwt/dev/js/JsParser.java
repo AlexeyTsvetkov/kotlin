@@ -610,8 +610,8 @@ public class JsParser {
 
         while (fromParamNode != null) {
             String fromParamName = fromParamNode.getString();
-            JsNameRef paramRef = scopeContext.localNameFor(fromParamName).makeRef();
-            toFn.getParameters().add(new JsParameter(paramRef.getName()));
+            JsName name = scopeContext.localNameFor(fromParamName);
+            toFn.getParameters().add(new JsParameter(name));
             fromParamNode = fromParamNode.getNext();
         }
 
