@@ -15,10 +15,10 @@ class A(var value: Int) {
 }
 
 fun doWork(a: A): Int =
-    // TODO: check that with second parameter is named f?
-    with (a) {
-        f(f() + A.f()).f()
-    }
+        // TODO: check that with second parameter is named f?
+        with (a) {
+            f(f() + A.f()).f()
+        }
 
 fun box(): String {
     assertEquals(90, doWork(A(10)))
