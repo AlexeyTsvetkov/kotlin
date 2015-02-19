@@ -81,7 +81,6 @@ public class FunctionReader(private val context: TranslationContext) {
         val jarPath = PathUtil.getKotlinPathsForDistDirectory().getJsStdLibJarPath();
         val sourcePath = jarPath.getAbsolutePath()
         val source = sourceFileCache[sourcePath]
-        if (source == null) throw RuntimeException("Could not read file: $sourcePath")
 
         val function = readFunctionFromSource(descriptor, source)
         function?.markInlineArguments(descriptor)
