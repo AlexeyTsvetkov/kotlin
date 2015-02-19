@@ -5,11 +5,11 @@ package foo
 fun test(a: Int, b: Int): Int {
     var res = 0
 
-    with (a+b) {
+    with (a + b) {
         val t = this
 
         t.times {
-            res += t-b
+            res += t - b
         }
     }
 
