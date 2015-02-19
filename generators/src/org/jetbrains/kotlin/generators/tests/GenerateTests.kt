@@ -118,9 +118,7 @@ import org.jetbrains.kotlin.psi.patternMatching.AbstractJetPsiUnifierTest
 import org.jetbrains.kotlin.completion.weighers.AbstractBasicCompletionWeigherTest
 import org.jetbrains.kotlin.completion.weighers.AbstractSmartCompletionWeigherTest
 import org.jetbrains.kotlin.generators.tests.reservedWords.generateTestDataForReservedWords
-import org.jetbrains.kotlin.js.test.semantics.AbstractReservedWordTest
 import org.jetbrains.kotlin.idea.resolve.AbstractReferenceResolveInJavaTest
-import org.jetbrains.kotlin.js.test.semantics.AbstractBridgeTest
 import org.jetbrains.kotlin.j2k.AbstractJavaToKotlinConverterMultiFileTest
 import org.jetbrains.kotlin.j2k.AbstractJavaToKotlinConverterForWebDemoTest
 import org.jetbrains.kotlin.idea.decompiler.textBuilder.AbstractDecompiledTextTest
@@ -133,8 +131,6 @@ import org.jetbrains.kotlin.renderer.AbstractDescriptorRendererTest
 import org.jetbrains.kotlin.types.AbstractJetTypeBindingTest
 import org.jetbrains.kotlin.idea.debugger.evaluate.AbstractCodeFragmentCompletionHandlerTest
 import org.jetbrains.kotlin.idea.coverage.AbstractKotlinCoverageOutputFilesTest
-import org.jetbrains.kotlin.js.test.semantics.AbstractDynamicTest
-import org.jetbrains.kotlin.js.test.semantics.AbstractMultiModuleTest
 import org.jetbrains.kotlin.completion.handlers.AbstractBasicCompletionHandlerTest
 import org.jetbrains.kotlin.idea.decompiler.stubBuilder.AbstractClsStubBuilderTest
 import org.jetbrains.kotlin.codegen.AbstractLineNumberTest
@@ -151,6 +147,8 @@ import org.jetbrains.kotlin.lang.resolve.android.test.AbstractAndroidBytecodeSha
 import org.jetbrains.kotlin.lang.resolve.android.test.AbstractAndroidXml2KConversionTest
 import org.jetbrains.kotlin.lang.resolve.android.test.AbstractAndroidBoxTest
 import org.jetbrains.kotlin.android.AbstractParserResultEqualityTest
+import org.jetbrains.kotlin.js.test.*
+import org.jetbrains.kotlin.js.test.semantics.*
 
 fun main(args: Array<String>) {
     System.setProperty("java.awt.headless", "true")
@@ -792,6 +790,22 @@ fun main(args: Array<String>) {
 
         testClass(javaClass<AbstractMultiModuleTest>()) {
             model("multiModule/cases", extension = null, recursive=false)
+        }
+
+        testClass(javaClass<AbstractInlineJsTest>()) {
+            model("inline/cases")
+        }
+
+        testClass(javaClass<AbstractInlineJsStdlibTest>()) {
+            model("inlineStdlib/cases")
+        }
+
+        testClass(javaClass<AbstractLabelTest>()) {
+            model("labels/cases")
+        }
+
+        testClass(javaClass<AbstractJsCodeTest>()) {
+            model("jsCode/cases")
         }
     }
 
