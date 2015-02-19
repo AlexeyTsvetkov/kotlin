@@ -9,7 +9,7 @@ fun test(a: Int, b: Int): Int {
         val t = this
 
         t.times {
-            res += t-b // res = a * (a+b)
+            res += t-b
         }
     }
 
