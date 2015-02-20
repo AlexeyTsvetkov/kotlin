@@ -39,16 +39,20 @@ import org.jetbrains.kotlin.js.translate.utils.JsAstUtils
 import org.jetbrains.kotlin.js.translate.utils.JsDescriptorUtils.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.utils.PathUtil
 
 import com.intellij.util.containers.SLRUCache
 import java.io.*
 import java.net.URL
+import org.jetbrains.kotlin.utils.*
 
 public class FunctionReader(private val context: TranslationContext) {
-    private val sourceFileCache = object : SLRUCache<String, String>(10, 10) {
-        override fun createValue(path: String): String =
-                requireNotNull(readSourceFile(path), "Could not read file: $path")
+    private val moduleJsFiles: Map<String, List<String>>;
+
+    {
+        val config = context.getConfig() as LibrarySourcesConfig
+        val libs = config.getLibraries().stream().map({File(it)})
+        val jsLibs = libs.filter({ it.exists() && LibraryUtils.isKotlinJavascriptLibrary(it) })
+
     }
 
     private val functionCache = object : SLRUCache<CallableDescriptor, JsFunction>(50, 50) {
@@ -63,6 +67,15 @@ public class FunctionReader(private val context: TranslationContext) {
     public fun get(descriptor: CallableDescriptor): JsFunction = functionCache.get(descriptor)
 
     private fun readSourceFile(path: String): String? {
+        val lc = context.getConfig() as LibrarySourcesConfig
+        val lf = lc.getLibFiles();
+        val libraries = lc.getLibraries()
+        val libFile = File(libraries.firstOrNull()!!)
+        if (LibraryUtils.isKotlinJavascriptLibrary(libFile)) {
+            val name = LibraryUtils.getKotlinJsModuleName(libFile)
+            LibraryUtils.copyJsFilesFromLibraries(libraries, "/tmp/")
+            val c = 0
+        }
         var reader: BufferedReader? = null
 
         try{
