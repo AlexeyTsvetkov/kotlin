@@ -59,8 +59,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static com.google.common.base.Predicates.in;
-import static com.google.common.base.Predicates.not;
 import static org.jetbrains.kotlin.js.test.rhino.RhinoUtils.runRhinoTest;
 import static org.jetbrains.kotlin.js.test.utils.JsTestUtils.convertFileNameToDotJsFile;
 
