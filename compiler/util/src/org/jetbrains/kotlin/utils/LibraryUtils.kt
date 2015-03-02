@@ -22,11 +22,9 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.Processor
 
 import java.io.*
+import java.util.jar.*
+import java.util.zip.*
 import java.util.Properties
-import java.util.jar.Attributes
-import java.util.jar.JarFile
-import java.util.jar.Manifest
-import java.util.zip.ZipFile
 import kotlin.platform.platformStatic
 
 public object LibraryUtils {
@@ -93,73 +91,62 @@ public object LibraryUtils {
     }
 
     platformStatic
-    public fun copyJsFilesFromLibraries(libraries: List<String>, outputLibraryJsPath: String) {
+    public fun copyJsFilesFromLibraries(libraries: List<String>, outputLibraryJsPath: String): Unit =
+            traverseJsLibraries(libraries) { (relativePath, stream) ->
+                val suggestedPath = getSuggestedPath(relativePath)
+
+                if (suggestedPath != null) {
+                    val output = File(outputLibraryJsPath, suggestedPath)
+                    FileUtil.copy(stream, FileOutputStream(output))
+                }
+            }
+
+    platformStatic
+    public fun traverseJsLibraries(libraries: List<String>, fn: (relativePath: String, stream: InputStream) -> Unit) {
         for (library in libraries) {
             val file = File(library)
-            assert(file.exists()) { "Library " + library + " not found" }
+            assert(file.exists()) { "Library $library not found" }
 
-            if (file.isDirectory()) {
-                copyJsFilesFromDirectory(file, outputLibraryJsPath)
-            }
-            else {
-                copyJsFilesFromZip(file, outputLibraryJsPath)
-            }
-        }
-    }
-
-    private fun copyJsFilesFromDirectory(dir: File, outputLibraryJsPath: String) {
-        FileUtil.processFilesRecursively(dir, object : Processor<File> {
-            override fun process(file: File): Boolean {
-                var relativePath = FileUtil.getRelativePath(dir, file)
-                assert(relativePath != null) { "relativePath should not be null " + dir + " " + file }
-                if (file.isFile() && relativePath!!.endsWith(JS_EXT)) {
-                    relativePath = getSuggestedPath(relativePath)
-                    if (relativePath == null) return true
-
-                    try {
-                        val copyFile = File(outputLibraryJsPath, relativePath)
-                        FileUtil.copy(file, copyFile)
-                    }
-                    catch (ex: IOException) {
-                        LOG.error("Could not copy " + relativePath + " from " + dir + ": " + ex.getMessage())
-                    }
-
+            try {
+                if (file.isDirectory()) {
+                    traverseJsLibraryDir(file, fn)
+                } else {
+                    traverseJsLibraryZip(file, fn)
                 }
-                return true
+            } catch(e: IOException) {
+                LOG.error("Could not extract javascript files from  $file: $e")
             }
-        })
+        }
     }
 
-    private fun copyJsFilesFromZip(file: File, outputLibraryJsPath: String) {
-        try {
-            traverseArchive(file, outputLibraryJsPath)
-        }
-        catch (ex: IOException) {
-            LOG.error("Could not extract javascript files from  " + file.getName() + ": " + ex.getMessage())
-        }
+    private fun traverseJsLibraryDir(dir: File, fn: (relativePath: String, stream: InputStream) -> Unit) =
+            FileUtil.processFilesRecursively(dir) { (file) ->
+                val relativePath = FileUtil.getRelativePath(dir, file)
+                if (relativePath == null) throw AssertionError("relativePath should not be null $dir $file")
 
-    }
+                if (file.isFile() && relativePath.endsWith(JS_EXT)) {
+                    FileInputStream(file).use { fn(relativePath, it) }
+                }
+
+                true
+            }
 
     throws(javaClass<IOException>())
-    private fun traverseArchive(file: File, outputLibraryJsPath: String) {
-        val zipFile = ZipFile(file.getPath())
+    private fun traverseJsLibraryZip(library: File, fn: (relativePath: String, stream: InputStream) -> Unit) {
+        val zipFile = ZipFile(library.getPath())
+
         try {
             val zipEntries = zipFile.entries()
+
             while (zipEntries.hasMoreElements()) {
                 val entry = zipEntries.nextElement()
                 val entryName = entry.getName()
-                if (!entry.isDirectory() && entryName.endsWith(JS_EXT)) {
-                    val relativePath = getSuggestedPath(entryName)
-                    if (relativePath == null) continue
 
-                    val stream = zipFile.getInputStream(entry)
-                    val content = FileUtil.loadTextAndClose(stream)
-                    val outputFile = File(outputLibraryJsPath, relativePath)
-                    FileUtil.writeToFile(outputFile, content)
+                if (!entry.isDirectory() && entryName.endsWith(JS_EXT)) {
+                    zipFile.getInputStream(entry).use { fn(entryName, it) }
                 }
             }
-        }
-        finally {
+        } finally {
             zipFile.close()
         }
     }
