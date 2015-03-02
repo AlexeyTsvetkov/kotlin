@@ -26,16 +26,25 @@ import java.util.Properties
 import java.util.jar.Attributes
 import java.util.jar.JarFile
 import java.util.jar.Manifest
-import java.util.zip.ZipFile
 import kotlin.platform.platformStatic
 import com.intellij.openapi.util.text.StringUtil
 import javax.xml.bind.DatatypeConverter.parseBase64Binary
 import javax.xml.bind.DatatypeConverter.printBase64Binary
-import java.util.zip.GZIPOutputStream
 import javax.xml.bind.DatatypeConverter
-import java.util.zip.GZIPInputStream
 import java.util.regex.Pattern
 import java.util.ArrayList
+import kotlin.properties.*
+import java.util.zip.*
+
+public trait JsLibEntry {
+    val suggestedPath: String
+    val content: String
+}
+
+public trait JsLib {
+    fun traverse(fn: (JsLibEntry) -> Unit): Unit
+    val metadata: LibraryUtils.Metadata
+}
 
 public object LibraryUtils {
     private val LOG = Logger.getInstance(javaClass<LibraryUtils>())
@@ -103,19 +112,15 @@ public object LibraryUtils {
     }
 
     platformStatic
-    public fun copyJsFilesFromLibraries(libraries: List<String>, outputLibraryJsPath: String) {
-        for (library in libraries) {
-            val file = File(library)
-            assert(file.exists()) { "Library " + library + " not found" }
+    public fun copyJsFilesFromLibraries(libraries: List<String>, outputLibraryJsPath: String): Unit =
+            traverseJsLibraries(libraries) { (relativePath, stream) ->
+                val suggestedPath = getSuggestedPath(relativePath)
 
-            if (file.isDirectory()) {
-                copyJsFilesFromDirectory(file, outputLibraryJsPath)
+                if (suggestedPath != null) {
+                    val output = File(outputLibraryJsPath, suggestedPath)
+                    FileUtil.copy(stream, FileOutputStream(output))
+                }
             }
-            else {
-                copyJsFilesFromZip(file, outputLibraryJsPath)
-            }
-        }
-    }
 
     platformStatic
     public fun writeMetadata(moduleName: String, content: ByteArray, metaFile: File) {
@@ -139,24 +144,31 @@ public object LibraryUtils {
 
     platformStatic
     public fun loadMetadataFromLibrary(library: String): List<Metadata> {
-        val file = File(library)
-        assert(file.exists()) { "Library " + library + " not found" }
+        val lib = JsLib(File(library))
+        if (lib == null) throw AssertionError("$library is not a library!")
 
-        var result: MutableList<Metadata> = arrayListOf()
-        if (file.isDirectory()) {
-            loadMetadataFromDirectory(file, result)
-        }
-        else {
-            loadMetadataFromZip(file, result)
-        }
-        return result
+        return lib.metadata
     }
 
     platformStatic
     public fun loadMetadata(file: File): List<Metadata> {
-        val result: MutableList<Metadata> = arrayListOf()
-        loadMetadataFromFile(file, result)
-        return result
+        val metadata = arrayListOf<Metadata>()
+
+        try {
+            val content = FileUtil.loadFile(file)
+            parseMetadata(content, metadata)
+        } catch (ex: IOException) {
+            LOG.error("Could not read ${file.getAbsolutePath()}: ${ex.getMessage()}")
+        }
+
+        return metadata
+    }
+
+    platformStatic
+    public fun readLibraries(paths: List<String>): List<JsLib> {
+        val files = paths.stream().map { File(it) }
+        val libs = files.filter { isKotlinJavascriptLibrary(it) }
+        return libs.map { JsLib(it) }.filterNotNull().toList()
     }
 
     private fun parseMetadata(text: String, metadataList: MutableList<Metadata>) {
@@ -189,25 +201,9 @@ public object LibraryUtils {
         })
     }
 
-    private fun loadMetadataFromFile(file: File, metadataList: MutableList<Metadata>) {
-        try {
-            val content = FileUtil.loadFile(file)
-            parseMetadata(content, metadataList)
-        }
-        catch (ex: IOException) {
-            LOG.error("Could not read ${file.getAbsolutePath()}: ${ex.getMessage()}")
-        }
-    }
-
     private fun loadMetadataFromDirectory(dir: File, metadataList: MutableList<Metadata>) {
         traverseDirectoryWithReportingIOException(dir) {
             file, relativePath -> parseMetadata(FileUtil.loadFile(file), metadataList)
-        }
-    }
-
-    private fun copyJsFilesFromDirectory(dir: File, outputLibraryJsPath: String) {
-        traverseDirectoryWithReportingIOException(dir) {
-            file, relativePath -> FileUtil.copy(file, File(outputLibraryJsPath, relativePath))
         }
     }
 
@@ -217,49 +213,6 @@ public object LibraryUtils {
         }
         catch (ex: IOException) {
             LOG.error("Could not read files from directory ${dir.getName()}: ${ex.getMessage()}")
-        }
-    }
-
-    private fun loadMetadataFromZip(file: File, metadataList: MutableList<Metadata>) {
-        traverseArchiveWithReportingIOException(file) { content, relativePath ->
-            parseMetadata(content, metadataList)
-        }
-    }
-
-    private fun copyJsFilesFromZip(file: File, outputLibraryJsPath: String) {
-        traverseArchiveWithReportingIOException(file) { content, relativePath ->
-            FileUtil.writeToFile(File(outputLibraryJsPath, relativePath), content)
-        }
-    }
-
-    private fun traverseArchiveWithReportingIOException(file: File, action: (String, String) -> Unit) {
-        try {
-            traverseArchive(file, action)
-        }
-        catch (ex: IOException) {
-            LOG.error("Could not extract files from archive ${file.getName()}: ${ex.getMessage()}")
-        }
-    }
-
-    private fun traverseArchive(file: File, action: (String, String) -> Unit) {
-        val zipFile = ZipFile(file.getPath())
-        try {
-            val zipEntries = zipFile.entries()
-            while (zipEntries.hasMoreElements()) {
-                val entry = zipEntries.nextElement()
-                val entryName = entry.getName()
-                if (!entry.isDirectory() && entryName.endsWith(JS_EXT)) {
-                    val relativePath = getSuggestedPath(entryName)
-                    if (relativePath == null) continue
-
-                    val stream = zipFile.getInputStream(entry)
-                    val content = FileUtil.loadTextAndClose(stream)
-                    action(content, relativePath)
-                }
-            }
-        }
-        finally {
-            zipFile.close()
         }
     }
 
@@ -336,4 +289,68 @@ public object LibraryUtils {
 
         return value
     }
+
+    private fun JsLib(file: File): JsLib? =
+            when {
+                file.isDirectory() -> JsLibDir(file)
+                FileUtil.isJarOrZip(file) -> JsLibZip(file)
+                else -> null
+            }
+
+    private class JsLibDir(private val dir: File) : JsLib {
+        override fun traverse(fn: (JsLibEntry) -> Unit) {
+            FileUtil.processFilesRecursively(dir) { (file) ->
+                if (file.isFile() && file.getPath().endsWith(JS_EXT) && getSuggestedPath(dir, file) != null) {
+                    fn(JsFileEntry(file))
+                }
+
+                true
+            }
+        }
+
+        private fun getSuggestedPath(dir: File, file: File): String? {
+            val relativePath = FileUtil.getRelativePath(dir, file)
+            if (relativePath == null) throw AssertionError("relativePath should not be null $dir $file")
+
+            return getSuggestedPath(relativePath)
+        }
+
+        inner private class JsFileEntry(file: File) : JsLibEntry {
+            override val suggestedPath: String by Delegates.lazy { getSuggestedPath(dir, file)!! }
+            override val content: String by Delegates.lazy { FileUtil.loadFile(file) }
+        }
+    }
+
+    private class JsLibZip(private val file: File) : JsLib {
+        override fun traverse(fn: (JsLibEntry) -> Unit) {
+            val zipFile = ZipFile(file.getPath())
+
+            try {
+                val zipEntries = zipFile.entries()
+
+                while (zipEntries.hasMoreElements()) {
+                    val entry = zipEntries.nextElement()
+                    val entryName = entry.getName()
+
+                    if (!entry.isDirectory() && entryName.endsWith(JS_EXT) && getSuggestedPath(entryName) != null) {
+                        fn(JsZipEntry(zipFile, entry))
+                    }
+                }
+            } catch (e: IOException) {
+                LOG.error("Could not extract files from archive ${file.getName()}: ${e.getMessage()}")
+            } finally {
+                zipFile.close()
+            }
+        }
+
+        private class JsZipEntry(zipFile: ZipFile, entry: ZipEntry) : JsLibEntry {
+            override val suggestedPath: String by Delegates.lazy { getSuggestedPath(entry.getName())!! }
+            override val content: String by Delegates.lazy { zipFile.loadEntry(entry) }
+        }
+    }
+}
+
+private fun ZipFile.loadEntry(entry: ZipEntry): String {
+    val stream = getInputStream(entry)
+    return FileUtil.loadTextAndClose(stream)
 }
