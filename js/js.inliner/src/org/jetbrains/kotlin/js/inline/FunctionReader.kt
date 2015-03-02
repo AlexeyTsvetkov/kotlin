@@ -19,9 +19,10 @@ package org.jetbrains.kotlin.js.inline
 import com.google.dart.compiler.backend.js.ast.*
 import com.google.dart.compiler.backend.js.ast.metadata.inlineStrategy
 import com.google.dart.compiler.common.SourceInfoImpl
-import com.google.gwt.dev.js.AbortParsingException
 import com.google.gwt.dev.js.JsParser
-import com.google.gwt.dev.js.JsParserException
+import com.google.gwt.dev.js.ThrowExceptionOnErrorReporter
+import com.google.gwt.dev.js.parserExceptions.AbortParsingException
+import com.google.gwt.dev.js.parserExceptions.JsParserException
 import com.google.gwt.dev.js.rhino.ErrorReporter
 import com.google.gwt.dev.js.rhino.EvaluatorException
 import org.jetbrains.kotlin.builtins.InlineStrategy
@@ -117,7 +118,7 @@ public class FunctionReader(private val context: TranslationContext) {
             val info = SourceInfoImpl(null, 0, 0, 0, 0)
             val scope = JsRootScope(context.program())
             val reader = StringReader(source)
-            return JsParser.parse(info, scope, reader, MutedErrorReporter, /* insideFunction= */ false)
+            return JsParser.parse(info, scope, reader, ThrowExceptionOnErrorReporter, /* insideFunction= */ false)
         }
         catch (e: Exception) {
             throw RuntimeException(e)
@@ -186,15 +187,3 @@ private fun replaceRootPackageVarWithModuleName(node: JsNode, moduleName: String
 
 private val CallableDescriptor.isInStdlib: Boolean
     get() = getExternalModuleName(this) == LibrarySourcesConfig.STDLIB_JS_MODULE_NAME
-
-private object MutedErrorReporter : ErrorReporter {
-    override fun warning(message: String?, sourceName: String?, line: Int, lineSource: String?, lineOffset: Int) {}
-
-    override fun error(message: String?, sourceName: String?, line: Int, lineSource: String?, lineOffset: Int) {
-        throw AbortParsingException()
-    }
-
-    override fun runtimeError(message: String?, sourceName: String?, line: Int, lineSource: String?, lineOffset: Int): EvaluatorException? {
-        throw AbortParsingException()
-    }
-}
