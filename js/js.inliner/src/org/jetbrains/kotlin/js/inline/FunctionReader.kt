@@ -50,9 +50,10 @@ public class FunctionReader(private val context: TranslationContext) {
 
     {
         val config = context.getConfig() as LibrarySourcesConfig
-        val libs = config.getLibraries().stream().map({File(it)})
-        val jsLibs = libs.filter({ it.exists() && LibraryUtils.isKotlinJavascriptLibrary(it) })
-
+        val libs = config.getLibraries().stream().map { File(it) }
+        val jsLibs = libs.filter { it.exists() && LibraryUtils.isKotlinJavascriptLibrary(it) }
+        LibraryUtils.
+        moduleJsFiles = hashMapOf()
     }
 
     private val functionCache = object : SLRUCache<CallableDescriptor, JsFunction>(50, 50) {
