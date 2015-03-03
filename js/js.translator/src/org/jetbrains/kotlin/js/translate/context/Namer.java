@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.js.translate.context;
 
 import com.google.dart.compiler.backend.js.ast.*;
+import com.intellij.openapi.util.text.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.CallableDescriptor;
@@ -25,7 +26,10 @@ import org.jetbrains.kotlin.idea.JetLanguage;
 import org.jetbrains.kotlin.name.FqName;
 import org.jetbrains.kotlin.resolve.DescriptorUtils;
 
+import java.util.Arrays;
+
 import static com.google.dart.compiler.backend.js.ast.AstPackage.JsObjectScope;
+import static org.jetbrains.kotlin.js.translate.utils.JsDescriptorUtils.getModuleName;
 import static org.jetbrains.kotlin.js.translate.utils.ManglingUtils.getStableMangledNameForDescriptor;
 import static org.jetbrains.kotlin.js.translate.utils.ManglingUtils.getSuggestedName;
 import static org.jetbrains.kotlin.resolve.DescriptorUtils.getFqNameSafe;
@@ -105,12 +109,23 @@ public final class Namer {
 
     @NotNull
     public static String getInlineStartTag(@NotNull CallableDescriptor functionDescriptor) {
-        return INLINE_START_TAG + "." + getFqNameSafe(functionDescriptor) + "." + getSuggestedName(functionDescriptor);
+        return formatInlineTag(functionDescriptor, INLINE_START_TAG);
     }
 
     @NotNull
     public static String getInlineEndTag(@NotNull CallableDescriptor functionDescriptor) {
-        return INLINE_END_TAG + "." + getFqNameSafe(functionDescriptor) + "." + getSuggestedName(functionDescriptor);
+        return formatInlineTag(functionDescriptor, INLINE_END_TAG);
+    }
+
+    @NotNull
+    private static String formatInlineTag(
+            @NotNull CallableDescriptor functionDescriptor,
+            @NotNull String tag
+    ) {
+        FqName fqName = getFqNameSafe(functionDescriptor);
+        String mangledName = getSuggestedName(functionDescriptor);
+        String moduleName = getModuleName(functionDescriptor);
+        return StringUtil.join(Arrays.asList(tag, moduleName, fqName, mangledName), ".");
     }
 
     @NotNull

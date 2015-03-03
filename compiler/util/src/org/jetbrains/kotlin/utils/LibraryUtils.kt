@@ -36,6 +36,7 @@ import javax.xml.bind.DatatypeConverter
 import java.util.zip.GZIPInputStream
 import java.util.regex.Pattern
 import java.util.ArrayList
+import org.jetbrains.kotlin.utils.fileUtils.*
 
 public object LibraryUtils {
     private val LOG = Logger.getInstance(javaClass<LibraryUtils>())
@@ -115,6 +116,29 @@ public object LibraryUtils {
                 copyJsFilesFromZip(file, outputLibraryJsPath)
             }
         }
+    }
+
+    platformStatic
+    public fun readJsFiles(libraries: List<String>): List<String> {
+        val files = arrayListOf<String>()
+        val libs = libraries.map { File(it) }.filter { it.exists() }
+
+        for (lib in libs) {
+            when {
+                lib.isDirectory() ->
+                    traverseDirectoryWithReportingIOException(lib) { (file, path) ->
+                        files.add(FileUtil.loadFile(file))
+                    }
+                FileUtil.isJarOrZip(lib) ->
+                    traverseArchiveWithReportingIOException(lib) { (content, path) ->
+                        files.add(content)
+                    }
+                else ->
+                    throw IllegalArgumentException("Unknown library format (directory or zip expected): $lib")
+            }
+        }
+
+        return files
     }
 
     platformStatic

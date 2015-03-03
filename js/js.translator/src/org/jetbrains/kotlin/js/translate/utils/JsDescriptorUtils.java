@@ -166,6 +166,14 @@ public final class JsDescriptorUtils {
         return type != null ? DescriptorUtilsPackage.getNameIfStandardType(type) : null;
     }
 
+    @NotNull
+    public static String getModuleName(@NotNull DeclarationDescriptor descriptor) {
+        String externalModuleName = getExternalModuleName(descriptor);
+        if (externalModuleName != null) return externalModuleName;
+
+        return getModuleNameFromDescriptorName(descriptor);
+    }
+
     @Nullable
     public static String getExternalModuleName(@NotNull DeclarationDescriptor descriptor) {
         if (isBuiltin(descriptor)) return BUILTINS_JS_MODULE_NAME;
@@ -175,11 +183,14 @@ public final class JsDescriptorUtils {
             element = descriptorToDeclaration(((PropertyAccessorDescriptor) descriptor).getCorrespondingProperty());
         }
 
-        if (element == null) {
-            ModuleDescriptor moduleDescriptor = DescriptorUtils.getContainingModule(descriptor);
-            String moduleName = moduleDescriptor.getName().asString();
-            return moduleName.substring(1, moduleName.length()-1);
-        }
+        if (element == null) return getModuleNameFromDescriptorName(descriptor);
+
         return element.getContainingFile().getUserData(LibrarySourcesConfig.EXTERNAL_MODULE_NAME);
+    }
+
+    private static String getModuleNameFromDescriptorName(DeclarationDescriptor descriptor) {
+        ModuleDescriptor moduleDescriptor = DescriptorUtils.getContainingModule(descriptor);
+        String moduleName = moduleDescriptor.getName().asString();
+        return moduleName.substring(1, moduleName.length() - 1);
     }
 }

@@ -94,6 +94,11 @@ public class LibrarySourcesConfig extends Config {
     }
 
     @NotNull
+    public List<String> getLibraries() {
+        return files;
+    }
+
+    @NotNull
     @Override
     protected List<JetFile> generateLibFiles() {
         if (files.isEmpty()) {

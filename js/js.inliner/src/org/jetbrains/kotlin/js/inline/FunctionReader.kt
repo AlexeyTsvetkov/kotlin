@@ -39,16 +39,27 @@ import org.jetbrains.kotlin.js.translate.utils.JsAstUtils
 import org.jetbrains.kotlin.js.translate.utils.JsDescriptorUtils.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.utils.PathUtil
+import org.jetbrains.kotlin.utils.*
 
 import com.intellij.util.containers.SLRUCache
 import java.io.*
 import java.net.URL
 
 public class FunctionReader(private val context: TranslationContext) {
-    private val sourceFileCache = object : SLRUCache<String, String>(10, 10) {
-        override fun createValue(path: String): String =
-                requireNotNull(readSourceFile(path), "Could not read file: $path")
+    private val moduleJsFiles = hashMapOf<String, MutableSet<String>>();
+
+    {
+        val config = context.getConfig() as LibrarySourcesConfig
+        val libs = config.getLibraries().map { File(it) }
+        val jsLibs = libs.filter { it.exists() && LibraryUtils.isKotlinJavascriptLibrary(it) }
+        val files = LibraryUtils.readJsFiles(jsLibs.map { it.getPath() }.toList())
+
+        for (file in files) {
+            file.definedModules.forEach {
+                val moduleFiles = moduleJsFiles.getOrPut(it, { hashSetOf() })
+                moduleFiles.add(file)
+            }
+        }
     }
 
     private val functionCache = object : SLRUCache<CallableDescriptor, JsFunction>(50, 50) {
@@ -56,34 +67,23 @@ public class FunctionReader(private val context: TranslationContext) {
                 requireNotNull(readFunction(descriptor), "Could not read function: $descriptor")
     }
 
-    public fun contains(descriptor: CallableDescriptor): Boolean =
-            context.getConfig().getModuleId() != LibrarySourcesConfig.STDLIB_JS_MODULE_NAME &&
-            descriptor.isInStdlib
+    public fun contains(descriptor: CallableDescriptor): Boolean {
+        val moduleName = getExternalModuleName(descriptor)
+        val currentModuleName = context.getConfig().getModuleId()
+        return currentModuleName != moduleName && moduleName in moduleJsFiles
+    }
 
     public fun get(descriptor: CallableDescriptor): JsFunction = functionCache.get(descriptor)
-
-    private fun readSourceFile(path: String): String? {
-        var reader: BufferedReader? = null
-
-        try{
-            val file = File(path)
-            val url = URL("jar:file:${file.getAbsolutePath()}!/kotlin.js")
-            val input= url.openStream()
-            reader = BufferedReader(InputStreamReader(input))
-            return reader?.readText()
-        } finally {
-            reader?.close()
-        }
-    }
 
     private fun readFunction(descriptor: CallableDescriptor): JsFunction? {
         if (descriptor !in this) return null
 
-        val jarPath = PathUtil.getKotlinPathsForDistDirectory().getJsStdLibJarPath();
-        val sourcePath = jarPath.getAbsolutePath()
-        val source = sourceFileCache[sourcePath]
+        val moduleName = getExternalModuleName(descriptor)
+        val files = moduleJsFiles[moduleName]
+        if (files == null) throw AssertionError("Module $moduleName files have not been read")
 
-        val function = readFunctionFromSource(descriptor, source)
+        val functions = files.stream().map { readFunctionFromSource(descriptor, it) }
+        val function = functions.firstOrNull { it != null }
         function?.markInlineArguments(descriptor)
         return function
     }
@@ -187,5 +187,17 @@ private fun replaceRootPackageVarWithModuleName(node: JsNode, moduleName: String
     visitor.accept(node)
 }
 
-private val CallableDescriptor.isInStdlib: Boolean
-    get() = getExternalModuleName(this) == LibrarySourcesConfig.STDLIB_JS_MODULE_NAME
+// TODO: add hash checksum to defineModule?
+private val DEFINE_MODULE_PATTERN = "\\w+\\.defineModule\\(\\s*['\"](\\w+)['\"]\\s*,\\s*_\\s*\\)".toRegex()
+
+private val String.definedModules: List<String>
+    get() {
+        val matcher = DEFINE_MODULE_PATTERN.matcher(this)
+        var modules = arrayListOf<String>()
+
+        while (matcher.find()) {
+            modules.add(matcher.group(1))
+        }
+
+        return modules
+    }
