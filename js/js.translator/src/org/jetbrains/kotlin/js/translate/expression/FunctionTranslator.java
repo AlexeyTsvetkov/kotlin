@@ -40,6 +40,7 @@ import static org.jetbrains.kotlin.js.translate.utils.BindingUtils.getFunctionDe
 import static org.jetbrains.kotlin.js.translate.utils.ErrorReportingUtils.message;
 import static org.jetbrains.kotlin.js.translate.utils.FunctionBodyTranslator.translateFunctionBody;
 import static org.jetbrains.kotlin.js.translate.utils.JsAstUtils.setParameters;
+import static org.jetbrains.kotlin.resolve.descriptorUtil.DescriptorUtilPackage.getIsEffectivelyPublicApi;
 
 public final class FunctionTranslator extends AbstractTranslator {
     @NotNull
@@ -97,7 +98,7 @@ public final class FunctionTranslator extends AbstractTranslator {
         JsName functionName = context().getNameForDescriptor(descriptor);
         generateFunctionObject();
 
-        if (isInlineAndEffectivlyPublic(descriptor)) {
+        if (shouldBeInlined(descriptor) && getIsEffectivelyPublicApi(descriptor)) {
             InlineMetadata metadata = InlineMetadata.compose(functionObject, descriptor);
             return new JsPropertyInitializer(functionName.makeRef(), metadata.getFunctionWithMetadata());
         }
@@ -147,20 +148,5 @@ public final class FunctionTranslator extends AbstractTranslator {
 
     private boolean isExtensionFunction() {
         return DescriptorUtils.isExtension(descriptor) && !(functionDeclaration instanceof JetFunctionLiteralExpression);
-    }
-
-    private static boolean isInlineAndEffectivlyPublic(@NotNull CallableDescriptor descriptor) {
-        if (!shouldBeInlined(descriptor) ||
-            descriptor.getVisibility() != Visibilities.PUBLIC) return false;
-
-
-        DeclarationDescriptor parent = descriptor.getContainingDeclaration();
-
-        if (parent instanceof PackageFragmentDescriptor) return true;
-
-        if (!(parent instanceof DeclarationDescriptorWithVisibility)) return false;
-
-        DeclarationDescriptorWithVisibility parentWithVisibility = (DeclarationDescriptorWithVisibility) parent;
-        return parentWithVisibility.getVisibility() == Visibilities.PUBLIC;
     }
 }
