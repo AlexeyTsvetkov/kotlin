@@ -46,7 +46,11 @@ import java.io.*
 import java.net.URL
 
 public class FunctionReader(private val context: TranslationContext) {
-    private val moduleJsFiles = hashMapOf<String, MutableSet<String>>();
+    /**
+     * Maps module name to .js file content, that contains this module definition.
+     * One file can contain more than one module definition.
+     */
+    private val moduleJsDefinition = hashMapOf<String, String>();
 
     {
         val config = context.getConfig() as LibrarySourcesConfig
@@ -56,8 +60,8 @@ public class FunctionReader(private val context: TranslationContext) {
 
         for (file in files) {
             file.definedModules.forEach {
-                val moduleFiles = moduleJsFiles.getOrPut(it, { hashSetOf() })
-                moduleFiles.add(file)
+                assert(it !in moduleJsDefinition) { "Module is defined in more, than one file" }
+                moduleJsDefinition[it] = file
             }
         }
     }
@@ -70,7 +74,7 @@ public class FunctionReader(private val context: TranslationContext) {
     public fun contains(descriptor: CallableDescriptor): Boolean {
         val moduleName = getExternalModuleName(descriptor)
         val currentModuleName = context.getConfig().getModuleId()
-        return currentModuleName != moduleName && moduleName in moduleJsFiles
+        return currentModuleName != moduleName && moduleName in moduleJsDefinition
     }
 
     public fun get(descriptor: CallableDescriptor): JsFunction = functionCache.get(descriptor)
@@ -79,11 +83,8 @@ public class FunctionReader(private val context: TranslationContext) {
         if (descriptor !in this) return null
 
         val moduleName = getExternalModuleName(descriptor)
-        val files = moduleJsFiles[moduleName]
-        if (files == null) throw AssertionError("Module $moduleName files have not been read")
-
-        val functions = files.stream().map { readFunctionFromSource(descriptor, it) }
-        val function = functions.firstOrNull { it != null }
+        val file = requireNotNull(moduleJsDefinition[moduleName], "Module $moduleName file have not been read")
+        val function = readFunctionFromSource(descriptor, file)
         function?.markInlineArguments(descriptor)
         return function
     }
