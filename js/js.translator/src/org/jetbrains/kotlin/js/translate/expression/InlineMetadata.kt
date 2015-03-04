@@ -24,6 +24,8 @@ import org.jetbrains.kotlin.js.translate.utils.JsDescriptorUtils.*
 
 import kotlin.platform.platformStatic
 
+private val METADATA_PROPERTIES_COUNT = 3
+
 public class InlineMetadata(
         val startTag: JsStringLiteral,
         val function: JsFunction,
@@ -85,7 +87,7 @@ public class InlineMetadata(
         }
 
         private fun decomposePropertiesList(properties: List<JsExpression>): InlineMetadata? {
-            if (properties.size() != 3) return null
+            if (properties.size() != METADATA_PROPERTIES_COUNT) return null
 
             val startTag = properties[0] as? JsStringLiteral
             val function = properties[1] as? JsFunction
