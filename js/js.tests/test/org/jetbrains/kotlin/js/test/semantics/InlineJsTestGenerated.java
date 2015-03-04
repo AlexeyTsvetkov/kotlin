@@ -270,6 +270,18 @@ public class InlineJsTestGenerated extends AbstractInlineJsTest {
         doTest(fileName);
     }
 
+    @TestMetadata("nullableReceiver.kt")
+    public void testNullableReceiver() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/inline/cases/nullableReceiver.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("nullableReceiverWithSideEffect.kt")
+    public void testNullableReceiverWithSideEffect() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/inline/cases/nullableReceiverWithSideEffect.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("params.kt")
     public void testParams() throws Exception {
         String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/inline/cases/params.kt");
