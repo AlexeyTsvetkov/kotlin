@@ -124,7 +124,8 @@ public class DirectiveTestUtils {
         void processEntry(@NotNull JsNode ast, @NotNull ArgumentsHelper arguments) throws Exception {
             String functionName = arguments.getPositionalArgument(0);
             JsExpression property = AstSearchUtil.getProperty(ast, functionName);
-            assert InlineMetadata.decompose(property) != null: "Inline metadata has not been generated for function " + functionName;
+            String message = "Inline metadata has not been generated for function " + functionName;
+            assertNotNull(message, InlineMetadata.decompose(property));
         }
     };
 
@@ -133,7 +134,8 @@ public class DirectiveTestUtils {
         void processEntry(@NotNull JsNode ast, @NotNull ArgumentsHelper arguments) throws Exception {
             String functionName = arguments.getPositionalArgument(0);
             JsExpression property = AstSearchUtil.getProperty(ast, functionName);
-            assert property instanceof JsFunction: "Inline metadata has been generated for not effectively public function " + functionName;
+            String message = "Inline metadata has been generated for not effectively public function " + functionName;
+            assertTrue(message, property instanceof JsFunction);
         }
     };
 
