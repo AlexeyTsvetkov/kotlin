@@ -189,7 +189,7 @@ private fun replaceRootPackageVarWithModuleName(node: JsNode, moduleName: String
 }
 
 // TODO: add hash checksum to defineModule?
-private val DEFINE_MODULE_PATTERN = "\\w+\\.defineModule\\(\\s*['\"](\\w+)['\"]\\s*,\\s*_\\s*\\)".toRegex()
+private val DEFINE_MODULE_PATTERN = "\\w+\\.defineModule\\(\\s*(['\"])(\\w+)\\1\\s*,\\s*_\\s*\\)".toRegex()
 
 private val String.definedModules: List<String>
     get() {
@@ -197,7 +197,7 @@ private val String.definedModules: List<String>
         var modules = arrayListOf<String>()
 
         while (matcher.find()) {
-            modules.add(matcher.group(1))
+            modules.add(matcher.group(2))
         }
 
         return modules
