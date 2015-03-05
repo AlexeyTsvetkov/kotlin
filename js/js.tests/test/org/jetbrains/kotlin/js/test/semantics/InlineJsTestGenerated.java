@@ -258,12 +258,6 @@ public class InlineJsTestGenerated extends AbstractInlineJsTest {
         doTest(fileName);
     }
 
-    @TestMetadata("mutualRecursion.kt")
-    public void testMutualRecursion() throws Exception {
-        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/inline/cases/mutualRecursion.kt");
-        doTest(fileName);
-    }
-
     @TestMetadata("noInlineLambda.kt")
     public void testNoInlineLambda() throws Exception {
         String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/inline/cases/noInlineLambda.kt");
