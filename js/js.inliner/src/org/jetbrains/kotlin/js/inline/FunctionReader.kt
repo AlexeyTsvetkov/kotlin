@@ -139,7 +139,10 @@ public class FunctionReader(private val context: TranslationContext) {
 
         val function = metadata.function
         val moduleName = getExternalModuleName(descriptor)!!
-        val replacements = hashMapOf(moduleRootVariable[moduleName] to moduleName.moduleReference,
+        val moduleNameLiteral = context.program().getStringLiteral(moduleName)
+        val moduleReference =  context.namer().getModuleReference(moduleNameLiteral)
+
+        val replacements = hashMapOf(moduleRootVariable[moduleName] to moduleReference,
                                      moduleKotlinVariable[moduleName] to Namer.KOTLIN_OBJECT_REF)
         replaceExternalNames(function, replacements)
         return function
@@ -218,11 +221,3 @@ private fun replaceExternalNames(function: JsFunction, externalReplacements: Map
 
     visitor.accept(function)
 }
-
-private val String.moduleReference: JsExpression
-    get() {
-        val program = JsProgram("<fake>")
-        val scope = JsRootScope(program)
-        val namer = Namer.newInstance(scope)
-        return namer.getModuleReference(program.getStringLiteral(this))
-    }
