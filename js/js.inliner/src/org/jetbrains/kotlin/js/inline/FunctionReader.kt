@@ -176,12 +176,13 @@ private fun replaceRootPackageVarWithModuleName(node: JsNode, moduleName: String
     val program = JsProgram("<fake>")
     val scope = JsRootScope(program)
     val namer = Namer.newInstance(scope)
+    val moduleReference = namer.getModuleReference(program.getStringLiteral(moduleName))
 
     val visitor = object: JsVisitorWithContextImpl() {
         override fun endVisit(x: JsNameRef?, ctx: JsContext?) {
             if (x?.getQualifier() != null || Namer.getRootPackageName() != x?.getIdent()) return
 
-            ctx?.replaceMe(JsAstUtils.moduleReference(moduleName, namer, program))
+            ctx?.replaceMe(moduleReference)
         }
     }
 

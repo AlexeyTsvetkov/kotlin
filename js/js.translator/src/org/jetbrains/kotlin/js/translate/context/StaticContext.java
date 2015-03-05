@@ -481,7 +481,7 @@ public final class StaticContext {
                     }
 
                     return JsAstUtils.replaceRootReference(
-                            result, JsAstUtils.moduleReference(moduleName, namer, program));
+                            result, namer.getModuleReference(program.getStringLiteral(moduleName)));
                 }
             };
             Rule<JsExpression> constructorOrClassObjectHasTheSameQualifierAsTheClass = new Rule<JsExpression>() {

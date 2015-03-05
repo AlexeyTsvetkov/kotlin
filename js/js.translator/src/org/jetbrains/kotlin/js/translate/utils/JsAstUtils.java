@@ -477,13 +477,4 @@ public final class JsAstUtils {
 
         return new SmartList<JsStatement>(statement);
     }
-
-    @NotNull
-    public static JsExpression moduleReference(
-            @NotNull String moduleName,
-            @NotNull Namer namer,
-            @NotNull JsProgram program
-    ) {
-        return new JsArrayAccess(namer.kotlin("modules"), program.getStringLiteral(moduleName));
-    }
 }
