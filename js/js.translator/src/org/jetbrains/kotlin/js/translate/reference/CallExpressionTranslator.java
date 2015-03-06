@@ -17,14 +17,13 @@
 package org.jetbrains.kotlin.js.translate.reference;
 
 import com.google.dart.compiler.backend.js.ast.*;
-import com.google.dart.compiler.common.SourceInfoImpl;
-import com.google.gwt.dev.js.JsParser;
 import com.google.gwt.dev.js.ThrowExceptionOnErrorReporter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.builtins.InlineUtil;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.*;
+import org.jetbrains.kotlin.js.parser.ParserPackage;
 import org.jetbrains.kotlin.js.translate.callTranslator.CallTranslator;
 import org.jetbrains.kotlin.js.translate.context.TranslationContext;
 import org.jetbrains.kotlin.psi.JetCallExpression;
@@ -41,7 +40,6 @@ import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluat
 import org.jetbrains.kotlin.types.JetType;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -158,10 +156,7 @@ public final class CallExpressionTranslator extends AbstractCallExpressionTransl
         List<JsStatement> statements = new ArrayList<JsStatement>();
 
         try {
-            SourceInfoImpl info = new SourceInfoImpl(null, 0, 0, 0, 0);
-            JsScope scope = context().scope();
-            StringReader reader = new StringReader(jsCode);
-            statements.addAll(JsParser.parse(info, scope, reader, ThrowExceptionOnErrorReporter.INSTANCE$, /* insideFunction= */ true));
+            ParserPackage.parse(jsCode, ThrowExceptionOnErrorReporter.INSTANCE$, /* insideFunction= */ true);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -24,20 +24,15 @@ import org.jetbrains.kotlin.js.translate.utils.JsDescriptorUtils.*
 
 import kotlin.platform.platformStatic
 
-private val METADATA_PROPERTIES_COUNT = 3
+private val METADATA_PROPERTIES_COUNT = 2
 
-public class InlineMetadata(
-        val startTag: JsStringLiteral,
-        val function: JsFunction,
-        val endTag: JsStringLiteral
-) {
+public class InlineMetadata(val tag: JsStringLiteral, val function: JsFunction) {
     class object {
         platformStatic
         fun compose(function: JsFunction, descriptor: CallableDescriptor): InlineMetadata {
             val program = function.getScope().getProgram()
-            val startTag = program.getStringLiteral(Namer.getInlineStartTag(descriptor))
-            val endTag = program.getStringLiteral(Namer.getInlineEndTag(descriptor))
-            return InlineMetadata(startTag, function, endTag)
+            val startTag = program.getStringLiteral(Namer.getFunctionTag(descriptor))
+            return InlineMetadata(startTag, function)
         }
 
         /**
@@ -51,7 +46,7 @@ public class InlineMetadata(
          *
          * @see Namer#getInlineStartTag
          * @see Namer#getInlineEndTag
-         * @see com.google.gwt.dev.js.JsParser
+         * @see com.google.gwt.dev.js.JsAstMapper
          */
         platformStatic
         fun decompose(expression: JsExpression?): InlineMetadata? =
@@ -95,13 +90,13 @@ public class InlineMetadata(
 
             if (startTag == null || function == null || endTag == null) return null
 
-            return InlineMetadata(startTag, function, endTag)
+            return InlineMetadata(startTag, function)
         }
     }
 
     public val functionWithMetadata: JsExpression
         get() {
-            val propertiesList = listOf(startTag, function, endTag)
+            val propertiesList = listOf(tag, function)
             return JsInvocation(Namer.CREATE_INLINE_FUNCTION, propertiesList)
         }
 }
