@@ -781,6 +781,10 @@ fun main(args: Array<String>) {
             model("inlineStdlib/cases")
         }
 
+        testClass(javaClass<AbstractInlineExpressionDecompositionTest>()) {
+            model("inlineExpressionDecomposition/cases")
+        }
+
         testClass(javaClass<AbstractLabelTest>()) {
             model("labels/cases")
         }
