@@ -190,7 +190,12 @@ public class JsInliner extends JsVisitorWithContextImpl {
         /** @see #lastStatementWasShifted */
         statementContext.shiftCurrentStatementForward();
         InsertionPoint<JsStatement> insertionPoint = statementContext.getInsertionPoint();
-        insertionPoint.insertAllAfter(flattenStatement(inlineableBody));
+        List<JsStatement> inlineableBodyStatements = flattenStatement(inlineableBody);
+
+        if (!inlineableBodyStatements.isEmpty()) {
+            List<> extractExpressionFromStatement(call, statementContext.getCurrentStatement());
+            insertionPoint.insertAllAfter(inlineableBodyStatements);
+        }
     }
 
     /**
