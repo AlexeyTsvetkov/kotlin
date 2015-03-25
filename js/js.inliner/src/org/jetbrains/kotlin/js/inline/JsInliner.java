@@ -176,6 +176,7 @@ public class JsInliner extends JsVisitorWithContextImpl {
         JsExpression resultExpression = inlineableResult.getResultExpression();
         StatementContext statementContext = inliningContext.getStatementContext();
         accept(inlineableBody);
+        InsertionPoint<JsStatement> insertionPoint = statementContext.getInsertionPoint();
 
         /**
          * Assumes, that resultExpression == null, when result is not needed.
@@ -185,17 +186,14 @@ public class JsInliner extends JsVisitorWithContextImpl {
             statementContext.removeCurrentStatement();
         } else {
             context.replaceMe(resultExpression);
+            JsScope scope = getFunctionContext().getScope();
+            JsVars vars = extractExpressionsBefore(scope, call, statementContext.getCurrentStatement());
+            insertionPoint.insertBefore(vars);
         }
 
         /** @see #lastStatementWasShifted */
         statementContext.shiftCurrentStatementForward();
-        InsertionPoint<JsStatement> insertionPoint = statementContext.getInsertionPoint();
-        List<JsStatement> inlineableBodyStatements = flattenStatement(inlineableBody);
-
-        if (!inlineableBodyStatements.isEmpty()) {
-            List<> extractExpressionFromStatement(call, statementContext.getCurrentStatement());
-            insertionPoint.insertAllAfter(inlineableBodyStatements);
-        }
+        insertionPoint.insertAllAfter(flattenStatement(inlineableBody));
     }
 
     /**

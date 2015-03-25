@@ -60,6 +60,12 @@ public class InlineExpressionDecompositionTestGenerated extends AbstractInlineEx
         doTest(fileName);
     }
 
+    @TestMetadata("binaryOperator.kt")
+    public void testBinaryOperator() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/inlineExpressionDecomposition/cases/binaryOperator.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("conditional.kt")
     public void testConditional() throws Exception {
         String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/inlineExpressionDecomposition/cases/conditional.kt");
