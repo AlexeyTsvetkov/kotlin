@@ -841,6 +841,8 @@ public class JsToStringGenerationVisitor extends JsVisitor {
 
     @Override
     public void visitVars(@NotNull JsVars vars) {
+        if (vars.isEmpty()) return;
+
         var();
         space();
         boolean sep = false;
