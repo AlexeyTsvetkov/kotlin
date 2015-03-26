@@ -76,10 +76,11 @@ class ExpressionExtractor(private val scope: JsScope) : JsVisitor() {
 
     override fun visitBinaryExpression(x: JsBinaryOperation) {
         if (child === x.getArg1()) return
+        assert(child === x.getArg2()) { "$x does not contain $child" }
 
         val arg1 = x.getArg1()
         if (canHaveSideEffect(arg1)) {
-            x.setArg1(addFirstNewTmpVar(arg1))
+            x.setArg1(newTemporary(arg1))
         }
     }
 
@@ -88,22 +89,52 @@ class ExpressionExtractor(private val scope: JsScope) : JsVisitor() {
     }
 
     override fun visitArray(x: JsArrayLiteral) {
-        super.visitArray(x)
+        extractChildPredecessors(x.getExpressions())
     }
 
     override fun visitConditional(x: JsConditional) {
         super.visitConditional(x)
     }
 
+    /**
+     * It's ok to call inlineFun in qualifier of [JsInvocation], no extraction needed.
+     * If inlineFun call is in arguments, we need to extract preceding arguments,
+     * that can have side effects (and qualifier in case it can have side effect).
+     *
+     * So "noInline1().noInline2(noInline3(), inlineFun())" will transform to:
+     *
+     *      var tmp$0 = noInline1();
+     *      var tmp$1 = noInline3();
+     *      // inlineFun body...
+     *      tmp$0.noInline2(tmp$1, inlineFunResult);
+     */
     override fun visitInvocation(invocation: JsInvocation) {
-        super.visitInvocation(invocation)
+        val qualifier = invocation.getQualifier()
+        if (child === qualifier) return
+
+        extractChildPredecessors(invocation.getArguments())
+        if (canHaveSideEffect(qualifier)) {
+            invocation.setQualifier(newTemporary(qualifier))
+        }
     }
 
     override fun visitNew(x: JsNew) {
         super.visitNew(x)
     }
 
-    private fun addFirstNewTmpVar(initExpression: JsExpression): JsNameRef {
+    private fun extractChildPredecessors(expressions: MutableList<JsExpression>) {
+        for ((i, expr) in expressions.withIndex()) {
+            if (expr === child) return
+
+            if (!canHaveSideEffect(expr)) continue
+
+            expressions[i] = newTemporary(expr)
+        }
+
+        throw AssertionError("$expressions does not contain $child")
+    }
+
+    private fun newTemporary(initExpression: JsExpression): JsNameRef {
         val name = scope.declareTemporary()
         val variable = JsVars.JsVar(name, initExpression)
         additionalVars.getVars().add(0, variable)
