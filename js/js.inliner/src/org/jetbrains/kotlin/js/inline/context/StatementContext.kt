@@ -31,13 +31,6 @@ abstract class StatementContext {
         statementContext.replaceMe(getEmptyStatement())
     }
 
-    open public fun shiftCurrentStatementForward() {
-        val statementContext = getCurrentStatementContext()
-        val currentStatement = getCurrentStatement()
-        statementContext.insertAfter(currentStatement)
-        statementContext.replaceMe(getEmptyStatement())
-    }
-
     public fun getCurrentStatement(): JsStatement {
         val statementContext = getCurrentStatementContext()
         return statementContext.getCurrentNode() as JsStatement
