@@ -26,8 +26,7 @@ import com.intellij.util.SmartList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * A visitor for iterating through and modifying an AST.
@@ -40,25 +39,33 @@ public class JsVisitorWithContextImpl extends JsVisitorWithContext {
         private List<T> collection;
         private int index;
 
+        // Those are reset in every iteration of traverse()
+        private final List<T> previous = new SmartList<T>();
+        private final List<T> next = new SmartList<T>();
+        private boolean removed = false;
+        private boolean changed = false;
+
         @Override
-        public <R extends T> void insertAfter(R node) {
-            //noinspection unchecked
-            collection.add(index + 1, (T) node);
+        public <R extends T> void addPrevious(R node) {
+            changed = true;
+            previous.add(node);
         }
 
         @Override
-        public <R extends T> void insertBefore(R node) {
-            //noinspection unchecked
-            collection.add(index++, (T) node);
+        public <R extends T> void addNext(R node) {
+            changed = true;
+            next.add(node);
         }
 
         @Override
         public void removeMe() {
-            collection.remove(index--);
+            changed = true;
+            removed = true;
         }
 
         @Override
         public <R extends T> void replaceMe(R node) {
+            changed = true;
             checkReplacement(collection.get(index), node);
             collection.set(index, node);
         }
@@ -73,11 +80,29 @@ public class JsVisitorWithContextImpl extends JsVisitorWithContext {
             return null;
         }
 
-        protected void traverse(List<T> collection) {
-            this.collection = collection;
-            for (index = 0; index < collection.size(); ++index) {
-                T node = collection.get(index);
+        protected void traverse(List<T> nodes) {
+            assert previous.isEmpty(): "insertBefore() was called before traverse()";
+            assert next.isEmpty(): "insertAfter() was called before traverse()";
+            this.collection = nodes;
+            List<T> changedNodes = new ArrayList<T>(collection.size());
+
+            for (index = 0; index < nodes.size(); ++index) {
+                removed = false;
+                previous.clear();
+                next.clear();
+                T node = nodes.get(index);
                 doTraverse(node, this);
+
+                changedNodes.addAll(previous);
+                if (!removed) {
+                    changedNodes.add(nodes.get(index));
+                }
+                changedNodes.addAll(next);
+            }
+
+            if (changed) {
+                nodes.clear();
+                nodes.addAll(changedNodes);
             }
         }
     }
@@ -87,16 +112,6 @@ public class JsVisitorWithContextImpl extends JsVisitorWithContext {
 
     private class NodeContext<T extends JsNode> extends JsContext<T> {
         protected T node;
-
-        @Override
-        public <R extends T> void insertAfter(R node) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <R extends T> void insertBefore(R node) {
-            throw new UnsupportedOperationException();
-        }
 
         @Override
         public void removeMe() {
