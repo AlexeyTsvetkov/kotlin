@@ -16,6 +16,7 @@ fun test(x: Int, y: Int): Int {
 }
 
 fun box(): String {
+    assertEquals(3, test(1, 2))
 
     return "OK"
 }
