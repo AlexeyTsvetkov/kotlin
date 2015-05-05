@@ -35,6 +35,12 @@ public class ReifiedTestGenerated extends AbstractReifiedTest {
         JetTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("js/js.translator/testData/reified/cases"), Pattern.compile("^(.+)\\.kt$"), true);
     }
 
+    @TestMetadata("callChain.kt")
+    public void testCallChain() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/callChain.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("innerObject.kt")
     public void testInnerObject() throws Exception {
         String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/innerObject.kt");
