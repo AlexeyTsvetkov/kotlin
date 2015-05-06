@@ -22,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.js.translate.context.Namer;
 import org.jetbrains.kotlin.js.translate.context.TranslationContext;
+import org.jetbrains.kotlin.js.translate.context.UsageTracker;
 import org.jetbrains.kotlin.js.translate.general.AbstractTranslator;
 import org.jetbrains.kotlin.js.translate.general.Translation;
 import org.jetbrains.kotlin.js.patterns.NamePredicate;
@@ -134,28 +135,9 @@ public final class PatternTranslator extends AbstractTranslator {
                 "Expected type parameter " + typeParameter +
                 " to be contained in CallableDescriptor, actual: " + containingDeclaration.getClass();
 
-        CallableDescriptor containingDescriptor = (CallableDescriptor) containingDeclaration;
-        int index = countReifiedTypesBefore(containingDescriptor.getTypeParameters(), typeParameter.getIndex());
-        JsFunction containingFunction = context().getFunctionObject(containingDescriptor);
-        JsParameter isTypeFunParameter = containingFunction.getParameters().get(index);
-        return isTypeFunParameter.getName().makeRef();
-    }
-
-    private static int countReifiedTypesBefore(
-            @NotNull List<TypeParameterDescriptor> typeParameters,
-            int typeParamIndex
-    ) {
-        int count = 0;
-
-        for (TypeParameterDescriptor typeParameter : typeParameters) {
-            if (typeParameter.getIndex() >= typeParamIndex) break;
-
-            if (typeParameter.isReified()) {
-                count++;
-            }
-        }
-
-        return count;
+        JsExpression alias = context().getAliasForDescriptor(typeParameter);
+        assert alias != null: "No alias found for reified type parameter: " + typeParameter;
+        return alias;
     }
 
     @NotNull

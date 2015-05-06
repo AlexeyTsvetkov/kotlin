@@ -77,6 +77,12 @@ public class ReifiedTestGenerated extends AbstractReifiedTest {
         doTest(fileName);
     }
 
+    @TestMetadata("lambda.kt")
+    public void testLambda() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/lambda.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("noValueParameters.kt")
     public void testNoValueParameters() throws Exception {
         String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/noValueParameters.kt");
