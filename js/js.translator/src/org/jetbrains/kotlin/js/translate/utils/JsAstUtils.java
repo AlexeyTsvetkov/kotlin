@@ -329,6 +329,11 @@ public final class JsAstUtils {
     }
 
     @NotNull
+    public static JsBinaryOperation typeof(@NotNull JsExpression expression, @NotNull JsStringLiteral string) {
+        return equality(new JsPrefixOperation(JsUnaryOperator.TYPEOF, expression), string);
+    }
+
+    @NotNull
     public static JsVars newVar(@NotNull JsName name, @Nullable JsExpression expr) {
         return new JsVars(new JsVars.JsVar(name, expr));
     }
