@@ -100,4 +100,10 @@ public class ReifiedTestGenerated extends AbstractReifiedTest {
         String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/noValueParameters.kt");
         doTest(fileName);
     }
+
+    @TestMetadata("parameterSwap.kt")
+    public void testParameterSwap() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/parameterSwap.kt");
+        doTest(fileName);
+    }
 }
