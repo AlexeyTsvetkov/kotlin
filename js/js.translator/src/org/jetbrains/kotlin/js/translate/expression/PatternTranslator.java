@@ -22,7 +22,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.js.translate.context.Namer;
 import org.jetbrains.kotlin.js.translate.context.TranslationContext;
-import org.jetbrains.kotlin.js.translate.context.UsageTracker;
 import org.jetbrains.kotlin.js.translate.general.AbstractTranslator;
 import org.jetbrains.kotlin.js.translate.general.Translation;
 import org.jetbrains.kotlin.js.patterns.NamePredicate;
@@ -34,8 +33,6 @@ import org.jetbrains.kotlin.psi.JetIsExpression;
 import org.jetbrains.kotlin.psi.JetTypeReference;
 import org.jetbrains.kotlin.resolve.DescriptorUtils;
 import org.jetbrains.kotlin.types.JetType;
-
-import java.util.List;
 
 import static org.jetbrains.kotlin.js.translate.utils.BindingUtils.getTypeByReference;
 import static org.jetbrains.kotlin.js.translate.utils.JsAstUtils.*;
