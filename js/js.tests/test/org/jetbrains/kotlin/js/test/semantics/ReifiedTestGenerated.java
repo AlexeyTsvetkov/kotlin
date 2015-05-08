@@ -89,6 +89,12 @@ public class ReifiedTestGenerated extends AbstractReifiedTest {
         doTest(fileName);
     }
 
+    @TestMetadata("multipleTypeParameters.kt")
+    public void testMultipleTypeParameters() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/multipleTypeParameters.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("noValueParameters.kt")
     public void testNoValueParameters() throws Exception {
         String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/noValueParameters.kt");
