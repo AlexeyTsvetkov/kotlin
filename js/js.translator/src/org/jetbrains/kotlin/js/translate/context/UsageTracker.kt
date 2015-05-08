@@ -72,7 +72,7 @@ class UsageTracker(
     }
 }
 
-public fun UsageTracker.getNameForCapturedDescriptor(descriptor: CallableDescriptor): JsName? = capturedDescriptorToJsName.get(descriptor)
+public fun UsageTracker.getNameForCapturedDescriptor(descriptor: DeclarationDescriptor): JsName? = capturedDescriptorToJsName.get(descriptor)
 
 public fun UsageTracker.hasCapturedExceptContaining(): Boolean {
     val hasNotCaptured =
