@@ -36,10 +36,10 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.types.expressions.OperatorConventions
 import java.util.ArrayList
 
-public fun CallArgumentTranslator.ArgumentsInfo.argsWithReceiver(receiver: JsExpression?): List<JsExpression> {
+public fun CallArgumentTranslator.ArgumentsInfo.argsWithReceiver(receiver: JsExpression): List<JsExpression> {
     val allArguments = ArrayList<JsExpression>(1 + reifiedArguments.size() + valueArguments.size())
     allArguments.addAll(reifiedArguments)
-    receiver?.let { allArguments.add(it) }
+    allArguments.add(receiver)
     allArguments.addAll(valueArguments)
     return allArguments
 }
@@ -115,13 +115,13 @@ object DefaultFunctionCallCase : FunctionCallCase {
                     functionRef
                 }
 
-        return JsInvocation(referenceToCall, argumentsInfo.argsWithReceiver(extensionReceiver))
+        return JsInvocation(referenceToCall, argumentsInfo.argsWithReceiver(extensionReceiver!!))
     }
 
     override fun FunctionCallInfo.bothReceivers(): JsExpression {
         // TODO: think about crazy case: spreadOperator + native
         val functionRef = JsNameRef(functionName, dispatchReceiver!!)
-        return JsInvocation(functionRef, argumentsInfo.argsWithReceiver(extensionReceiver))
+        return JsInvocation(functionRef, argumentsInfo.argsWithReceiver(extensionReceiver!!))
     }
 }
 
@@ -197,7 +197,7 @@ object InvokeIntrinsic : FunctionCallCase {
      *      extLambda.call(obj, some, args)
      */
     override fun FunctionCallInfo.bothReceivers(): JsExpression {
-        return JsInvocation(Namer.getFunctionCallRef(dispatchReceiver!!), argumentsInfo.argsWithReceiver(extensionReceiver))
+        return JsInvocation(Namer.getFunctionCallRef(dispatchReceiver!!), argumentsInfo.argsWithReceiver(extensionReceiver!!))
     }
 }
 
