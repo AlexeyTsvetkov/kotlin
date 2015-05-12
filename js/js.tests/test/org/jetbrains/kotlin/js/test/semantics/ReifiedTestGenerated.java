@@ -53,6 +53,12 @@ public class ReifiedTestGenerated extends AbstractReifiedTest {
         doTest(fileName);
     }
 
+    @TestMetadata("extensionMethod.kt")
+    public void testExtensionMethod() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/extensionMethod.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("innerObject.kt")
     public void testInnerObject() throws Exception {
         String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/innerObject.kt");
@@ -92,6 +98,12 @@ public class ReifiedTestGenerated extends AbstractReifiedTest {
     @TestMetadata("lambda.kt")
     public void testLambda() throws Exception {
         String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/lambda.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("method.kt")
+    public void testMethod() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/method.kt");
         doTest(fileName);
     }
 
