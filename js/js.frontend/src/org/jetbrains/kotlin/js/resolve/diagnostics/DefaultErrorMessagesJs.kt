@@ -38,6 +38,7 @@ private val DIAGNOSTIC_FACTORY_TO_RENDERER by Delegates.lazy {
         put(ErrorsJs.REFERENCE_TO_BUILTIN_MEMBERS_NOT_SUPPORTED, "Callable references for builtin members are not supported yet: ''{0}''", RenderFirstLineOfElementText)
         put(ErrorsJs.NON_TOPLEVEL_CLASS_DECLARATION, "Non-toplevel {0} declarations not supported yet", Renderers.STRING)
         put(ErrorsJs.JSCODE_NO_JAVASCRIPT_PRODUCED, "Argument must be non-empty JavaScript code")
+        put(ErrorsJs.COULD_NOT_INLINE_FROM_LIBRARY, "Could not inline call: function definition was not found in compiled files")
 
         this
     }

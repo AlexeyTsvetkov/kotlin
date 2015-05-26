@@ -25,18 +25,16 @@ import kotlin.jvm.functions.Function1;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
-import org.jetbrains.kotlin.descriptors.PackageFragmentProvider;
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl;
-import org.jetbrains.kotlin.js.analyze.TopDownAnalyzerFacadeForJS;
-import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.psi.JetFile;
-import org.jetbrains.kotlin.serialization.js.KotlinJavascriptSerializationUtil;
 import org.jetbrains.kotlin.storage.LockBasedStorageManager;
 import org.jetbrains.kotlin.utils.KotlinJavascriptMetadata;
 import org.jetbrains.kotlin.utils.KotlinJavascriptMetadataUtils;
 
 import java.util.Collection;
 import java.util.List;
+
+import static org.jetbrains.kotlin.js.descriptorUtils.DescriptorUtilsPackage.ModuleDescriptor;
 
 /**
  * Base class representing a configuration of translator.
@@ -120,7 +118,7 @@ public abstract class Config {
 
         moduleDescriptors = new SmartList<ModuleDescriptorImpl>();
         for (KotlinJavascriptMetadata metadataEntry : metadata) {
-            moduleDescriptors.add(createModuleDescriptor(metadataEntry));
+            moduleDescriptors.add(ModuleDescriptor(metadataEntry, storageManager));
         }
         for (ModuleDescriptorImpl module : moduleDescriptors) {
             setDependencies(module, moduleDescriptors);
@@ -145,23 +143,6 @@ public abstract class Config {
 
         init(sourceFilesFromLibraries, metadata);
         initialized = true;
-    }
-
-    private ModuleDescriptorImpl createModuleDescriptor(KotlinJavascriptMetadata metadata) {
-        assert metadata.getIsAbiVersionCompatible() :
-                "expected abi version " + KotlinJavascriptMetadataUtils.ABI_VERSION + ", but metadata.abiVersion = " + metadata.getAbiVersion();
-
-        ModuleDescriptorImpl moduleDescriptor = new ModuleDescriptorImpl(
-                Name.special("<" + metadata.getModuleName() + ">"), storageManager,
-                TopDownAnalyzerFacadeForJS.JS_MODULE_PARAMETERS
-        );
-
-        PackageFragmentProvider provider =
-                KotlinJavascriptSerializationUtil.createPackageFragmentProvider(moduleDescriptor, metadata.getBody(), storageManager);
-
-        moduleDescriptor.initialize(provider != null ? provider : PackageFragmentProvider.Empty.INSTANCE$);
-
-        return moduleDescriptor;
     }
 
     private static void setDependencies(ModuleDescriptorImpl module, List<ModuleDescriptorImpl> modules) {

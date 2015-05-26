@@ -17,10 +17,11 @@
 package org.jetbrains.kotlin.js.inline
 
 import com.google.dart.compiler.backend.js.ast.*
+import com.google.dart.compiler.backend.js.ast.metadata.descriptor
 import com.google.dart.compiler.backend.js.ast.metadata.hasDefaultValue
 import com.google.dart.compiler.backend.js.ast.metadata.inlineStrategy
+import com.google.dart.compiler.backend.js.ast.metadata.psiElement
 import com.google.gwt.dev.js.ThrowExceptionOnErrorReporter
-import com.intellij.util.containers.SLRUCache
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
@@ -28,15 +29,16 @@ import org.jetbrains.kotlin.js.config.LibrarySourcesConfig
 import org.jetbrains.kotlin.js.inline.util.IdentitySet
 import org.jetbrains.kotlin.js.inline.util.isCallInvocation
 import org.jetbrains.kotlin.js.parser.parseFunction
+import org.jetbrains.kotlin.js.resolve.diagnostics.ErrorsJs
 import org.jetbrains.kotlin.js.translate.context.Namer
 import org.jetbrains.kotlin.js.translate.context.TranslationContext
-import org.jetbrains.kotlin.js.translate.reference.CallExpressionTranslator
 import org.jetbrains.kotlin.js.translate.utils.JsDescriptorUtils.getExternalModuleName
+import org.jetbrains.kotlin.psi.JetExpression
 import org.jetbrains.kotlin.resolve.descriptorUtil.isExtension
 import org.jetbrains.kotlin.resolve.inline.InlineStrategy
 import org.jetbrains.kotlin.utils.LibraryUtils
-import org.jetbrains.kotlin.utils.sure
 import java.io.File
+import java.util.WeakHashMap
 
 // TODO: add hash checksum to defineModule?
 /**
@@ -64,6 +66,8 @@ public class FunctionReader(private val context: TranslationContext) {
      */
     private val moduleKotlinVariable = hashMapOf<String, String>()
 
+    private val failedToLoad = hashSetOf<JsInvocation>()
+
     init {
         val config = context.getConfig() as LibrarySourcesConfig
         val libs = config.getLibraries().map { File(it) }
@@ -83,24 +87,40 @@ public class FunctionReader(private val context: TranslationContext) {
         }
     }
 
-    private val functionCache = object : SLRUCache<CallableDescriptor, JsFunction>(50, 50) {
-        override fun createValue(descriptor: CallableDescriptor): JsFunction =
-                readFunction(descriptor).sure { "Could not read function: $descriptor" }
-    }
+    private val functions = WeakHashMap<CallableDescriptor, JsFunction?>()
 
-    public fun contains(descriptor: CallableDescriptor): Boolean {
+    public fun isCallToFunctionFromLibrary(call: JsInvocation): Boolean {
+        val descriptor = call.descriptor ?: return false
         val moduleName = getExternalModuleName(descriptor)
         val currentModuleName = context.getConfig().getModuleId()
-        return currentModuleName != moduleName && moduleName in moduleJsDefinition
+        return moduleName != null && currentModuleName != moduleName
     }
 
-    public fun get(descriptor: CallableDescriptor): JsFunction = functionCache.get(descriptor)
-    
-    private fun readFunction(descriptor: CallableDescriptor): JsFunction? {
-        if (descriptor !in this) return null
+    public fun getLibraryFunctionDefinition(call: JsInvocation): JsFunction? {
+        if (call in failedToLoad) return null
 
+        val descriptor = call.descriptor!!
+        val function = functions.getOrPut(descriptor) { readFunction(descriptor) }
+
+        if (function == null) {
+            val psiElement = call.psiElement
+
+            if (psiElement !is JetExpression) {
+                val className = psiElement?.javaClass?.getName()
+                throw AssertionError("Expected JetExpression, got $className")
+            }
+
+            val diagnostic = ErrorsJs.COULD_NOT_INLINE_FROM_LIBRARY.on(psiElement)
+            context.bindingTrace().report(diagnostic)
+            failedToLoad.add(call)
+        }
+
+        return function
+    }
+
+    private fun readFunction(descriptor: CallableDescriptor): JsFunction? {
         val moduleName = getExternalModuleName(descriptor)
-        val file = moduleJsDefinition[moduleName].sure { "Module $moduleName file have not been read" }
+        val file = moduleJsDefinition[moduleName] ?: return null
         val function = readFunctionFromSource(descriptor, file)
         function?.markInlineArguments(descriptor)
         function?.markArgumentsWithDefaultValue(descriptor)
