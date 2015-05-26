@@ -145,7 +145,11 @@ fun main(args: Array<String>) {
         }
 
         testClass(javaClass<AbstractJetDiagnosticsTestWithJsStdLibAndBackendCompilation>()) {
-            model("diagnostics/testsWithJsStdLibAndBackendCompilation")
+            model("diagnostics/testsWithJsStdLibAndBackendCompilation/inline")
+        }
+
+        testClass(javaClass<AbstractJetDiagnosticJsInlineWithRemovedLib>()) {
+            model("diagnostics/testsWithJsStdLibAndBackendCompilation/inlineFailWarning", extension = "lib.kt", recursive = false)
         }
 
         testClass(javaClass<AbstractResolveTest>()) {

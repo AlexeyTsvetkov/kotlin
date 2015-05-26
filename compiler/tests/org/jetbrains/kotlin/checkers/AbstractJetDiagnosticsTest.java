@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.PsiElement;
+import com.intellij.util.SmartList;
 import kotlin.KotlinPackage;
 import kotlin.jvm.functions.Function1;
 import org.jetbrains.annotations.NotNull;
@@ -315,26 +316,28 @@ public abstract class AbstractJetDiagnosticsTest extends BaseDiagnosticsTest {
         Map<TestModule, ModuleDescriptorImpl> modules = new HashMap<TestModule, ModuleDescriptorImpl>();
 
         for (TestModule testModule : groupedByModule.keySet()) {
-            ModuleDescriptorImpl module =
-                    testModule == null ?
-                    createSealedModule(storageManager) :
-                    createModule("<" + testModule.getName() + ">", storageManager);
+            String moduleName = "<test-module>";
 
-            modules.put(testModule, module);
-        }
-
-        for (TestModule testModule : groupedByModule.keySet()) {
-            if (testModule == null) continue;
-
-            ModuleDescriptorImpl module = modules.get(testModule);
-            List<ModuleDescriptorImpl> dependencies = new ArrayList<ModuleDescriptorImpl>();
-            dependencies.add(module);
-            for (TestModule dependency : testModule.getDependencies()) {
-                dependencies.add(modules.get(dependency));
+            if (testModule != null) {
+                moduleName = "<" + testModule.getName() + ">";
             }
 
-            dependencies.add(KotlinBuiltIns.getInstance().getBuiltInsModule());
-            module.setDependencies(dependencies);
+            modules.put(testModule, createModule(moduleName, storageManager));
+        }
+
+        List<ModuleDescriptorImpl> commonDependencies = commonDependencies(storageManager);
+
+        for (TestModule testModule : groupedByModule.keySet()) {
+            ModuleDescriptorImpl module = modules.get(testModule);
+            List<ModuleDescriptorImpl> dependencies = new SmartList<ModuleDescriptorImpl>(commonDependencies);
+
+            if (testModule != null) {
+                for (TestModule dependency : testModule.getDependencies()) {
+                    dependencies.add(modules.get(dependency));
+                }
+            }
+
+            setUpDependeciesAndSealModule(module, dependencies);
         }
 
         return modules;
@@ -347,11 +350,20 @@ public abstract class AbstractJetDiagnosticsTest extends BaseDiagnosticsTest {
                                         TopDownAnalyzerFacadeForJVM.JVM_MODULE_PARAMETERS);
     }
 
+    protected void setUpDependeciesAndSealModule(
+            @NotNull ModuleDescriptorImpl module,
+            @NotNull List<ModuleDescriptorImpl> dependencies
+    ) {
+        List<ModuleDescriptorImpl> dependenciesToAdd = new ArrayList<ModuleDescriptorImpl>();
+        dependenciesToAdd.add(module);
+        dependenciesToAdd.addAll(dependencies);
+        module.setDependencies(dependenciesToAdd);
+    }
+
     @NotNull
-    protected ModuleDescriptorImpl createSealedModule(@NotNull StorageManager storageManager) {
-        ModuleDescriptorImpl moduleDescriptor = createModule("<test-module>", storageManager);
-        moduleDescriptor.setDependencies(moduleDescriptor, KotlinBuiltIns.getInstance().getBuiltInsModule());
-        return moduleDescriptor;
+    protected List<ModuleDescriptorImpl> commonDependencies(@NotNull StorageManager storageManager) {
+        ModuleDescriptorImpl builtinsModule = KotlinBuiltIns.getInstance().getBuiltInsModule();
+        return new SmartList<ModuleDescriptorImpl>(builtinsModule);
     }
 
     private static void checkAllResolvedCallsAreCompleted(@NotNull List<JetFile> jetFiles, @NotNull BindingContext bindingContext) {

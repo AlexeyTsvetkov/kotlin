@@ -17,8 +17,8 @@
 package org.jetbrains.kotlin.checkers;
 
 import com.intellij.openapi.Disposable;
+import com.intellij.util.SmartList;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles;
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment;
 import org.jetbrains.kotlin.config.CompilerConfiguration;
@@ -32,7 +32,6 @@ import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.resolve.BindingTrace;
 import org.jetbrains.kotlin.storage.StorageManager;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -79,20 +78,11 @@ public abstract class AbstractJetDiagnosticsTestWithJsStdLib extends AbstractJet
 
     @NotNull
     @Override
-    protected ModuleDescriptorImpl createSealedModule(@NotNull StorageManager storageManager) {
-        ModuleDescriptorImpl module = createModule("<kotlin-js-test-module>", storageManager);
-
-        List<ModuleDescriptorImpl> dependencies = new ArrayList<ModuleDescriptorImpl>();;
-        dependencies.add(module);
-
-        for (ModuleDescriptorImpl moduleDescriptor : config.getModuleDescriptors()) {
-            dependencies.add(moduleDescriptor);
-        }
-
-        dependencies.add(KotlinBuiltIns.getInstance().getBuiltInsModule());
-        module.setDependencies(dependencies);
-
-        return module;
+    protected List<ModuleDescriptorImpl> commonDependencies(@NotNull StorageManager storageManager) {
+        List<ModuleDescriptorImpl> commonDependencies = new SmartList<ModuleDescriptorImpl>();
+        commonDependencies.addAll(super.commonDependencies(storageManager));
+        commonDependencies.addAll(config.getModuleDescriptors());
+        return commonDependencies;
     }
 
     protected Config getConfig() {

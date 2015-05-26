@@ -109,7 +109,7 @@ public abstract class KotlinMultiFileTestWithWithJava<M, F> extends JetLiteFixtu
         return dir;
     }
 
-    protected void doTest(String filePath) throws Exception {
+    protected void doTest(@NotNull String filePath) throws Exception {
         File file = new File(filePath);
         final File javaFilesDir = createJavaFilesDir();
         final File kotlinFilesDir = getKotlinSourceRoot();
