@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.js.translate.context.TranslationContext;
 import org.jetbrains.kotlin.js.translate.general.AbstractTranslator;
 import org.jetbrains.kotlin.js.translate.general.Translation;
 import org.jetbrains.kotlin.js.translate.intrinsic.operation.BinaryOperationIntrinsic;
+import org.jetbrains.kotlin.js.translate.reference.CallExpressionTranslator;
 import org.jetbrains.kotlin.js.translate.utils.JsAstUtils;
 import org.jetbrains.kotlin.js.translate.utils.TranslationUtils;
 import org.jetbrains.kotlin.lexer.JetToken;
@@ -42,6 +43,7 @@ import static org.jetbrains.kotlin.js.translate.operation.CompareToTranslator.is
 import static org.jetbrains.kotlin.js.translate.utils.BindingUtils.getCallableDescriptorForOperationExpression;
 import static org.jetbrains.kotlin.js.translate.utils.JsAstUtils.not;
 import static org.jetbrains.kotlin.js.translate.utils.PsiUtils.*;
+import static org.jetbrains.kotlin.js.translate.utils.UtilsPackage.setInlineCallMetadata;
 import static org.jetbrains.kotlin.resolve.calls.callUtil.CallUtilPackage.getFunctionResolvedCallWithAssert;
 
 public final class BinaryOperationTranslator extends AbstractTranslator {
@@ -251,6 +253,11 @@ public final class BinaryOperationTranslator extends AbstractTranslator {
     private JsExpression translateAsOverloadedBinaryOperation() {
         ResolvedCall<? extends FunctionDescriptor> resolvedCall = getFunctionResolvedCallWithAssert(expression, bindingContext());
         JsExpression result = CallTranslator.INSTANCE$.translate(context(), resolvedCall, getReceiver());
+
+        if (CallExpressionTranslator.shouldBeInlined(resolvedCall.getResultingDescriptor())) {
+            setInlineCallMetadata(result, expression, resolvedCall, context());
+        }
+
         return mayBeWrapWithNegation(result);
     }
 

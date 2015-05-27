@@ -851,6 +851,10 @@ fun main(args: Array<String>) {
             model("inline/cases")
         }
 
+        testClass(javaClass<AbstractInlineOperatorsJsTest>()) {
+            model("inlineOperators/cases")
+        }
+
         testClass(javaClass<AbstractInlineJsStdlibTest>()) {
             model("inlineStdlib/cases")
         }

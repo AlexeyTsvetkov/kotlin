@@ -40,6 +40,8 @@ public abstract class AbstractInlineJsStdlibTest : AbstractSingleFileTranslation
 
 public abstract class AbstractInlineJsTest : AbstractSingleFileTranslationWithDirectivesTest("inline/")
 
+public abstract class AbstractInlineOperatorsJsTest : AbstractSingleFileTranslationWithDirectivesTest("inlineOperators/")
+
 public abstract class AbstractJsCodeTest : AbstractSingleFileTranslationWithDirectivesTest("jsCode/")
 
 public abstract class AbstractLabelTest : AbstractSingleFileTranslationWithDirectivesTest("labels/")
