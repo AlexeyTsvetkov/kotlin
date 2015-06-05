@@ -101,6 +101,18 @@ public class InlineJsTestGenerated extends AbstractInlineJsTest {
         doTest(fileName);
     }
 
+    @TestMetadata("functionExpression.kt")
+    public void testFunctionExpression() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/inline/cases/functionExpression.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("functionExpressionWithClosure.kt")
+    public void testFunctionExpressionWithClosure() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/inline/cases/functionExpressionWithClosure.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("identityEquals.kt")
     public void testIdentityEquals() throws Exception {
         String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/inline/cases/identityEquals.kt");
