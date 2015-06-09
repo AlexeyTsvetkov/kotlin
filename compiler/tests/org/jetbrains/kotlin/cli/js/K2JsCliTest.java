@@ -16,13 +16,21 @@
 
 package org.jetbrains.kotlin.cli.js;
 
+import com.intellij.openapi.util.io.FileUtil;
+import com.intellij.util.SmartList;
 import org.jetbrains.kotlin.cli.CliBaseTest;
+import org.jetbrains.kotlin.js.test.rhino.RhinoFunctionResultChecker;
+import org.jetbrains.kotlin.js.test.rhino.RhinoUtils;
+import org.jetbrains.kotlin.test.MockLibraryUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.List;
 
 public class K2JsCliTest extends CliBaseTest {
+    private final RhinoFunctionResultChecker CHECK_FOO_BOX_IS_OK = new RhinoFunctionResultChecker("out", "foo", "box", "OK");
+
     @Test
     public void simple2js() throws Exception {
         executeCompilerCompareOutputJS();
@@ -111,5 +119,20 @@ public class K2JsCliTest extends CliBaseTest {
         executeCompilerCompareOutputJS();
 
         Assert.assertFalse(new File(tmpdir.getTmpDir(), "out.js").isFile());
+    }
+
+    @Test
+    public void inlineFromJarLib() throws Exception {
+        File utilsKt = new File(getJsTestDataDir(), "libWithInlineFun.kt");
+        String jarName = "libWithInlineFun";
+        File jar = MockLibraryUtil.compileJsLibraryToJar(utilsKt.getPath(), jarName, false);
+        FileUtil.copy(jar, new File(tmpdir.getTmpDir(), jarName + ".jar"));
+
+        executeCompilerCompareOutputJS();
+        File outJs = new File(tmpdir.getTmpDir(), "out.js");
+        Assert.assertTrue(outJs.isFile());
+
+        List<String> jsFiles = new SmartList<String>(outJs.getPath());
+        RhinoUtils.runRhinoTest(jsFiles, CHECK_FOO_BOX_IS_OK);
     }
 }

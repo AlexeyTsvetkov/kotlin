@@ -1,0 +1,5 @@
+$TESTDATA_DIR$/inlineFromJarLib.kt
+-library-files
+$TEMP_DIR$/libWithInlineFun.jar
+-output
+$TEMP_DIR$/out.js
