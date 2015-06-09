@@ -392,8 +392,22 @@ public final class Namer {
     }
 
     @NotNull
+    public JsExpression isTypeOfOrNull(@NotNull JsExpression type) {
+        JsInvocation invocation = new JsInvocation(kotlin("isTypeOfOrNull"), type);
+        MetadataPackage.setTypeCheck(invocation, TypeCheck.TYPEOF);
+        return invocation;
+    }
+
+    @NotNull
     public JsExpression isInstanceOf(@NotNull JsExpression type) {
         JsInvocation invocation = new JsInvocation(kotlin("isInstanceOf"), type);
+        MetadataPackage.setTypeCheck(invocation, TypeCheck.INSTANCEOF);
+        return invocation;
+    }
+
+    @NotNull
+    public JsExpression isInstanceOfOrNull(@NotNull JsExpression type) {
+        JsInvocation invocation = new JsInvocation(kotlin("isInstanceOfOrNull"), type);
         MetadataPackage.setTypeCheck(invocation, TypeCheck.INSTANCEOF);
         return invocation;
     }

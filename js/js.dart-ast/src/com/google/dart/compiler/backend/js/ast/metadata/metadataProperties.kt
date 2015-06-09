@@ -36,7 +36,9 @@ public var JsParameter.hasDefaultValue: Boolean by MetadataProperty(default = fa
 
 public var JsInvocation.typeCheck: TypeCheck? by MetadataProperty(default = null)
 
-public enum class TypeCheck {
+public class TypeCheck(public val type: )
+
+public enum class TypeCheck(val nullable: Boolean) {
     TYPEOF,
     INSTANCEOF
 }

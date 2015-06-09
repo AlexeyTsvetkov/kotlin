@@ -67,7 +67,7 @@ public final class PatternTranslator extends AbstractTranslator {
         JsExpression checkFunReference = getIsTypeCheckCallable(type);
         JsInvocation isCheck = new JsInvocation(checkFunReference, subject);
 
-        if (isNullable(typeReference)) {
+        if (isNullable(typeReference) && !isReifiedTypeParameter(type)) {
             return addNullCheck(subject, isCheck);
         }
 
@@ -81,32 +81,44 @@ public final class PatternTranslator extends AbstractTranslator {
 
         ClassifierDescriptor typeDescriptor = type.getConstructor().getDeclarationDescriptor();
 
-        if (typeDescriptor instanceof TypeParameterDescriptor) {
-            TypeParameterDescriptor typeParameterDescriptor = (TypeParameterDescriptor) typeDescriptor;
-
-            if (typeParameterDescriptor.isReified()) {
-                return getIsTypeCheckCallableForReifiedType(typeParameterDescriptor);
-            }
+        if (isReifiedTypeParameter(type)) {
+            ClassifierDescriptor descriptor = getDescriptor(type);
+            return getIsTypeCheckCallableForReifiedType((TypeParameterDescriptor) descriptor);
         }
 
         JsNameRef typeName = getClassNameReference(type);
         return namer().isInstanceOf(typeName);
     }
 
+    private boolean isReifiedTypeParameter(@NotNull JetType type) {
+        ClassifierDescriptor typeDescriptor = getDescriptor(type);
+
+        if (!(typeDescriptor instanceof TypeParameterDescriptor)) {
+            return false;
+        }
+
+        return ((TypeParameterDescriptor) typeDescriptor).isReified();
+    }
+
+    private ClassifierDescriptor getDescriptor(@NotNull JetType type) {
+        return type.getConstructor().getDeclarationDescriptor();
+    }
+
     @Nullable
     private JsExpression getIsTypeCheckCallableForBuiltin(@NotNull JetType type) {
         Name typeName = getNameIfStandardType(type);
+        boolean isNullable = type.isMarkedNullable();
 
         if (NamePredicate.STRING.apply(typeName)) {
-            return namer().isTypeOf(program().getStringLiteral("string"));
+            return namer().isTypeOf(program().getStringLiteral("string"), isNullable);
         }
 
         if (NamePredicate.BOOLEAN.apply(typeName)) {
-            return namer().isTypeOf(program().getStringLiteral("boolean"));
+            return namer().isTypeOf(program().getStringLiteral("boolean"), isNullable);
         }
 
         if (NamePredicate.LONG.apply(typeName)) {
-            return namer().isInstanceOf(Namer.KOTLIN_LONG_NAME_REF);
+            return namer().isInstanceOf(Namer.KOTLIN_LONG_NAME_REF, isNullable);
         }
 
         if (NamePredicate.NUMBER.apply(typeName)) {
@@ -118,7 +130,7 @@ public final class PatternTranslator extends AbstractTranslator {
         }
 
         if (NamePredicate.PRIMITIVE_NUMBERS_MAPPED_TO_PRIMITIVE_JS.apply(typeName)) {
-            return namer().isTypeOf(program().getStringLiteral("number"));
+            return namer().isTypeOf(program().getStringLiteral("number"), isNullable);
         }
 
         return null;
