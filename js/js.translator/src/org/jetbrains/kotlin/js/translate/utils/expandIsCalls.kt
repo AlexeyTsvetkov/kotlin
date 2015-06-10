@@ -20,29 +20,63 @@ import com.google.dart.compiler.backend.js.ast.*
 import com.google.dart.compiler.backend.js.ast.metadata.TypeCheck
 import com.google.dart.compiler.backend.js.ast.metadata.typeCheck
 import org.jetbrains.kotlin.js.translate.context.TranslationContext
-import org.jetbrains.kotlin.js.translate.utils.JsAstUtils.*
+import org.jetbrains.kotlin.js.translate.utils.JsAstUtils.or
+import org.jetbrains.kotlin.js.translate.utils.JsAstUtils.typeof
+import org.jetbrains.kotlin.js.translate.utils.TranslationUtils.isNullCheck
+import java.util.Stack
 
 public fun expandIsCalls(node: JsNode, context: TranslationContext) {
-    val visitor = object : JsVisitorWithContextImpl() {
-        override fun visit(x: JsInvocation, ctx: JsContext<*>): Boolean {
-            val callee = x.getQualifier() as? JsInvocation
-            val instance = x.getArguments().firstOrNull()
-            val type = callee?.getArguments()?.firstOrNull()
+    TypeCheckRewritingVisitor(context).accept(node)
+}
 
-            val replacement = when (callee?.typeCheck) {
-                TypeCheck.TYPEOF -> typeof(instance!!, type as JsStringLiteral)
-                TypeCheck.INSTANCEOF -> context.namer().isInstanceOf(instance!!, type!!)
-                else -> null
-            }
+private class TypeCheckRewritingVisitor(private val context: TranslationContext) : JsVisitorWithContextImpl() {
 
-            if (replacement != null) {
-                ctx.replaceMe(replacement)
-                return false
-            }
+    private val scopes = Stack<JsScope>()
 
-            return super.visit(x, ctx)
-        }
+    override fun visit(x: JsFunction, ctx: JsContext<*>): Boolean {
+        scopes.push(x.getScope())
+        return super.visit(x, ctx)
     }
 
-    visitor.accept(node)
+    override fun endVisit(x: JsFunction, ctx: JsContext<*>) {
+        scopes.pop()
+        super.endVisit(x, ctx)
+    }
+
+    override fun visit(x: JsInvocation, ctx: JsContext<*>): Boolean {
+        // callee(calleeArgument)(argument)
+        val callee = x.getQualifier() as? JsInvocation
+        val calleeArgument = callee?.getArguments()?.firstOrNull()
+        val argument = x.getArguments().firstOrNull()
+
+        if (callee != null && calleeArgument != null && argument != null) {
+            val replacement = getReplacement(callee, calleeArgument, argument)
+
+            if (replacement != null) {
+                ctx.replaceMe(accept(replacement))
+                return false
+            }
+        }
+
+        return true
+    }
+
+    private fun getReplacement(callee: JsInvocation, calleeArgument: JsExpression, argument: JsExpression): JsExpression? {
+        return when (callee.typeCheck) {
+            // Kotlin.isTypeOf(calleeArgument)(argument) -> typeOf argument === calleeArgument
+            TypeCheck.TYPEOF ->
+                typeof(argument, calleeArgument as JsStringLiteral)
+
+            // Kotlin.isInstanceOf(calleeArgument)(argument) -> argument instanceof calleeArgument
+            TypeCheck.INSTANCEOF ->
+                context.namer().isInstanceOf(argument, calleeArgument)
+
+            // Kotlin.orNull(calleeArgument)(argument) -> argument === null || calleeArgument(argument)
+            TypeCheck.OR_NULL ->
+                or(isNullCheck(argument), JsInvocation(calleeArgument, argument))
+
+            else ->
+                null
+        }
+    }
 }

@@ -17,8 +17,8 @@
 package org.jetbrains.kotlin.js.translate.context;
 
 import com.google.dart.compiler.backend.js.ast.*;
-import com.google.dart.compiler.backend.js.ast.metadata.TypeCheck;
 import com.google.dart.compiler.backend.js.ast.metadata.MetadataPackage;
+import com.google.dart.compiler.backend.js.ast.metadata.TypeCheck;
 import com.intellij.openapi.util.text.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
@@ -386,15 +386,27 @@ public final class Namer {
 
     @NotNull
     public JsExpression isTypeOf(@NotNull JsExpression type) {
-        JsInvocation invocation = new JsInvocation(kotlin("isTypeOf"), type);
-        MetadataPackage.setTypeCheck(invocation, TypeCheck.TYPEOF);
-        return invocation;
+        return invokeFunctionAndSetTypeCheckMetadata("isTypeOf", type, TypeCheck.TYPEOF);
     }
 
     @NotNull
     public JsExpression isInstanceOf(@NotNull JsExpression type) {
-        JsInvocation invocation = new JsInvocation(kotlin("isInstanceOf"), type);
-        MetadataPackage.setTypeCheck(invocation, TypeCheck.INSTANCEOF);
+        return invokeFunctionAndSetTypeCheckMetadata("isInstanceOf", type, TypeCheck.INSTANCEOF);
+    }
+
+    @NotNull
+    public JsExpression orNull(@NotNull JsExpression callable) {
+        return invokeFunctionAndSetTypeCheckMetadata("orNull", callable, TypeCheck.OR_NULL);
+    }
+
+    @NotNull
+    public JsExpression invokeFunctionAndSetTypeCheckMetadata(
+            @NotNull String functionName,
+            @NotNull JsExpression argument,
+            @NotNull TypeCheck metadata
+    ) {
+        JsInvocation invocation = new JsInvocation(kotlin(functionName), argument);
+        MetadataPackage.setTypeCheck(invocation, metadata);
         return invocation;
     }
 

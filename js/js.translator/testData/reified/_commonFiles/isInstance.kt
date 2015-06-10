@@ -1,4 +1,4 @@
 package foo
 
-inline fun isInstance<reified T>(x: Any): Boolean =
+inline fun isInstance<reified T>(x: Any?): Boolean =
         x is T
