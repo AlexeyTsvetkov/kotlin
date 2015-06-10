@@ -61,28 +61,31 @@ private class TypeCheckRewritingVisitor(private val context: TranslationContext)
     }
 
     private fun getReplacement(callee: JsInvocation, calleeArgument: JsExpression, argument: JsExpression): JsExpression? {
-        return when (callee.typeCheck) {
-            // Kotlin.isTypeOf(calleeArgument)(argument) -> typeOf argument === calleeArgument
-            TypeCheck.TYPEOF ->
-                typeof(argument, calleeArgument as JsStringLiteral)
+        // Kotlin.isTypeOf(calleeArgument)(argument) -> typeOf argument === calleeArgument
+        if (callee.typeCheck == TypeCheck.TYPEOF) {
+            return typeof(argument, calleeArgument as JsStringLiteral)
+        }
 
-            // Kotlin.isInstanceOf(calleeArgument)(argument) -> argument instanceof calleeArgument
-            TypeCheck.INSTANCEOF ->
-                context.namer().isInstanceOf(argument, calleeArgument)
+        // Kotlin.isInstanceOf(calleeArgument)(argument) -> argument instanceof calleeArgument
+        if (callee.typeCheck == TypeCheck.INSTANCEOF) {
+            return context.namer().isInstanceOf(argument, calleeArgument)
+        }
 
-            // Kotlin.orNull(calleeArgument)(argument) -> (tmp = argument) == null || calleeArgument(tmp)
-            TypeCheck.OR_NULL -> {
-                val currentScope = scopes.peek()
-                val tmp = currentScope.declareTemporary()
-                val statementContext = getLastStatementLevelContext()
-                statementContext.addPrevious(newVar(tmp, null))
-                val assignment = assignment(tmp.makeRef(), argument)
-                val tmpIsNull = TranslationUtils.isNullCheck(assignment)
-                or(tmpIsNull, JsInvocation(calleeArgument, tmp.makeRef()))
+        // Kotlin.orNull(calleeArgument)(argument) -> (tmp = argument) == null || calleeArgument(tmp)
+        if (callee.typeCheck == TypeCheck.OR_NULL) {
+            if (calleeArgument is JsInvocation && calleeArgument.typeCheck == TypeCheck.OR_NULL) {
+                return JsInvocation(calleeArgument, argument)
             }
 
-            else ->
-                null
+            val currentScope = scopes.peek()
+            val tmp = currentScope.declareTemporary()
+            val statementContext = getLastStatementLevelContext()
+            statementContext.addPrevious(newVar(tmp, null))
+            val assignment = assignment(tmp.makeRef(), argument)
+            val tmpIsNull = TranslationUtils.isNullCheck(assignment)
+            return or(tmpIsNull, JsInvocation(calleeArgument, tmp.makeRef()))
         }
+
+        return null
     }
 }
