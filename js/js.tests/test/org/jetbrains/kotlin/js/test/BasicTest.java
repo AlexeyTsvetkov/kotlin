@@ -59,6 +59,7 @@ import java.util.Map;
 
 import static org.jetbrains.kotlin.js.test.rhino.RhinoUtils.runRhinoTest;
 import static org.jetbrains.kotlin.js.test.utils.JsTestUtils.convertFileNameToDotJsFile;
+import static org.jetbrains.kotlin.test.InTextDirectivesUtils.isDirectiveDefined;
 
 public abstract class BasicTest extends KotlinTestWithEnvironment {
     // predictable order of ecma version in tests
@@ -77,7 +78,8 @@ public abstract class BasicTest extends KotlinTestWithEnvironment {
     public static final String TEST_MODULE = "JS_TESTS";
     public static final String TEST_PACKAGE = "foo";
     public static final String TEST_FUNCTION = "box";
-    public static final boolean IS_INLINE_ENABLED = true;
+    public static final String NO_INLINE_DIRECTIVE = "// NO_INLINE";
+    public boolean isInlineEnabled = true;
 
     @NotNull
     private String relativePathToTestDir = "";
@@ -107,6 +109,7 @@ public abstract class BasicTest extends KotlinTestWithEnvironment {
         File outDir = new File(getOutputPath());
 
         JetTestUtils.mkdirs(outDir);
+        isInlineEnabled = true;
     }
 
     @Override
@@ -174,7 +177,7 @@ public abstract class BasicTest extends KotlinTestWithEnvironment {
         List<String> allFiles = withAdditionalKotlinFiles(files);
         List<JetFile> jetFiles = createJetFileList(project, allFiles, null);
 
-        Config config = createConfig(getProject(), moduleName, version, libraries);
+        Config config = createConfig(getProject(), moduleName, version, libraries, jetFiles);
         File outputFile = new File(getOutputFilePath(testName, version));
 
         translateFiles(jetFiles, outputFile, mainCallParameters, config);
@@ -303,7 +306,22 @@ public abstract class BasicTest extends KotlinTestWithEnvironment {
     }
 
     @NotNull
-    private Config createConfig(@NotNull Project project, @NotNull String moduleId, @NotNull EcmaVersion ecmaVersion, @Nullable List<String> libraries) {
+    private Config createConfig(
+            @NotNull Project project,
+            @NotNull String moduleId,
+            @NotNull EcmaVersion ecmaVersion,
+            @Nullable List<String> libraries,
+            List<JetFile> jetFiles
+    ) {
+        for (JetFile file : jetFiles) {
+            String text = file.getText();
+
+            if (isDirectiveDefined(text, NO_INLINE_DIRECTIVE)) {
+                isInlineEnabled = false;
+                break;
+            }
+        }
+
         List<String> librariesWithStdlib = new ArrayList<String>(LibrarySourcesConfig.JS_STDLIB);
         if (libraries != null) {
             librariesWithStdlib.addAll(libraries);
@@ -312,7 +330,7 @@ public abstract class BasicTest extends KotlinTestWithEnvironment {
         return new LibrarySourcesConfig.Builder(project, moduleId, librariesWithStdlib)
                 .ecmaVersion(ecmaVersion)
                 .sourceMap(shouldGenerateSourceMap())
-                .inlineEnabled(IS_INLINE_ENABLED)
+                .inlineEnabled(isInlineEnabled)
                 .isUnitTestConfig(shouldBeTranslateAsUnitTestClass())
                 .metaInfo(shouldGenerateMetaInfo())
                 .build();
