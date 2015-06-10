@@ -51,3 +51,5 @@ public abstract class AbstractInlineMultiModuleTest : MultipleModulesTranslation
 public abstract class AbstractReservedWordTest : SingleFileTranslationTest("reservedWords/")
 
 public abstract class AbstractSecondaryConstructorTest : AbstractBlackBoxTest("secondaryConstructors/")
+
+public abstract class AbstractRttiTest : SingleFileTranslationTest("rtti/")
