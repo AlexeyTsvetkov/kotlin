@@ -89,6 +89,7 @@ public final class Namer {
     public static final String ANOTHER_THIS_PARAMETER_NAME = "$this";
 
     private static final String THROW_NPE_FUN_NAME = "throwNPE";
+    private static final String THROW_CLASS_CAST_EXCEPTION_FUN_NAME = "throwCCE";
     private static final String COMPANION_OBJECT_GETTER = "object";
     private static final String COMPANION_OBJECT_INITIALIZER = "object_initializer$";
     private static final String PROTOTYPE_NAME = "prototype";
@@ -367,6 +368,11 @@ public final class Namer {
     @NotNull
     public JsExpression throwNPEFunctionRef() {
         return new JsNameRef(THROW_NPE_FUN_NAME, kotlinObject());
+    }
+
+    @NotNull
+    public JsExpression throwClassCastExceptionFunRef() {
+        return new JsNameRef(THROW_CLASS_CAST_EXCEPTION_FUN_NAME, kotlinObject());
     }
 
     @NotNull

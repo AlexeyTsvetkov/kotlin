@@ -25,6 +25,9 @@ library
 public class NullPointerException(message: String? = null) : RuntimeException(message) {}
 
 library
+public class ClassCastException(message: String? = null) : RuntimeException(message) {}
+
+library
 public trait Runnable {
     public open fun run() : Unit;
 }

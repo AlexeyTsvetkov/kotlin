@@ -94,4 +94,16 @@ public class RttiTestGenerated extends AbstractRttiTest {
         String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/rtti/cases/stdlibEmptyListClass.kt");
         doTest(fileName);
     }
+
+    @TestMetadata("unsafeCastToNotNull.kt")
+    public void testUnsafeCastToNotNull() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/rtti/cases/unsafeCastToNotNull.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("unsafeCastToNullable.kt")
+    public void testUnsafeCastToNullable() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/rtti/cases/unsafeCastToNullable.kt");
+        doTest(fileName);
+    }
 }

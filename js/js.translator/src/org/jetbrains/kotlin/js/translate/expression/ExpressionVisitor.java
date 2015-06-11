@@ -34,8 +34,6 @@ import org.jetbrains.kotlin.js.translate.operation.BinaryOperationTranslator;
 import org.jetbrains.kotlin.js.translate.operation.UnaryOperationTranslator;
 import org.jetbrains.kotlin.js.translate.reference.*;
 import org.jetbrains.kotlin.js.translate.utils.JsAstUtils;
-import org.jetbrains.kotlin.js.translate.utils.TranslationUtils;
-import org.jetbrains.kotlin.lexer.JetTokens;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.resolve.BindingContext;
 import org.jetbrains.kotlin.resolve.BindingContextUtils;
@@ -44,8 +42,6 @@ import org.jetbrains.kotlin.resolve.constants.CompileTimeConstant;
 import org.jetbrains.kotlin.resolve.constants.NullValue;
 import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluator;
 import org.jetbrains.kotlin.resolve.inline.InlineUtil;
-import org.jetbrains.kotlin.types.JetType;
-import org.jetbrains.kotlin.types.TypeUtils;
 
 import java.util.List;
 
@@ -352,25 +348,20 @@ public final class ExpressionVisitor extends TranslatorVisitor<JsNode> {
 
     @Override
     @NotNull
-    public JsNode visitBinaryWithTypeRHSExpression(@NotNull JetBinaryExpressionWithTypeRHS expression,
-            @NotNull TranslationContext context) {
-        JsExpression jsExpression = Translation.translateAsExpression(expression.getLeft(), context);
+    public JsNode visitBinaryWithTypeRHSExpression(
+            @NotNull JetBinaryExpressionWithTypeRHS expression,
+            @NotNull TranslationContext context
+    ) {
+        JsExpression jsExpression;
 
-        if (expression.getOperationReference().getReferencedNameElementType() != JetTokens.AS_KEYWORD)
-            return jsExpression.source(expression);
-
-        JetTypeReference right = expression.getRight();
-        assert right != null;
-
-        JetType rightType = BindingContextUtils.getNotNull(context.bindingContext(), BindingContext.TYPE, right);
-        JetType leftType = BindingContextUtils.getTypeNotNull(context.bindingContext(), expression.getLeft());
-        if (TypeUtils.isNullableType(rightType) || !TypeUtils.isNullableType(leftType)) {
-            return jsExpression.source(expression);
+        if (PatternTranslator.isUnsafeCast(expression)) {
+            jsExpression = PatternTranslator.newInstance(context).translateUnsafeCast(expression);
+        }
+        else {
+            jsExpression = Translation.translateAsExpression(expression.getLeft(), context);
         }
 
-        // KT-2670
-        // we actually do not care for types in js
-        return TranslationUtils.sure(jsExpression, context).source(expression);
+        return jsExpression.source(expression);
     }
 
     private static String getReferencedName(JetSimpleNameExpression expression) {
