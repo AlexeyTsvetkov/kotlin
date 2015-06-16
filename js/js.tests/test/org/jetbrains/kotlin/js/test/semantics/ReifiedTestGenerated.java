@@ -137,6 +137,18 @@ public class ReifiedTestGenerated extends AbstractReifiedTest {
         doTest(fileName);
     }
 
+    @TestMetadata("unsafeCastToNotNull.kt")
+    public void testUnsafeCastToNotNull() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/unsafeCastToNotNull.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("unsafeCastToNullable.kt")
+    public void testUnsafeCastToNullable() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/unsafeCastToNullable.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("vararg.kt")
     public void testVararg() throws Exception {
         String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/reified/cases/vararg.kt");

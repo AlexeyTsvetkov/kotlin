@@ -1,0 +1,21 @@
+package foo
+
+import java.lang.*
+
+interface A
+
+class AImpl : A {}
+
+inline
+fun test<reified T>(x: Any?): T = x as T
+
+fun box(): String {
+    var a: A? = AImpl()
+    assertEquals(a, test<A?>(a), "a = AImpl()")
+    a = object : A {}
+    assertEquals(a, test<A?>(a), "a = object : A{}")
+    assertEquals(null, test<A?>(null), "test(null)")
+    assertClassCastException("test(object{})") { test<A?>(object{}) }
+
+    return "OK"
+}
