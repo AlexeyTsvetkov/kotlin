@@ -1,14 +1,14 @@
 package foo
 
 // CHECK_NOT_CALLED: test
-// CHECK_NOT_CALLED: fn
+// CHECK_NOT_CALLED: XisTYisR
 
 class A(val x: Any? = null) {
     inline
-    fun test<reified T, reified R>(b: B) = b.fn<T, R>()
+    fun test<reified T, reified R>(b: B) = b.XisTYisR<T, R>()
 
     inline
-    fun B.fn<reified T, reified R>() = x is T && y is R
+    fun B.XisTYisR<reified T, reified R>() = x is T && y is R
 }
 
 class B(val y: Any? = null)
