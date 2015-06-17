@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.js.translate.utils
 
 import com.google.dart.compiler.backend.js.ast.*
 import com.google.dart.compiler.backend.js.ast.metadata.TypeCheck
+import com.google.dart.compiler.backend.js.ast.metadata.isUnsafeCast
 import com.google.dart.compiler.backend.js.ast.metadata.typeCheck
 import org.jetbrains.kotlin.js.translate.context.TranslationContext
 import org.jetbrains.kotlin.js.translate.utils.JsAstUtils.*
@@ -40,6 +41,17 @@ private class TypeCheckRewritingVisitor(private val context: TranslationContext)
     override fun endVisit(x: JsFunction, ctx: JsContext<*>) {
         scopes.pop()
         super.endVisit(x, ctx)
+    }
+
+    override fun endVisit(x: JsConditional, ctx: JsContext<*>) {
+        val test = x.getTestExpression()
+
+        if (x.isUnsafeCast &&
+            test is JsBinaryOperation &&
+            test.getOperator() == JsBinaryOperator.ASG
+        ) {
+            ctx.replaceMe(test.getArg2())
+        }
     }
 
     override fun visit(x: JsInvocation, ctx: JsContext<*>): Boolean {

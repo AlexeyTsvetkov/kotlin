@@ -20,6 +20,7 @@ import com.google.dart.compiler.backend.js.ast.JsConditional;
 import com.google.dart.compiler.backend.js.ast.JsExpression;
 import com.google.dart.compiler.backend.js.ast.JsInvocation;
 import com.google.dart.compiler.backend.js.ast.JsNameRef;
+import com.google.dart.compiler.backend.js.ast.metadata.MetadataPackage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.JetNodeTypes;
@@ -79,7 +80,9 @@ public final class PatternTranslator extends AbstractTranslator {
         Namer namer = context().namer();
         JsExpression throwCCEFunRef = namer.throwClassCastExceptionFunRef();
         JsExpression throwCCE = new JsInvocation(throwCCEFunRef);
-        return new JsConditional(isCheck, temporary.reference(), throwCCE);
+        JsConditional conditional = new JsConditional(isCheck, temporary.reference(), throwCCE);
+        MetadataPackage.setIsUnsafeCast(conditional, true);
+        return conditional;
     }
 
     @NotNull
