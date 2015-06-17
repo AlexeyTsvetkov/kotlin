@@ -113,7 +113,7 @@ public final class PatternTranslator extends AbstractTranslator {
     public JsExpression getIsTypeCheckCallable(@NotNull JetType type) {
         JsExpression callable = doGetIsTypeCheckCallable(type);
 
-        if (isNullableType(type) && isNonReifiedTypeParemeter(type)) {
+        if (isNullableType(type) && !isReifiedTypeParameter(type)) {
             return namer().orNull(callable);
         }
 
