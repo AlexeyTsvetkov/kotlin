@@ -106,6 +106,10 @@ public final class PatternTranslator extends AbstractTranslator {
 
     @NotNull
     private JsExpression doGetIsTypeCheckCallable(@NotNull JetType type) {
+        if (KotlinBuiltIns.isAnyOrNullableAny(type)) {
+            return namer().isAny();
+        }
+
         JsExpression builtinCheck = getIsTypeCheckCallableForBuiltin(type);
         if (builtinCheck != null) return builtinCheck;
 
@@ -117,10 +121,6 @@ public final class PatternTranslator extends AbstractTranslator {
             if (typeParameterDescriptor.isReified()) {
                 return getIsTypeCheckCallableForReifiedType(typeParameterDescriptor);
             }
-        }
-
-        if (KotlinBuiltIns.isAnyOrNullableAny(type)) {
-            return namer().isAny();
         }
 
         JsNameRef typeName = getClassNameReference(type);
