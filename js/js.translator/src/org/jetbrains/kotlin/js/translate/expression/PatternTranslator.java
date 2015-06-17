@@ -134,9 +134,8 @@ public final class PatternTranslator extends AbstractTranslator {
             if (typeParameterDescriptor.isReified()) {
                 return getIsTypeCheckCallableForReifiedType(typeParameterDescriptor);
             }
-            else {
-                return namer().isAny();
-            }
+
+            return namer().isAny();
         }
 
         JsNameRef typeName = getClassNameReference(type);
