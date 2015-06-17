@@ -48,7 +48,7 @@ private class TypeCheckRewritingVisitor(private val context: TranslationContext)
         val calleeArgument = callee?.getArguments()?.firstOrNull()
         val argument = x.getArguments().firstOrNull()
 
-        if (callee != null && calleeArgument != null && argument != null) {
+        if (callee != null && argument != null) {
             val replacement = getReplacement(callee, calleeArgument, argument)
 
             if (replacement != null) {
@@ -60,7 +60,16 @@ private class TypeCheckRewritingVisitor(private val context: TranslationContext)
         return true
     }
 
-    private fun getReplacement(callee: JsInvocation, calleeArgument: JsExpression, argument: JsExpression): JsExpression? {
+    private fun getReplacement(callee: JsInvocation, calleeArgument: JsExpression?, argument: JsExpression): JsExpression? {
+        if (calleeArgument == null) {
+            // Kotlin.isAny()(argument) -> argument != null
+            if (callee.typeCheck == TypeCheck.IS_ANY) {
+                return TranslationUtils.isNotNullCheck(argument)
+            }
+
+            return null
+        }
+
         // Kotlin.isTypeOf(calleeArgument)(argument) -> typeOf argument === calleeArgument
         if (callee.typeCheck == TypeCheck.TYPEOF) {
             return typeof(argument, calleeArgument as JsStringLiteral)
@@ -73,8 +82,10 @@ private class TypeCheckRewritingVisitor(private val context: TranslationContext)
 
         // Kotlin.orNull(calleeArgument)(argument) -> (tmp = argument) == null || calleeArgument(tmp)
         if (callee.typeCheck == TypeCheck.OR_NULL) {
-            if (calleeArgument is JsInvocation && calleeArgument.typeCheck == TypeCheck.OR_NULL) {
-                return JsInvocation(calleeArgument, argument)
+            if (calleeArgument is JsInvocation) {
+                if (calleeArgument.typeCheck == TypeCheck.OR_NULL) return JsInvocation(calleeArgument, argument)
+
+                if (calleeArgument.typeCheck == TypeCheck.IS_ANY) return argument
             }
 
             val currentScope = scopes.peek()

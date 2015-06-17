@@ -21,6 +21,7 @@ import com.google.dart.compiler.backend.js.ast.metadata.MetadataPackage;
 import com.google.dart.compiler.backend.js.ast.metadata.TypeCheck;
 import com.intellij.openapi.util.text.StringUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.CallableDescriptor;
 import org.jetbrains.kotlin.descriptors.ClassDescriptor;
@@ -406,12 +407,22 @@ public final class Namer {
     }
 
     @NotNull
+    public JsExpression isAny() {
+        return invokeFunctionAndSetTypeCheckMetadata("isAny", null, TypeCheck.IS_ANY);
+    }
+
+    @NotNull
     public JsExpression invokeFunctionAndSetTypeCheckMetadata(
             @NotNull String functionName,
-            @NotNull JsExpression argument,
+            @Nullable JsExpression argument,
             @NotNull TypeCheck metadata
     ) {
-        JsInvocation invocation = new JsInvocation(kotlin(functionName), argument);
+        JsInvocation invocation = new JsInvocation(kotlin(functionName));
+
+        if (argument != null) {
+            invocation.getArguments().add(argument);
+        }
+
         MetadataPackage.setTypeCheck(invocation, metadata);
         return invocation;
     }

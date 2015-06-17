@@ -39,5 +39,6 @@ public var JsInvocation.typeCheck: TypeCheck? by MetadataProperty(default = null
 public enum class TypeCheck {
     TYPEOF,
     INSTANCEOF,
-    OR_NULL
+    OR_NULL,
+    IS_ANY
 }

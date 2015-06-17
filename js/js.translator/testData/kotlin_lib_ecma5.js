@@ -497,6 +497,12 @@ var Kotlin = {};
         }
     };
 
+    Kotlin.isAny = function () {
+        return function (object) {
+            return object != null;
+        }
+    };
+
     Kotlin.kotlinModuleMetadata = function (abiVersion, moduleName, data) {
     };
 

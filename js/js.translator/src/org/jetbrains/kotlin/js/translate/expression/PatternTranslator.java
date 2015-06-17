@@ -22,6 +22,7 @@ import com.google.dart.compiler.backend.js.ast.JsInvocation;
 import com.google.dart.compiler.backend.js.ast.JsNameRef;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.js.patterns.NamePredicate;
 import org.jetbrains.kotlin.js.translate.context.Namer;
@@ -38,7 +39,6 @@ import org.jetbrains.kotlin.psi.JetIsExpression;
 import org.jetbrains.kotlin.psi.JetTypeReference;
 import org.jetbrains.kotlin.resolve.DescriptorUtils;
 import org.jetbrains.kotlin.types.JetType;
-import org.jetbrains.kotlin.types.TypeUtils;
 
 import static org.jetbrains.kotlin.js.descriptorUtils.DescriptorUtilsPackage.getNameIfStandardType;
 import static org.jetbrains.kotlin.js.translate.utils.JsAstUtils.equality;
@@ -68,10 +68,6 @@ public final class PatternTranslator extends AbstractTranslator {
 
         JetTypeReference typeReference = expression.getRight();
         assert typeReference != null: "Unsafe cast must have type reference";
-        JetType fromType = BindingUtils.getTypeForExpression(bindingContext(), left);
-        JetType toType = BindingUtils.getTypeByReference(bindingContext(), typeReference);
-
-        if (TypeUtils.isTypeParameter())
         JsExpression isCheck = translateIsCheck(temporary.assignmentExpression(), typeReference);
 
         Namer namer = context().namer();
@@ -121,6 +117,10 @@ public final class PatternTranslator extends AbstractTranslator {
             if (typeParameterDescriptor.isReified()) {
                 return getIsTypeCheckCallableForReifiedType(typeParameterDescriptor);
             }
+        }
+
+        if (KotlinBuiltIns.isAnyOrNullableAny(type)) {
+            return namer().isAny();
         }
 
         JsNameRef typeName = getClassNameReference(type);
