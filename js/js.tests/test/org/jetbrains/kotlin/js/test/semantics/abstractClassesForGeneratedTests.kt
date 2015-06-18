@@ -53,3 +53,5 @@ public abstract class AbstractReservedWordTest : SingleFileTranslationTest("rese
 public abstract class AbstractSecondaryConstructorTest : AbstractBlackBoxTest("secondaryConstructors/")
 
 public abstract class AbstractRttiTest : SingleFileTranslationTest("rtti/")
+
+public abstract class AbstractCastTest : SingleFileTranslationTest("expression/cast/")
