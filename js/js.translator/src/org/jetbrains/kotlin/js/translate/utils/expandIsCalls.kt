@@ -20,6 +20,7 @@ import com.google.dart.compiler.backend.js.ast.*
 import com.google.dart.compiler.backend.js.ast.metadata.TypeCheck
 import com.google.dart.compiler.backend.js.ast.metadata.isCastExpression
 import com.google.dart.compiler.backend.js.ast.metadata.typeCheck
+import org.jetbrains.kotlin.js.inline.util.IdentitySet
 import org.jetbrains.kotlin.js.translate.context.TranslationContext
 import org.jetbrains.kotlin.js.translate.utils.JsAstUtils.*
 import org.jetbrains.kotlin.js.translate.utils.TranslationUtils.isNullCheck
@@ -32,14 +33,22 @@ public fun expandIsCalls(node: JsNode, context: TranslationContext) {
 private class TypeCheckRewritingVisitor(private val context: TranslationContext) : JsVisitorWithContextImpl() {
 
     private val scopes = Stack<JsScope>()
+    private val localVars = Stack<MutableSet<JsName>>()
 
     override fun visit(x: JsFunction, ctx: JsContext<*>): Boolean {
         scopes.push(x.getScope())
+        localVars.push(IdentitySet())
+        return super.visit(x, ctx)
+    }
+
+    override fun visit(x: JsVars.JsVar, ctx: JsContext<*>): Boolean {
+        localVars.peek().add(x.getName())
         return super.visit(x, ctx)
     }
 
     override fun endVisit(x: JsFunction, ctx: JsContext<*>) {
         scopes.pop()
+        localVars.pop()
         super.endVisit(x, ctx)
     }
 
@@ -100,15 +109,38 @@ private class TypeCheckRewritingVisitor(private val context: TranslationContext)
                 if (calleeArgument.typeCheck == TypeCheck.IS_ANY) return argument
             }
 
-            val currentScope = scopes.peek()
-            val tmp = currentScope.declareTemporary()
-            val statementContext = getLastStatementLevelContext()
-            statementContext.addPrevious(newVar(tmp, null))
-            val assignment = assignment(tmp.makeRef(), argument)
-            val tmpIsNull = TranslationUtils.isNullCheck(assignment)
-            return or(tmpIsNull, JsInvocation(calleeArgument, tmp.makeRef()))
+            var nullCheckTarget = argument
+            var nextCheckTarget = argument
+
+            if (argument.isAssignmentToLocalVar) {
+                // Kotlin.orNull(Kotlin.isInstance(SomeType))(localVar=someExpr) -> (localVar=someExpr) != null || Kotlin.isInstance(SomeType)(localVar)
+                val localVar = (argument as JsBinaryOperation).getArg1()
+                nextCheckTarget = localVar
+            }
+            else if (!argument.isLocalVar) {
+                val currentScope = scopes.peek()
+                val tmp = currentScope.declareTemporary()
+                val statementContext = getLastStatementLevelContext()
+                statementContext.addPrevious(newVar(tmp, null))
+                nullCheckTarget = assignment(tmp.makeRef(), argument)
+                nextCheckTarget = tmp.makeRef()
+            }
+
+            val isNull = TranslationUtils.isNullCheck(nullCheckTarget)
+            return or(isNull, JsInvocation(calleeArgument, nextCheckTarget))
         }
 
         return null
     }
+
+    private val JsExpression.isLocalVar: Boolean
+        get() {
+            if (localVars.empty() || this !is JsNameRef) return false
+
+            val name = this.getName()
+            return name != null && localVars.peek().contains(name)
+        }
+
+    private val JsExpression.isAssignmentToLocalVar: Boolean
+        get() = this is JsBinaryOperation && getOperator() == JsBinaryOperator.ASG
 }
