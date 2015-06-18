@@ -16,8 +16,8 @@ fun box(): String {
     assertEquals(a, test<A>(a), "a = AImpl()")
     a = object : A {}
     assertEquals(a, test<A>(a), "a = object : A{}")
-    assertClassCastException("test(null)") { test<A>(null) }
-    assertClassCastException("test(object{})") { test<A>(object{}) }
+    failsClassCast("test(null)") { test<A>(null) }
+    failsClassCast("test(object{})") { test<A>(object{}) }
 
     return "OK"
 }

@@ -14,7 +14,7 @@ fun box(): String {
     a = object : A {}
     assertEquals(a, test(a), "a = object : A{}")
     assertEquals(null, test(null), "test(null)")
-    assertClassCastException("test(object{})") { test(object{}) }
+    failsClassCast("test(object{})") { test(object{}) }
 
     return "OK"
 }
