@@ -1,7 +1,5 @@
 package foo
 
-import java.lang.*
-
 trait A
 
 class AImpl: A

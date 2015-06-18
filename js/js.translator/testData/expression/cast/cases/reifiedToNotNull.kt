@@ -2,8 +2,6 @@ package foo
 
 // CHECK_NOT_CALLED: test
 
-import java.lang.*
-
 trait A
 
 class AImpl: A

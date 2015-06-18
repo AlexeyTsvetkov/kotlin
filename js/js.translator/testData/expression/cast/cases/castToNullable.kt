@@ -1,7 +1,5 @@
 package foo
 
-import java.lang.*
-
 interface A
 
 class AImpl : A {}
