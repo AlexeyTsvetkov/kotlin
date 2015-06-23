@@ -29,6 +29,8 @@ import java.io.File;
 import java.util.List;
 
 public class K2JsCliTest extends CliBaseTest {
+    private final RhinoFunctionResultChecker CHECK_FOO_BOX_IS_OK = new RhinoFunctionResultChecker("out", "foo", "box", "OK");
+
     @Test
     public void simple2js() throws Exception {
         executeCompilerCompareOutputJS();
@@ -131,6 +133,6 @@ public class K2JsCliTest extends CliBaseTest {
         Assert.assertTrue(outJs.isFile());
 
         List<String> jsFiles = new SmartList<String>(outJs.getPath());
-        RhinoUtils.runRhinoTest(jsFiles, new RhinoFunctionResultChecker("out", "foo", "box", "OK"));
+        RhinoUtils.runRhinoTest(jsFiles, CHECK_FOO_BOX_IS_OK);
     }
 }
