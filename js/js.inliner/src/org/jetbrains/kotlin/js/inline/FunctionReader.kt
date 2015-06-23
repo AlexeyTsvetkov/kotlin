@@ -17,12 +17,13 @@
 package org.jetbrains.kotlin.js.inline
 
 import com.google.dart.compiler.backend.js.ast.*
+import com.google.dart.compiler.backend.js.ast.metadata.hasDefaultValue
 import com.google.dart.compiler.backend.js.ast.metadata.inlineStrategy
 import com.google.gwt.dev.js.ThrowExceptionOnErrorReporter
-import com.intellij.openapi.util.io.FileUtil
 import com.intellij.util.containers.SLRUCache
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.js.config.LibrarySourcesConfig
 import org.jetbrains.kotlin.js.inline.util.IdentitySet
 import org.jetbrains.kotlin.js.inline.util.isCallInvocation
@@ -33,11 +34,9 @@ import org.jetbrains.kotlin.js.translate.reference.CallExpressionTranslator
 import org.jetbrains.kotlin.js.translate.utils.JsDescriptorUtils.getExternalModuleName
 import org.jetbrains.kotlin.resolve.descriptorUtil.isExtension
 import org.jetbrains.kotlin.resolve.inline.InlineStrategy
-import org.jetbrains.kotlin.utils.KotlinJavascriptMetadataUtils
 import org.jetbrains.kotlin.utils.LibraryUtils
 import org.jetbrains.kotlin.utils.sure
 import java.io.File
-import kotlin.platform.platformStatic
 
 // TODO: add hash checksum to defineModule?
 /**
@@ -104,6 +103,7 @@ public class FunctionReader(private val context: TranslationContext) {
         val file = moduleJsDefinition[moduleName].sure { "Module $moduleName file have not been read" }
         val function = readFunctionFromSource(descriptor, file)
         function?.markInlineArguments(descriptor)
+        function?.markArgumentsWithDefaultValue(descriptor)
         return function
     }
 
@@ -133,21 +133,32 @@ public class FunctionReader(private val context: TranslationContext) {
 private val Char.isWhitespaceOrComma: Boolean
     get() = this == ',' || this.isWhitespace()
 
-private fun JsFunction.markInlineArguments(descriptor: CallableDescriptor) {
+inline
+private fun JsFunction.forEachParameter(
+        descriptor: CallableDescriptor,
+        fn: (ValueParameterDescriptor, JsParameter) -> Unit
+) {
     val params = descriptor.getValueParameters()
     val paramsJs = getParameters()
-    val inlineFuns = IdentitySet<JsName>()
-    val inlineExtensionFuns = IdentitySet<JsName>()
     val offset = if (descriptor.isExtension) 1 else 0
 
     for ((i, param) in params.withIndex()) {
-        if (!CallExpressionTranslator.shouldBeInlined(descriptor)) continue
+        fn(param, paramsJs[i + offset])
+    }
+}
 
+private fun JsFunction.markInlineArguments(descriptor: CallableDescriptor) {
+    val inlineFuns = IdentitySet<JsName>()
+    val inlineExtensionFuns = IdentitySet<JsName>()
+
+    forEachParameter(descriptor) { param, paramJs ->
         val type = param.getType()
-        if (!KotlinBuiltIns.isFunctionOrExtensionFunctionType(type)) continue
+        val name = paramJs.getName()
 
-        val namesSet = if (KotlinBuiltIns.isExtensionFunctionType(type)) inlineExtensionFuns else inlineFuns
-        namesSet.add(paramsJs[i + offset].getName())
+        when {
+            KotlinBuiltIns.isFunctionType(type) -> inlineFuns.add(name)
+            KotlinBuiltIns.isExtensionFunctionType(type) -> inlineExtensionFuns.add(name)
+        }
     }
 
     val visitor = object: JsVisitorWithContextImpl() {
@@ -172,6 +183,12 @@ private fun JsFunction.markInlineArguments(descriptor: CallableDescriptor) {
     }
 
     visitor.accept(this)
+}
+
+private fun JsFunction.markArgumentsWithDefaultValue(descriptor: CallableDescriptor) {
+    forEachParameter(descriptor) { param, paramJs ->
+        paramJs.hasDefaultValue = param.hasDefaultValue()
+    }
 }
 
 private fun replaceExternalNames(function: JsFunction, externalReplacements: Map<String, JsExpression>) {

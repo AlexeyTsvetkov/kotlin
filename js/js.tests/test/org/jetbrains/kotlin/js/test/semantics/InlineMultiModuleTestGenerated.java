@@ -53,6 +53,12 @@ public class InlineMultiModuleTestGenerated extends AbstractInlineMultiModuleTes
         doTest(fileName);
     }
 
+    @TestMetadata("defaultValue")
+    public void testDefaultValue() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/inlineMultiModule/cases/defaultValue/");
+        doTest(fileName);
+    }
+
     @TestMetadata("extensionLambda")
     public void testExtensionLambda() throws Exception {
         String fileName = JetTestUtils.navigationMetadata("js/js.translator/testData/inlineMultiModule/cases/extensionLambda/");
