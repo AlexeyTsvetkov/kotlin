@@ -25,7 +25,6 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.js.config.LibrarySourcesConfig
 import org.jetbrains.kotlin.js.inline.util.IdentitySet
-import org.jetbrains.kotlin.js.inline.util.LruCache
 import org.jetbrains.kotlin.js.inline.util.isCallInvocation
 import org.jetbrains.kotlin.js.parser.parseFunction
 import org.jetbrains.kotlin.js.resolve.diagnostics.ErrorsJs
@@ -38,6 +37,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.isExtension
 import org.jetbrains.kotlin.resolve.inline.InlineStrategy
 import org.jetbrains.kotlin.utils.LibraryUtils
 import java.io.File
+import java.util.WeakHashMap
 
 // TODO: add hash checksum to defineModule?
 /**
@@ -86,10 +86,7 @@ public class FunctionReader(private val context: TranslationContext) {
         }
     }
 
-    private val functionCache = object : LruCache<CallableDescriptor, JsFunction?>(200) {
-        override fun load(key: CallableDescriptor): JsFunction? =
-                readFunction(key)
-    }
+    private val functions = WeakHashMap<CallableDescriptor, JsFunction?>()
 
     public fun isCallToFunctionFromLibrary(call: JsInvocation): Boolean {
         val descriptor = call.descriptor ?: return false
@@ -102,7 +99,7 @@ public class FunctionReader(private val context: TranslationContext) {
         if (call in failedToLoad) return null
 
         val descriptor = call.descriptor!!
-        val function = functionCache[descriptor]
+        val function = functions.getOrPut(descriptor) { readFunction(descriptor) }
 
         if (function == null) {
             val psiElement = call.psiElement

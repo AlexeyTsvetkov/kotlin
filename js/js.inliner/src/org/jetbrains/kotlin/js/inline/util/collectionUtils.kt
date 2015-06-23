@@ -16,35 +16,8 @@
 
 package org.jetbrains.kotlin.js.inline.util
 
-import java.util.*
-
-public abstract class LruCache<K, V>(maxEntries: Int) {
-    private val map = LruMap<K, V>(maxEntries)
-
-    abstract fun load(key: K): V
-
-    public fun get(key: K): V {
-        val value = map[key] ?: load(key)
-
-        if (value != null) {
-            put(key, value)
-        }
-
-        return value
-    }
-
-    public fun put(key: K, value: V): Unit {
-        map.put(key, value)
-    }
-
-    public fun contains(key: K): Boolean =
-            key in map
-
-    private class LruMap<K, V>(private val maxEntries: Int) : LinkedHashMap<K, V>() {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>?): Boolean =
-                size() > maxEntries
-    }
-}
+import java.util.Collections
+import java.util.IdentityHashMap
 
 public fun IdentitySet<T>(): MutableSet<T> {
     return Collections.newSetFromMap(IdentityHashMap<T, Boolean>())
