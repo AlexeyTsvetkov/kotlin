@@ -40,8 +40,9 @@ public abstract class AbstractJetDiagnosticJsInlineWithRemovedLib : AbstractJetD
         if (!filePath.endsWith(KT_EXT)) throw AssertionError("Test file does not have Kotlin extension ($KT_EXT)")
 
         val libKtFile = File(filePath)
-        val testFile = File(filePath.removeSuffix(LIB_KT) + KT_EXT)
-        val outputDir = createOutputDirectoryForTest(testFile)
+        val testName = filePath.removeSuffix(LIB_KT)
+        val testFile = File(testName + KT_EXT)
+        val outputDir = createOutputDirectoryForTest(testName, testFile)
         val libJs = File(outputDir, LIB_JS)
         libMetaJs = File(outputDir, LIB_META_JS)
 
@@ -77,8 +78,7 @@ private val OUT_DIR_NAME = "out"
 private val LIB_META_JS = "lib.meta.js"
 private val LIB_JS = "lib.js"
 
-private fun createOutputDirectoryForTest(testKt: File): File {
-    val testName = testKt.getName().removeSuffix(KT_EXT)
+private fun createOutputDirectoryForTest(testName: String, testKt: File): File {
     val normalizedName = testName.replace("\\W+".toRegex(), "")
     val outDir = File(testKt.parent, OUT_DIR_NAME)
     val outputDir = File(outDir, normalizedName)
