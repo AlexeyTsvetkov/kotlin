@@ -134,7 +134,7 @@ public class CliBaseTest {
     }
 
     @NotNull
-    protected File getJsTestDataDir() {
+    protected static File getJsTestDataDir() {
         return new File(JS_TEST_DATA);
     }
 }
