@@ -119,7 +119,7 @@ public class MockLibraryUtil {
             File contentDir = JetTestUtils.tmpDir("testLibrary-" + jarName);
 
             File outDir = new File(contentDir, "out");
-            File outputFile = new File(outDir, jarName.replaceFirst("\\.jar$", ".js"));
+            File outputFile = new File(outDir, jarName + ".js");
             File outputMetaFile = new File(outDir, jarName + ".meta.js");
             compileKotlin2JS(sourcesPath, outputFile, outputMetaFile);
 

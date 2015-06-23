@@ -124,9 +124,9 @@ public class K2JsCliTest extends CliBaseTest {
     @Test
     public void inlineFromJarLib() throws Exception {
         File utilsKt = new File(getJsTestDataDir(), "libWithInlineFun.kt");
-        String jarName = "libWithInlineFun.jar";
+        String jarName = "libWithInlineFun";
         File jar = MockLibraryUtil.compileJsLibraryToJar(utilsKt.getPath(), jarName, false);
-        FileUtil.copy(jar, new File(tmpdir.getTmpDir(), jarName));
+        FileUtil.copy(jar, new File(tmpdir.getTmpDir(), jarName + ".jar"));
 
         executeCompilerCompareOutputJS();
         File outJs = new File(tmpdir.getTmpDir(), "out.js");
