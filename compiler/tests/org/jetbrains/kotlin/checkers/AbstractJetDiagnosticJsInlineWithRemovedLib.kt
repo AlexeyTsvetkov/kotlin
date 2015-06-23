@@ -39,9 +39,7 @@ public abstract class AbstractJetDiagnosticJsInlineWithRemovedLib : AbstractJetD
     override fun doTest(filePath: String) {
         if (!filePath.endsWith(KT_EXT)) throw AssertionError("Test file does not have Kotlin extension ($KT_EXT)")
 
-        val libKtPath = filePath
-        val libKtFile = File(libKtPath)
-
+        val libKtFile = File(filePath)
         val testFile = File(filePath.removeSuffix(LIB_KT) + KT_EXT)
         val outputDir = createOutputDirectoryForTest(testFile)
         val libJs = File(outputDir, LIB_JS)
