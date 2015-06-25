@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.cli.js;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.util.SmartList;
 import org.jetbrains.kotlin.cli.CliBaseTest;
+import org.jetbrains.kotlin.js.test.BasicTest;
 import org.jetbrains.kotlin.js.test.rhino.RhinoFunctionResultChecker;
 import org.jetbrains.kotlin.js.test.rhino.RhinoUtils;
 import org.jetbrains.kotlin.test.MockLibraryUtil;
@@ -29,7 +30,8 @@ import java.io.File;
 import java.util.List;
 
 public class K2JsCliTest extends CliBaseTest {
-    private final RhinoFunctionResultChecker CHECK_FOO_BOX_IS_OK = new RhinoFunctionResultChecker("out", "foo", "box", "OK");
+    private final RhinoFunctionResultChecker CHECK_FOO_BOX_IS_OK =
+            new RhinoFunctionResultChecker("out", BasicTest.TEST_PACKAGE, BasicTest.TEST_FUNCTION, "OK");
 
     @Test
     public void simple2js() throws Exception {
