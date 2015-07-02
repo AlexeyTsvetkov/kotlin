@@ -131,7 +131,7 @@ public class CompilerOutputParser {
 
         @Override
         public void characters(char[] ch, int start, int length) throws SAXException {
-            if (tags.size() == 1) {
+            if (atMessagesRootTag()) {
                 // We're directly inside the root tag: <MESSAGES>
                 String message = new String(ch, start, length);
                 if (!message.trim().isEmpty()) {
@@ -145,7 +145,7 @@ public class CompilerOutputParser {
 
         @Override
         public void endElement(String uri, @NotNull String localName, @NotNull String qName) throws SAXException {
-            if (tags.size() == 1) {
+            if (atMessagesRootTag()) {
                 // We're directly inside the root tag: <MESSAGES>
                 return;
             }
@@ -171,6 +171,10 @@ public class CompilerOutputParser {
             if (output != null) {
                 collector.add(output.sourceFiles, output.outputFile);
             }
+        }
+
+        private boolean atMessagesRootTag() {
+            return tags.size() == 1 && tags.peek().toLowerCase().equals("messages");
         }
 
         private static int safeParseInt(@Nullable String value, int defaultValue) {

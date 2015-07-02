@@ -21,4 +21,9 @@ import java.util.Collection;
 
 public interface OutputItemsCollector {
     void add(Collection<File> sourceFiles, File outputFile);
+
+    OutputItemsCollector DEFAULT = new OutputItemsCollector() {
+        @Override
+        public void add(Collection<File> sourceFiles, File outputFile) {}
+    };
 }

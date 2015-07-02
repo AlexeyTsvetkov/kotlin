@@ -84,17 +84,39 @@ public class KotlinCompilerRunner {
             String compilerClassName,
             CommonCompilerArguments arguments,
             String additionalArguments,
-            MessageCollector messageCollector,
-            OutputItemsCollector collector,
+            final MessageCollector messageCollector,
+            final OutputItemsCollector collector,
             CompilerEnvironment environment
     ) {
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream(stream);
+        PipedOutputStream out = new PipedOutputStream();
+        PrintStream printStream = new PrintStream(out);
+        Thread thread;
 
-        String exitCode = execCompiler(compilerClassName, arguments, additionalArguments, environment, out, messageCollector);
+        try {
+            //noinspection IOResourceOpenedButNotSafelyClosed
+            final PipedInputStream in = new PipedInputStream(out);
+            Runnable runnable = new Runnable() {
+                @Override
+                public void run() {
+                    CompilerOutputParser.parseCompilerMessagesFromReader(messageCollector, new InputStreamReader(in), collector);
+                }
+            };
+            thread = new Thread(runnable, "Parsing messages from compiler");
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
-        BufferedReader reader = new BufferedReader(new StringReader(stream.toString()));
-        CompilerOutputParser.parseCompilerMessagesFromReader(messageCollector, reader, collector);
+        thread.start();
+        String exitCode = execCompiler(compilerClassName, arguments, additionalArguments, environment, printStream, messageCollector);
+        printStream.close();
+
+        try {
+            thread.join();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
         if (INTERNAL_ERROR.equals(exitCode)) {
             messageCollector.report(ERROR, "Compiler terminated with internal error", NO_LOCATION);
