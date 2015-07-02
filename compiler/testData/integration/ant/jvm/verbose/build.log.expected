@@ -3,8 +3,12 @@ Buildfile: [TestData]/build.xml
 
 build:
   [kotlinc] Compiling [[TestData]/hello.kt] => [[Temp]/hello.jar]
-  [kotlinc] logging: using Kotlin home directory [KotlinProjectHome]/dist/kotlinc
-  [kotlinc] logging: configuring the compilation environment
+  [kotlinc] output: using Kotlin home directory [KotlinProjectHome]/dist/kotlinc
+  [kotlinc] progress: loading plugins
+  [kotlinc] progress: configuring the compilation environment
+  [kotlinc] progress: analyzing Kotlin files
+  [kotlinc] progress: translating Kotlin files to bytecode
+  [kotlinc] progress: writing bytecode
 
 BUILD SUCCESSFUL
 Total time: [time]

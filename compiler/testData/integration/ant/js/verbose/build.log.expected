@@ -3,7 +3,10 @@ Buildfile: [TestData]/build.xml
 
 build:
 [kotlin2js] Compiling [[TestData]/root1] => [[Temp]/out.js]
-[kotlin2js] logging: compiling source files: [TestData]/root1/foo.kt
+[kotlin2js] progress: analyzing Kotlin files
+[kotlin2js] progress: translating Kotlin to JavaScript
+[kotlin2js] progress: inlining Kotlin functions
+[kotlin2js] progress: writing generated JavaScript
 [kotlin2js] output: output:
 [kotlin2js] [Temp]/out.js
 [kotlin2js] Sources:
