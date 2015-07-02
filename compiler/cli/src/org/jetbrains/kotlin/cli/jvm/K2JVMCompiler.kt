@@ -87,6 +87,7 @@ public open class K2JVMCompiler : CLICompiler<K2JVMCompilerArguments>() {
 
 
         try {
+            reportProgress(messageSeverityCollector, "Loading plugins")
             PluginCliParser.loadPlugins(arguments, configuration)
         }
         catch (e: PluginCliOptionProcessingException) {
@@ -169,7 +170,7 @@ public open class K2JVMCompiler : CLICompiler<K2JVMCompilerArguments>() {
                 val compilerConfiguration = KotlinToJVMBytecodeCompiler.createCompilerConfiguration(configuration, moduleScript.getModules(), directory)
                 environment = createCoreEnvironment(rootDisposable, compilerConfiguration)
 
-                KotlinToJVMBytecodeCompiler.compileModules(environment, configuration, moduleScript.getModules(), directory, jar, arguments.includeRuntime)
+                KotlinToJVMBytecodeCompiler.compileModules(environment, moduleScript.getModules(), directory, jar, arguments.includeRuntime)
             }
             else if (arguments.script) {
                 val scriptArgs = arguments.freeArgs.subList(1, arguments.freeArgs.size())

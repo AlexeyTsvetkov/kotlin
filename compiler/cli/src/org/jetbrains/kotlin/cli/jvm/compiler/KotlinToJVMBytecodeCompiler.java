@@ -70,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static org.jetbrains.kotlin.cli.common.messages.MessageCollectorUtil.reportProgress;
 import static org.jetbrains.kotlin.cli.jvm.config.ConfigPackage.*;
 import static org.jetbrains.kotlin.config.ConfigPackage.addKotlinSourceRoots;
 
@@ -98,13 +99,16 @@ public class KotlinToJVMBytecodeCompiler {
     }
 
     private static void writeOutput(
-            @NotNull CompilerConfiguration configuration,
+            @NotNull  KotlinCoreEnvironment environment,
             @NotNull ClassFileFactory outputFiles,
             @Nullable File outputDir,
             @Nullable File jarPath,
             boolean jarRuntime,
             @Nullable FqName mainClass
     ) {
+        reportProgress(getCollector(environment), "Writing bytecode");
+        CompilerConfiguration configuration = environment.getConfiguration();
+
         if (jarPath != null) {
             CompileEnvironmentUtil.writeToJar(jarPath, jarRuntime, mainClass, outputFiles);
         }
@@ -116,7 +120,6 @@ public class KotlinToJVMBytecodeCompiler {
 
     public static boolean compileModules(
             @NotNull KotlinCoreEnvironment environment,
-            @NotNull CompilerConfiguration configuration,
             @NotNull List<Module> chunk,
             @NotNull File directory,
             @Nullable File jarPath,
@@ -158,7 +161,7 @@ public class KotlinToJVMBytecodeCompiler {
 
         for (Module module : chunk) {
             ProgressIndicatorAndCompilationCanceledStatus.checkCanceled();
-            writeOutput(configuration, outputFiles.get(module), new File(module.getOutputDirectory()), jarPath, jarRuntime, null);
+            writeOutput(environment, outputFiles.get(module), new File(module.getOutputDirectory()), jarPath, jarRuntime, null);
         }
         return true;
     }
@@ -230,7 +233,7 @@ public class KotlinToJVMBytecodeCompiler {
         FqName mainClass = findMainClass(generationState, environment.getSourceFiles());
 
         try {
-            writeOutput(environment.getConfiguration(), generationState.getFactory(), outputDir, jar, includeRuntime, mainClass);
+            writeOutput(environment, generationState.getFactory(), outputDir, jar, includeRuntime, mainClass);
             return true;
         }
         finally {
@@ -311,9 +314,7 @@ public class KotlinToJVMBytecodeCompiler {
 
     @Nullable
     private static AnalysisResult analyze(@NotNull final KotlinCoreEnvironment environment, @Nullable String targetDescription) {
-        MessageCollector collector = environment.getConfiguration().get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY);
-        assert collector != null;
-
+        MessageCollector collector = getCollector(environment);
         long analysisStart = PerformanceCounter.Companion.currentTime();
         AnalyzerWithCompilerReport analyzerWithCompilerReport = new AnalyzerWithCompilerReport(collector);
         analyzerWithCompilerReport.analyzeAndReport(
@@ -361,6 +362,7 @@ public class KotlinToJVMBytecodeCompiler {
             @Nullable String moduleId,
             File outputDirectory
     ) {
+        reportProgress(getCollector(environment), "Translating Kotlin files to bytecode");
         CompilerConfiguration configuration = environment.getConfiguration();
         IncrementalCacheProvider incrementalCacheProvider = configuration.get(JVMConfigurationKeys.INCREMENTAL_CACHE_PROVIDER);
 
@@ -415,5 +417,12 @@ public class KotlinToJVMBytecodeCompiler {
         );
         ProgressIndicatorAndCompilationCanceledStatus.checkCanceled();
         return generationState;
+    }
+
+    @NotNull
+    private static MessageCollector getCollector(@NotNull KotlinCoreEnvironment environment) {
+        MessageCollector collector = environment.getConfiguration().get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY);
+        assert collector != null;
+        return collector;
     }
 }

@@ -29,6 +29,7 @@ import com.intellij.psi.PsiManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.backend.common.output.OutputFileCollection;
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector;
 import org.jetbrains.kotlin.cli.common.output.outputUtils.OutputUtilsPackage;
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles;
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment;
@@ -190,7 +191,7 @@ public abstract class BasicTest extends KotlinTestWithEnvironment {
             @NotNull MainCallParameters mainCallParameters,
             @NotNull Config config
     ) throws Exception {
-        K2JSTranslator translator = new K2JSTranslator(config);
+        K2JSTranslator translator = new K2JSTranslator(config, MessageCollector.NONE);
         TranslationResult translationResult = translator.translate(jetFiles, mainCallParameters);
 
         if (!(translationResult instanceof TranslationResult.Success)) return;

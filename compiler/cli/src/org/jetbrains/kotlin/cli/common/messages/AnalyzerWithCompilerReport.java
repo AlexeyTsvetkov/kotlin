@@ -45,6 +45,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static com.intellij.openapi.util.io.FileUtil.toSystemDependentName;
+import static org.jetbrains.kotlin.cli.common.messages.MessageCollectorUtil.reportProgress;
 import static org.jetbrains.kotlin.diagnostics.DiagnosticUtils.sortedDiagnostics;
 
 public final class AnalyzerWithCompilerReport {
@@ -220,6 +221,7 @@ public final class AnalyzerWithCompilerReport {
     }
 
     public void analyzeAndReport(@NotNull Collection<JetFile> files, @NotNull Function0<AnalysisResult> analyzer) {
+        reportProgress(messageCollector, "Analyzing Kotlin files");
         analysisResult = analyzer.invoke();
         reportAbiVersionErrors();
         reportSyntaxErrors(files);

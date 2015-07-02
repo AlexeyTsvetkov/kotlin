@@ -20,15 +20,12 @@ import com.google.common.base.Joiner;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.io.FileUtil;
-import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.util.Function;
 import com.intellij.util.SmartList;
 import com.intellij.util.containers.ContainerUtil;
 import kotlin.Unit;
 import kotlin.jvm.functions.Function0;
 import kotlin.jvm.functions.Function1;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.analyzer.AnalysisResult;
 import org.jetbrains.kotlin.backend.common.output.OutputFileCollection;
 import org.jetbrains.kotlin.cli.common.CLICompiler;
@@ -44,7 +41,6 @@ import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment;
 import org.jetbrains.kotlin.cli.jvm.config.JVMConfigurationKeys;
 import org.jetbrains.kotlin.config.CompilerConfiguration;
 import org.jetbrains.kotlin.config.Services;
-import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus;
 import org.jetbrains.kotlin.js.analyze.TopDownAnalyzerFacadeForJS;
 import org.jetbrains.kotlin.js.analyzer.JsAnalysisResult;
 import org.jetbrains.kotlin.js.config.Config;
@@ -53,6 +49,7 @@ import org.jetbrains.kotlin.js.config.LibrarySourcesConfig;
 import org.jetbrains.kotlin.js.facade.K2JSTranslator;
 import org.jetbrains.kotlin.js.facade.MainCallParameters;
 import org.jetbrains.kotlin.js.facade.TranslationResult;
+import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.utils.PathUtil;
 
@@ -62,7 +59,7 @@ import java.util.List;
 import static org.jetbrains.kotlin.cli.common.ExitCode.COMPILATION_ERROR;
 import static org.jetbrains.kotlin.cli.common.ExitCode.OK;
 import static org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation.NO_LOCATION;
-import static org.jetbrains.kotlin.cli.common.messages.MessageUtil.reportProgress;
+import static org.jetbrains.kotlin.cli.common.messages.MessageCollectorUtil.reportProgress;
 import static org.jetbrains.kotlin.config.ConfigPackage.addKotlinSourceRoots;
 
 public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
@@ -175,7 +172,7 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
         MainCallParameters mainCallParameters = createMainCallParameters(arguments.main);
         TranslationResult translationResult;
 
-        K2JSTranslator translator = new K2JSTranslator(config);
+        K2JSTranslator translator = new K2JSTranslator(config, messageSeverityCollector);
         try {
             //noinspection unchecked
             translationResult = translator.translate(sourcesFiles, mainCallParameters, jsAnalysisResult);
@@ -189,6 +186,7 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
 
         if (!(translationResult instanceof TranslationResult.Success)) return ExitCode.COMPILATION_ERROR;
 
+        reportProgress(messageSeverityCollector, "Writing generated JavaScript");
         TranslationResult.Success successResult = (TranslationResult.Success) translationResult;
         OutputFileCollection outputFiles = successResult.getOutputFiles(outputFile, outputPrefixFile, outputPostfixFile);
 

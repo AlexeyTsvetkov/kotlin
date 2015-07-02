@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.checkers
 
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.context.ModuleContext
 import org.jetbrains.kotlin.diagnostics.DiagnosticUtils.hasError
 import org.jetbrains.kotlin.js.analyze.TopDownAnalyzerFacadeForJS
@@ -34,7 +35,7 @@ public abstract class AbstractJetDiagnosticsTestWithJsStdLibAndBackendCompilatio
         val diagnostics = analysisResult.bindingTrace.getBindingContext().getDiagnostics()
 
         if (!hasError(diagnostics)) {
-            val translator = K2JSTranslator(getConfig())
+            val translator = K2JSTranslator(getConfig(), MessageCollector.NONE)
             translator.translate(jetFiles, MainCallParameters.noCall(), analysisResult)
         }
     }
