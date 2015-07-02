@@ -23,4 +23,8 @@ public class MessageCollectorUtil {
         messageCollector.report(CompilerMessageSeverity.EXCEPTION, OutputMessageUtil.renderException(exception),
                                 CompilerMessageLocation.NO_LOCATION);
     }
+
+    public static void reportProgress(@NotNull MessageCollector collector, @NotNull String message) {
+        collector.report(CompilerMessageSeverity.PROGRESS, message, CompilerMessageLocation.getNO_LOCATION());
+    }
 }

@@ -62,6 +62,7 @@ import java.util.List;
 import static org.jetbrains.kotlin.cli.common.ExitCode.COMPILATION_ERROR;
 import static org.jetbrains.kotlin.cli.common.ExitCode.OK;
 import static org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation.NO_LOCATION;
+import static org.jetbrains.kotlin.cli.common.messages.MessageUtil.reportProgress;
 import static org.jetbrains.kotlin.config.ConfigPackage.addKotlinSourceRoots;
 
 public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
@@ -222,8 +223,7 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
                 return file.getName() + "(no virtual file)";
             }
         });
-        messageCollector.report(CompilerMessageSeverity.PROGRESS, "Compiling source files: " + Joiner.on(", ").join(fileNames),
-                                CompilerMessageLocation.NO_LOCATION);
+        reportProgress(messageCollector, "Compiling source files: " + Joiner.on(", ").join(fileNames));
     }
 
     private static AnalyzerWithCompilerReport analyzeAndReportErrors(@NotNull MessageCollector messageCollector,
