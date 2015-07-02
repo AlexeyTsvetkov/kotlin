@@ -14,26 +14,15 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.cli.common.messages;
+package org.jetbrains.kotlin.cli.common.messages
 
-import com.google.common.base.Predicate;
-import org.jetbrains.annotations.NotNull;
+import com.google.common.base.Predicate
 
-public class FilteringMessageCollector implements MessageCollector {
-    private final MessageCollector messageCollector;
-    private final Predicate<CompilerMessageSeverity> decline;
+public class FilteringMessageCollector(private val messageCollector: MessageCollector, private val decline: Predicate<CompilerMessageSeverity>) : MessageCollector {
 
-    public FilteringMessageCollector(@NotNull MessageCollector messageCollector, @NotNull Predicate<CompilerMessageSeverity> decline) {
-        this.messageCollector = messageCollector;
-        this.decline = decline;
-    }
-
-    @Override
-    public void report(
-            @NotNull CompilerMessageSeverity severity, @NotNull String message, @NotNull CompilerMessageLocation location
-    ) {
+    override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation) {
         if (!decline.apply(severity)) {
-            messageCollector.report(severity, message, location);
+            messageCollector.report(severity, message, location)
         }
     }
 }
