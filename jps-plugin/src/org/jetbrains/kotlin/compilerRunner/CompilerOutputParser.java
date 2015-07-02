@@ -96,7 +96,7 @@ public class CompilerOutputParser {
         private static final Map<String, CompilerMessageSeverity> CATEGORIES = new ContainerUtil.ImmutableMapBuilder<String, CompilerMessageSeverity>()
                 .put("error", ERROR)
                 .put("warning", WARNING)
-                .put("logging", LOGGING)
+                .put("progress", PROGRESS)
                 .put("output", OUTPUT)
                 .put("exception", EXCEPTION)
                 .put("info", INFO)

@@ -554,7 +554,7 @@ public class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR
                 INFO -> BuildMessage.Kind.INFO
                 ERROR, EXCEPTION -> BuildMessage.Kind.ERROR
                 WARNING -> BuildMessage.Kind.WARNING
-                LOGGING -> BuildMessage.Kind.PROGRESS
+                PROGRESS -> BuildMessage.Kind.PROGRESS
                 else -> throw IllegalArgumentException("Unsupported severity: " + severity)
             }
         }
