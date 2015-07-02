@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.compilerRunner;
 
+import com.google.common.base.Predicate;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.Function;
@@ -27,6 +28,8 @@ import org.jetbrains.kotlin.cli.common.ExitCode;
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments;
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments;
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments;
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity;
+import org.jetbrains.kotlin.cli.common.messages.FilteringMessageCollector;
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector;
 import org.jetbrains.kotlin.cli.common.messages.MessageCollectorUtil;
 import org.jetbrains.kotlin.config.CompilerSettings;
@@ -39,6 +42,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static com.google.common.base.Predicates.equalTo;
+import static com.google.common.base.Predicates.not;
 import static org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation.NO_LOCATION;
 import static org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.ERROR;
 import static org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.INFO;
@@ -88,13 +93,16 @@ public class KotlinCompilerRunner {
             OutputItemsCollector collector,
             CompilerEnvironment environment
     ) {
+        Predicate<CompilerMessageSeverity> severityIsProgress = equalTo(CompilerMessageSeverity.PROGRESS);
+        MessageCollector progressCollector = new FilteringMessageCollector(messageCollector, severityIsProgress);
+        MessageCollector notProgressCollector = new FilteringMessageCollector(messageCollector, not(severityIsProgress));
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream(stream);
+        PrintStream out = new CopyingMessageCollectorPrintingStreamAdapter(progressCollector, stream);
 
-        String exitCode = execCompiler(compilerClassName, arguments, additionalArguments, environment, out, messageCollector);
+        String exitCode = execCompiler(compilerClassName, arguments, additionalArguments, environment, out, notProgressCollector);
 
         BufferedReader reader = new BufferedReader(new StringReader(stream.toString()));
-        CompilerOutputParser.parseCompilerMessagesFromReader(messageCollector, reader, collector);
+        CompilerOutputParser.parseCompilerMessagesFromReader(notProgressCollector, reader, collector);
 
         if (INTERNAL_ERROR.equals(exitCode)) {
             messageCollector.report(ERROR, "Compiler terminated with internal error", NO_LOCATION);

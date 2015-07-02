@@ -14,16 +14,21 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.compilerRunner;
+package org.jetbrains.kotlin.compilerRunner
 
-import java.io.File;
-import java.util.Collection;
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import java.io.*
 
-public interface OutputItemsCollector {
-    void add(Collection<File> sourceFiles, File outputFile);
+public class CopyingMessageCollectorPrintingStreamAdapter(
+        private val collector: MessageCollector,
+        stream: OutputStream
+) : PrintStream(stream) {
+    override fun print(s: String?) {
+        if (s != null) {
+            val reader = BufferedReader(StringReader(s))
+            CompilerOutputParser.parseCompilerMessagesFromReader(collector, reader, OutputItemsCollector.DEFAULT)
+        }
 
-    OutputItemsCollector DEFAULT = new OutputItemsCollector() {
-        @Override
-        public void add(Collection<File> sourceFiles, File outputFile) {}
-    };
+        super.print(s)
+    }
 }
