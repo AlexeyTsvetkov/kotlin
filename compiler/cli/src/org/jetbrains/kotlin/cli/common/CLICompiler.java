@@ -16,7 +16,6 @@
 
 package org.jetbrains.kotlin.cli.common;
 
-import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.util.Disposer;
@@ -37,6 +36,8 @@ import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStat
 import java.io.PrintStream;
 import java.util.List;
 
+import static com.google.common.base.Predicates.equalTo;
+import static com.google.common.base.Predicates.not;
 import static org.jetbrains.kotlin.cli.common.ExitCode.*;
 
 public abstract class CLICompiler<A extends CommonCompilerArguments> {
@@ -143,7 +144,7 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
         printVersionIfNeeded(messageCollector, arguments);
 
         if (arguments.suppressWarnings) {
-            messageCollector = new FilteringMessageCollector(messageCollector, Predicates.equalTo(CompilerMessageSeverity.WARNING));
+            messageCollector = new FilteringMessageCollector(messageCollector, not(equalTo(CompilerMessageSeverity.WARNING)));
         }
 
         GroupingMessageCollector groupingCollector = new GroupingMessageCollector(messageCollector);

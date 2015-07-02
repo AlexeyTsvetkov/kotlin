@@ -18,10 +18,10 @@ package org.jetbrains.kotlin.cli.common.messages
 
 import com.google.common.base.Predicate
 
-public class FilteringMessageCollector(private val messageCollector: MessageCollector, private val decline: Predicate<CompilerMessageSeverity>) : MessageCollector {
+public class FilteringMessageCollector(private val messageCollector: MessageCollector, private val predicate: Predicate<CompilerMessageSeverity>) : MessageCollector {
 
     override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation) {
-        if (!decline.apply(severity)) {
+        if (predicate.apply(severity)) {
             messageCollector.report(severity, message, location)
         }
     }
