@@ -3,6 +3,7 @@ Buildfile: [TestData]/build.xml
 
 build:
   [kotlinc] Compiling [[TestData]/hello.kt] => [[Temp]/hello.jar]
+  [kotlinc] info: using Kotlin home directory [KotlinProjectHome]/dist/kotlinc
 
 BUILD SUCCESSFUL
 Total time: [time]

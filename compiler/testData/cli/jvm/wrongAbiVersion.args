@@ -1,4 +1,5 @@
 $TESTDATA_DIR$/wrongAbiVersion.kt
+-nowarn
 -classpath
 $TESTDATA_DIR$/wrongAbiVersionLib/bin
 -d

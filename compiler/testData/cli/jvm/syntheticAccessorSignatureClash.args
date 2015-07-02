@@ -1,3 +1,4 @@
 $TESTDATA_DIR$/syntheticAccessorSignatureClash.kt
+-nowarn
 -d
 $TEMP_DIR$

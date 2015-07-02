@@ -3,9 +3,11 @@ Buildfile: [TestData]/build.xml
 
 build:
   [kotlinc] Compiling [[TestData]/hello.kt] => [[Temp]/hello.jar]
+  [kotlinc] info: using Kotlin home directory [KotlinProjectHome]/dist/kotlinc
     [javac] Compiling 1 source file to [Temp]
     [javac] Compiling [[TestData]] => [[Temp]]
     [javac] info: Kotlin Compiler version [KotlinVersion]
+    [javac] info: using Kotlin home directory [KotlinProjectHome]/dist/kotlinc
     [javac] Running javac...
 
 BUILD SUCCESSFUL
