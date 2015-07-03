@@ -24,6 +24,10 @@ public enum CompilerMessageSeverity {
     WARNING,
     EXCEPTION,
     PROGRESS,
+    /**
+     * Special message type to transfer input/output sources list
+     * between compiler and JPS plugin
+     */
     OUTPUT;
 
     public static final EnumSet<CompilerMessageSeverity> ERRORS = EnumSet.of(ERROR, EXCEPTION);
