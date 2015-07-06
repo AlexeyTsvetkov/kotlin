@@ -41,7 +41,6 @@ import java.util.List;
 
 import static org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation.NO_LOCATION;
 import static org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.ERROR;
-import static org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.INFO;
 
 public class KotlinCompilerRunner {
     private static final String K2JVM_COMPILER = "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler";
@@ -133,8 +132,6 @@ public class KotlinCompilerRunner {
             MessageCollector messageCollector
     ) {
         try {
-            messageCollector.report(INFO, "Using kotlin-home = " + environment.getKotlinPaths().getHomePath(), NO_LOCATION);
-
             List<String> argumentsList = ArgumentUtils.convertArgumentsToStringList(arguments);
             argumentsList.addAll(StringUtil.split(additionalArguments, " "));
 

@@ -511,6 +511,7 @@ public class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR
 
         val project = context.getProjectDescriptor().getProject()
         val k2JvmArguments = JpsKotlinCompilerSettings.getK2JvmCompilerArguments(project)
+        k2JvmArguments.kotlinHome = environment.getKotlinPaths().getHomePath().canonicalPath
         val compilerSettings = JpsKotlinCompilerSettings.getCompilerSettings(project)
 
         KotlinBuilder.LOG.debug("Compiling to JVM ${filesToCompile.values().size()} files"
