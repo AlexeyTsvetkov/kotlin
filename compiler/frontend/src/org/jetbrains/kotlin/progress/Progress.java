@@ -27,6 +27,10 @@ public interface Progress {
         @Override
         public void reportOutput(@NotNull Collection<File> sourceFiles, @Nullable File outputFile) {
         }
+
+        @Override
+        public void reportProgress(@NotNull String message) {
+        }
     };
 
     /**
@@ -34,4 +38,6 @@ public interface Progress {
      * @param outputFile an output file
      */
     void reportOutput(@NotNull Collection<File> sourceFiles, @Nullable File outputFile);
+
+    void reportProgress(@NotNull String message);
 }

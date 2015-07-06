@@ -51,6 +51,7 @@ import org.jetbrains.kotlin.parsing.JetScriptDefinition;
 import org.jetbrains.kotlin.parsing.JetScriptDefinitionProvider;
 import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus;
+import org.jetbrains.kotlin.progress.ProgressMessageCollectorAdapter;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.resolve.AnalyzerScriptParameter;
 import org.jetbrains.kotlin.resolve.BindingTrace;
@@ -316,6 +317,7 @@ public class KotlinToJVMBytecodeCompiler {
     @Nullable
     private static AnalysisResult analyze(@NotNull final KotlinCoreEnvironment environment, @Nullable String targetDescription) {
         MessageCollector collector = getCollector(environment);
+        final Progress progress = new ProgressMessageCollectorAdapter(collector);
         long analysisStart = PerformanceCounter.Companion.currentTime();
         AnalyzerWithCompilerReport analyzerWithCompilerReport = new AnalyzerWithCompilerReport(collector);
         analyzerWithCompilerReport.analyzeAndReport(
@@ -331,7 +333,8 @@ public class KotlinToJVMBytecodeCompiler {
                                 environment.getSourceFiles(),
                                 sharedTrace,
                                 environment.getConfiguration().get(JVMConfigurationKeys.MODULE_IDS),
-                                environment.getConfiguration().get(JVMConfigurationKeys.INCREMENTAL_CACHE_PROVIDER)
+                                environment.getConfiguration().get(JVMConfigurationKeys.INCREMENTAL_CACHE_PROVIDER),
+                                progress
                         );
                     }
                 }

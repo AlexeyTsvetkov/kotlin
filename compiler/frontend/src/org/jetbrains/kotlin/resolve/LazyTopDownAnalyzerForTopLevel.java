@@ -22,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.descriptors.PackageFragmentProvider;
 import org.jetbrains.kotlin.descriptors.impl.CompositePackageFragmentProvider;
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl;
+import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.psi.JetScript;
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo;
@@ -52,7 +53,8 @@ public class LazyTopDownAnalyzerForTopLevel {
     public TopDownAnalysisContext analyzeFiles(
             @NotNull TopDownAnalysisMode topDownAnalysisMode,
             @NotNull Collection<JetFile> files,
-            @NotNull List<? extends PackageFragmentProvider> additionalProviders
+            @NotNull List<? extends PackageFragmentProvider> additionalProviders,
+            @NotNull Progress progress
     ) {
         PackageFragmentProvider provider;
         if (additionalProviders.isEmpty()) {
@@ -66,7 +68,7 @@ public class LazyTopDownAnalyzerForTopLevel {
 
         ((ModuleDescriptorImpl) resolveSession.getModuleDescriptor()).initialize(provider);
 
-        return analyzeDeclarations(topDownAnalysisMode, files);
+        return analyzeDeclarations(topDownAnalysisMode, files, progress);
     }
 
     @NotNull
@@ -74,7 +76,16 @@ public class LazyTopDownAnalyzerForTopLevel {
             @NotNull TopDownAnalysisMode topDownAnalysisMode,
             @NotNull Collection<? extends PsiElement> elements
     ) {
-        TopDownAnalysisContext c = lazyTopDownAnalyzer.analyzeDeclarations(topDownAnalysisMode, elements, DataFlowInfo.EMPTY);
+        return analyzeDeclarations(topDownAnalysisMode, elements, Progress.DEAF);
+    }
+
+    @NotNull
+    private TopDownAnalysisContext analyzeDeclarations(
+            @NotNull TopDownAnalysisMode topDownAnalysisMode,
+            @NotNull Collection<? extends PsiElement> elements,
+            @NotNull Progress progress
+    ) {
+        TopDownAnalysisContext c = lazyTopDownAnalyzer.analyzeDeclarations(topDownAnalysisMode, elements, DataFlowInfo.EMPTY, progress);
 
         resolveImportsInAllFiles(c, resolveSession);
 

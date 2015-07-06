@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.diagnostics.Errors.CONSTRUCTOR_IN_TRAIT
 import org.jetbrains.kotlin.diagnostics.Errors.MANY_COMPANION_OBJECTS
 import org.jetbrains.kotlin.diagnostics.Errors.UNSUPPORTED
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.progress.Progress
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
 import org.jetbrains.kotlin.resolve.lazy.*
@@ -102,7 +103,12 @@ public class LazyTopDownAnalyzer {
         this.bodyResolver = bodyResolver
     }
 
-    public fun analyzeDeclarations(topDownAnalysisMode: TopDownAnalysisMode, declarations: Collection<PsiElement>, outerDataFlowInfo: DataFlowInfo): TopDownAnalysisContext {
+    public fun analyzeDeclarations(
+            topDownAnalysisMode: TopDownAnalysisMode,
+            declarations: Collection<PsiElement>,
+            outerDataFlowInfo: DataFlowInfo,
+            progress: Progress
+    ): TopDownAnalysisContext {
         val c = TopDownAnalysisContext(topDownAnalysisMode, outerDataFlowInfo, declarationScopeProvider!!)
 
         val topLevelFqNames = HashMultimap.create<FqName, JetElement>()
@@ -124,6 +130,7 @@ public class LazyTopDownAnalyzer {
                 }
 
                 override fun visitJetFile(file: JetFile) {
+                    progress.reportProgress("Analyzing file: ${file.getName()}")
                     if (file.isScript()) {
                         val script = file.getScript() ?: throw AssertionError("getScript() is null for file: $file")
 

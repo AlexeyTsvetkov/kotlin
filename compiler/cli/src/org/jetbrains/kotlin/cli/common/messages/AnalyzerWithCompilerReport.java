@@ -221,7 +221,6 @@ public final class AnalyzerWithCompilerReport {
     }
 
     public void analyzeAndReport(@NotNull Collection<JetFile> files, @NotNull Function0<AnalysisResult> analyzer) {
-        reportProgress(messageCollector, "Analyzing Kotlin files");
         analysisResult = analyzer.invoke();
         reportAbiVersionErrors();
         reportSyntaxErrors(files);
