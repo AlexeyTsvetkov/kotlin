@@ -32,6 +32,7 @@ import org.jetbrains.jps.incremental.fs.CompilationRound
 import org.jetbrains.jps.incremental.java.JavaBuilder
 import org.jetbrains.jps.incremental.messages.BuildMessage
 import org.jetbrains.jps.incremental.messages.CompilerMessage
+import org.jetbrains.jps.incremental.messages.ProgressMessage
 import org.jetbrains.jps.model.JpsProject
 import org.jetbrains.kotlin.cli.common.KotlinVersion
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
@@ -48,8 +49,6 @@ import org.jetbrains.kotlin.config.CompilerRunnerConstants
 import org.jetbrains.kotlin.config.CompilerRunnerConstants.INTERNAL_ERROR_PREFIX
 import org.jetbrains.kotlin.config.IncrementalCompilation
 import org.jetbrains.kotlin.config.Services
-import org.jetbrains.kotlin.progress.CompilationCanceledStatus
-import org.jetbrains.kotlin.progress.CompilationCanceledException
 import org.jetbrains.kotlin.jps.JpsKotlinCompilerSettings
 import org.jetbrains.kotlin.jps.incremental.*
 import org.jetbrains.kotlin.jps.incremental.IncrementalCacheImpl.RecompilationDecision.DO_NOTHING
@@ -60,6 +59,8 @@ import org.jetbrains.kotlin.load.kotlin.PackageClassUtils
 import org.jetbrains.kotlin.load.kotlin.header.isCompatiblePackageFacadeKind
 import org.jetbrains.kotlin.load.kotlin.incremental.cache.IncrementalCache
 import org.jetbrains.kotlin.load.kotlin.incremental.cache.IncrementalCacheProvider
+import org.jetbrains.kotlin.progress.CompilationCanceledException
+import org.jetbrains.kotlin.progress.CompilationCanceledStatus
 import org.jetbrains.kotlin.resolve.jvm.JvmClassName
 import org.jetbrains.kotlin.utils.LibraryUtils
 import org.jetbrains.kotlin.utils.PathUtil
@@ -96,7 +97,7 @@ public class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR
             LOG.info("Label in local history: $historyLabel")
         }
 
-        val messageCollector = MessageCollectorAdapter(context)
+        val messageCollector = MessageCollectorAdapter(context, chunk)
         try {
             return doBuild(chunk, context, dirtyFilesHolder, messageCollector, outputConsumer)
         }
@@ -522,21 +523,29 @@ public class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR
         return outputItemCollector
     }
 
-    public class MessageCollectorAdapter(private val context: CompileContext) : MessageCollector {
+    public class MessageCollectorAdapter(private val context: CompileContext, private val chunk: ModuleChunk) : MessageCollector {
 
         override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation) {
             var prefix = ""
             if (severity == EXCEPTION) {
                 prefix = INTERNAL_ERROR_PREFIX
             }
-            context.processMessage(CompilerMessage(
-                    CompilerRunnerConstants.KOTLIN_COMPILER_NAME,
-                    kind(severity),
-                    prefix + message + renderLocationIfNeeded(location),
-                    location.path,
-                    -1, -1, -1,
-                    location.line.toLong(), location.column.toLong()
-            ))
+
+            val buildMessage = when (severity) {
+                PROGRESS ->
+                    ProgressMessage(message + " [${chunk.getName()}]")
+                else ->
+                    CompilerMessage(
+                        CompilerRunnerConstants.KOTLIN_COMPILER_NAME,
+                        kind(severity),
+                        prefix + message + renderLocationIfNeeded(location),
+                        location.path,
+                        -1, -1, -1,
+                        location.line.toLong(), location.column.toLong()
+                    )
+            }
+
+            context.processMessage(buildMessage)
         }
 
         private fun renderLocationIfNeeded(location: CompilerMessageLocation): String {
