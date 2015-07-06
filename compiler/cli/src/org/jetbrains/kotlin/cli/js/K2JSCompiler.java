@@ -16,15 +16,19 @@
 
 package org.jetbrains.kotlin.cli.js;
 
+import com.google.common.base.Joiner;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.io.FileUtil;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.util.Function;
 import com.intellij.util.SmartList;
 import com.intellij.util.containers.ContainerUtil;
 import kotlin.Unit;
 import kotlin.jvm.functions.Function0;
 import kotlin.jvm.functions.Function1;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.analyzer.AnalysisResult;
 import org.jetbrains.kotlin.backend.common.output.OutputFileCollection;
 import org.jetbrains.kotlin.cli.common.CLICompiler;
@@ -118,6 +122,10 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
             return COMPILATION_ERROR;
         }
 
+        if (arguments.verbose) {
+            reportCompiledSourcesList(messageSeverityCollector, sourcesFiles);
+        }
+
         File outputFile = new File(arguments.outputFile);
 
         Config config = getConfig(arguments, project);
@@ -202,6 +210,21 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
         OutputUtilsPackage.writeAll(outputFiles, outputDir, messageSeverityCollector);
 
         return OK;
+    }
+
+    private static void reportCompiledSourcesList(@NotNull MessageCollector messageCollector, @NotNull List<JetFile> sourceFiles) {
+        Iterable<String> fileNames = ContainerUtil.map(sourceFiles, new Function<JetFile, String>() {
+            @Override
+            public String fun(@Nullable JetFile file) {
+                assert file != null;
+                VirtualFile virtualFile = file.getVirtualFile();
+                if (virtualFile != null) {
+                    return FileUtil.toSystemDependentName(virtualFile.getPath());
+                }
+                return file.getName() + "(no virtual file)";
+            }
+        });
+        reportProgress(messageCollector, "Compiling source files: " + Joiner.on(", ").join(fileNames));
     }
 
     private static AnalyzerWithCompilerReport analyzeAndReportErrors(@NotNull MessageCollector messageCollector,
