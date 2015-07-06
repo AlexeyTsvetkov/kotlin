@@ -36,6 +36,7 @@ import org.jetbrains.kotlin.psi.JetScript;
 import org.jetbrains.kotlin.resolve.BindingContext;
 import org.jetbrains.kotlin.resolve.BindingTrace;
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace;
+import org.jetbrains.kotlin.progress.Progress;
 
 import java.io.File;
 import java.util.Collection;
