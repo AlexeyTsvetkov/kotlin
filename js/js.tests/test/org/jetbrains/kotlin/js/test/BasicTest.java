@@ -45,7 +45,6 @@ import org.jetbrains.kotlin.js.test.rhino.RhinoResultChecker;
 import org.jetbrains.kotlin.js.test.utils.DirectiveTestUtils;
 import org.jetbrains.kotlin.js.test.utils.JsTestUtils;
 import org.jetbrains.kotlin.js.translate.context.Namer;
-import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.psi.JetPsiFactory;
 import org.jetbrains.kotlin.resolve.lazy.KotlinTestWithEnvironment;
@@ -191,7 +190,7 @@ public abstract class BasicTest extends KotlinTestWithEnvironment {
             @NotNull MainCallParameters mainCallParameters,
             @NotNull Config config
     ) throws Exception {
-        K2JSTranslator translator = new K2JSTranslator(config, Progress.DEAF);
+        K2JSTranslator translator = new K2JSTranslator(config);
         TranslationResult translationResult = translator.translate(jetFiles, mainCallParameters);
 
         if (!(translationResult instanceof TranslationResult.Success)) return;

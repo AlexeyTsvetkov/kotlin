@@ -35,7 +35,7 @@ public abstract class AbstractJetDiagnosticsTestWithJsStdLibAndBackendCompilatio
         val diagnostics = analysisResult.bindingTrace.getBindingContext().getDiagnostics()
 
         if (!hasError(diagnostics)) {
-            val translator = K2JSTranslator(getConfig(), Progress.DEAF)
+            val translator = K2JSTranslator(getConfig())
             translator.translate(jetFiles, MainCallParameters.noCall(), analysisResult)
         }
     }

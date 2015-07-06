@@ -30,7 +30,6 @@ import org.jetbrains.kotlin.js.analyzer.JsAnalysisResult;
 import org.jetbrains.kotlin.js.config.Config;
 import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.platform.PlatformToKotlinClassMap;
-import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.resolve.*;
 import org.jetbrains.kotlin.resolve.lazy.declarations.FileBasedDeclarationProviderFactory;
@@ -100,9 +99,7 @@ public final class TopDownAnalyzerFacadeForJS {
                 moduleContext, trace,
                 new FileBasedDeclarationProviderFactory(moduleContext.getStorageManager(), allFiles)
         );
-        // TODO: pass messageCollector from compiler
-        analyzerForJs.analyzeFiles(TopDownAnalysisMode.TopLevelDeclarations, files, Collections.<PackageFragmentProvider>emptyList(),
-                                   Progress.DEAF);
+        analyzerForJs.analyzeFiles(TopDownAnalysisMode.TopLevelDeclarations, files, Collections.<PackageFragmentProvider>emptyList(), config.getProgress());
         return JsAnalysisResult.success(trace, moduleContext.getModule());
     }
 

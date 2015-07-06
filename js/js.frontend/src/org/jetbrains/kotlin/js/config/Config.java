@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.descriptors.PackageFragmentProvider;
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl;
 import org.jetbrains.kotlin.js.analyze.TopDownAnalyzerFacadeForJS;
 import org.jetbrains.kotlin.name.Name;
+import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.serialization.js.KotlinJavascriptSerializationUtil;
 import org.jetbrains.kotlin.storage.LockBasedStorageManager;
@@ -66,13 +67,17 @@ public abstract class Config {
 
     private boolean initialized = false;
 
+    @NotNull
+    private Progress progress;
+
     protected Config(
             @NotNull Project project,
             @NotNull String moduleId,
             @NotNull EcmaVersion ecmaVersion,
             boolean sourcemap,
             boolean inlineEnabled,
-            boolean metaInfo
+            boolean metaInfo,
+            @NotNull Progress progress
     ) {
         this.project = project;
         this.target = ecmaVersion;
@@ -80,6 +85,7 @@ public abstract class Config {
         this.sourcemap = sourcemap;
         this.inlineEnabled = inlineEnabled;
         this.metaInfo = metaInfo;
+        this.progress = progress;
     }
 
     public boolean isSourcemap() {
@@ -138,6 +144,11 @@ public abstract class Config {
 
     public boolean isTestConfig() {
         return false;
+    }
+
+    @NotNull
+    public Progress getProgress() {
+        return progress;
     }
 
     private void init() {

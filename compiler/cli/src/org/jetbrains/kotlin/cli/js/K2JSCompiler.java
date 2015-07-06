@@ -52,6 +52,7 @@ import org.jetbrains.kotlin.js.config.LibrarySourcesConfig;
 import org.jetbrains.kotlin.js.facade.K2JSTranslator;
 import org.jetbrains.kotlin.js.facade.MainCallParameters;
 import org.jetbrains.kotlin.js.facade.TranslationResult;
+import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus;
 import org.jetbrains.kotlin.progress.ProgressMessageCollectorAdapter;
 import org.jetbrains.kotlin.psi.JetFile;
@@ -64,7 +65,6 @@ import static org.jetbrains.kotlin.cli.common.ExitCode.COMPILATION_ERROR;
 import static org.jetbrains.kotlin.cli.common.ExitCode.OK;
 import static org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation.NO_LOCATION;
 import static org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation.getNO_LOCATION;
-import static org.jetbrains.kotlin.cli.common.messages.MessageCollectorUtil.reportProgress;
 import static org.jetbrains.kotlin.config.ConfigPackage.addKotlinSourceRoots;
 
 public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
@@ -130,7 +130,8 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
 
         File outputFile = new File(arguments.outputFile);
 
-        Config config = getConfig(arguments, project);
+        Progress progress = new ProgressMessageCollectorAdapter(messageSeverityCollector);
+        Config config = getConfig(arguments, project, progress);
         if (config.checkLibFilesAndReportErrors(new Function1<String, Unit>() {
             @Override
             public Unit invoke(String message) {
@@ -177,7 +178,7 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
         MainCallParameters mainCallParameters = createMainCallParameters(arguments.main);
         TranslationResult translationResult;
 
-        K2JSTranslator translator = new K2JSTranslator(config, new ProgressMessageCollectorAdapter(messageSeverityCollector));
+        K2JSTranslator translator = new K2JSTranslator(config);
         try {
             //noinspection unchecked
             translationResult = translator.translate(sourcesFiles, mainCallParameters, jsAnalysisResult);
@@ -191,7 +192,7 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
 
         if (!(translationResult instanceof TranslationResult.Success)) return ExitCode.COMPILATION_ERROR;
 
-        reportProgress(messageSeverityCollector, "Writing generated JavaScript");
+        progress.reportProgress("Writing JavaScript");
         TranslationResult.Success successResult = (TranslationResult.Success) translationResult;
         OutputFileCollection outputFiles = successResult.getOutputFiles(outputFile, outputPrefixFile, outputPostfixFile);
 
@@ -242,7 +243,7 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
     }
 
     @NotNull
-    private static Config getConfig(@NotNull K2JSCompilerArguments arguments, @NotNull Project project) {
+    private static Config getConfig(@NotNull K2JSCompilerArguments arguments, @NotNull Project project, @NotNull Progress progress) {
         if (arguments.target != null) {
             assert arguments.target == "v5" : "Unsupported ECMA version: " + arguments.target;
         }
@@ -264,6 +265,7 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
                 .sourceMap(arguments.sourceMap)
                 .inlineEnabled(inlineEnabled)
                 .metaInfo(arguments.metaInfo)
+                .progress(progress)
                 .build();
     }
 

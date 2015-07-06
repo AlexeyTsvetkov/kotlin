@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.js.translate.context.Namer;
 import org.jetbrains.kotlin.js.translate.context.TranslationContext;
 import org.jetbrains.kotlin.js.translate.general.AbstractTranslator;
 import org.jetbrains.kotlin.name.FqName;
+import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.resolve.BindingContext;
 import org.jetbrains.kotlin.resolve.BindingContextUtils;
@@ -51,8 +52,10 @@ public final class PackageDeclarationTranslator extends AbstractTranslator {
     private List<JsStatement> translate() {
         // predictable order
         Map<FqName, DefineInvocation> packageFqNameToDefineInvocation = new THashMap<FqName, DefineInvocation>();
+        Progress progress = context().getConfig().getProgress();
 
         for (JetFile file : files) {
+            progress.reportProgress("Generating JavaScript: " + file.getName());
             PackageFragmentDescriptor packageFragment =
                     BindingContextUtils.getNotNull(context().bindingContext(), BindingContext.FILE_TO_PACKAGE_FRAGMENT, file);
 

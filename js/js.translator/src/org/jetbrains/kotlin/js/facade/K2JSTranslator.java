@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.js.facade.exceptions.TranslationException;
 import org.jetbrains.kotlin.js.inline.JsInliner;
 import org.jetbrains.kotlin.js.translate.context.TranslationContext;
 import org.jetbrains.kotlin.js.translate.general.Translation;
-import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.resolve.BindingTrace;
@@ -48,12 +47,9 @@ public final class K2JSTranslator {
 
     @NotNull
     private final Config config;
-    @NotNull
-    private final Progress progress;
 
-    public K2JSTranslator(@NotNull Config config, @NotNull Progress progress) {
+    public K2JSTranslator(@NotNull Config config) {
         this.config = config;
-        this.progress = progress;
     }
 
     @NotNull
@@ -80,7 +76,6 @@ public final class K2JSTranslator {
         ModuleDescriptor moduleDescriptor = analysisResult.getModuleDescriptor();
         Diagnostics diagnostics = bindingTrace.getBindingContext().getDiagnostics();
 
-        progress.reportProgress("Translating Kotlin to JavaScript");
         TranslationContext context = Translation.generateAst(bindingTrace, files, mainCallParameters, moduleDescriptor, config);
         ProgressIndicatorAndCompilationCanceledStatus.checkCanceled();
         if (hasError(diagnostics)) return new TranslationResult.Fail(diagnostics);
@@ -88,7 +83,7 @@ public final class K2JSTranslator {
         JsProgram program = context.program();
 
         if (config.isInlineEnabled()) {
-            progress.reportProgress("Inlining Kotlin functions");
+            config.getProgress().reportProgress("Inlining functions");
             program = JsInliner.process(context);
             ProgressIndicatorAndCompilationCanceledStatus.checkCanceled();
             if (hasError(diagnostics)) return new TranslationResult.Fail(diagnostics);

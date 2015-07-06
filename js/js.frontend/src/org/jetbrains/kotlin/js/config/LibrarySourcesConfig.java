@@ -31,6 +31,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.idea.JetFileType;
 import org.jetbrains.kotlin.js.JavaScript;
+import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.utils.KotlinJavascriptMetadata;
 import org.jetbrains.kotlin.utils.KotlinJavascriptMetadataUtils;
@@ -70,9 +71,10 @@ public class LibrarySourcesConfig extends Config {
             boolean sourceMap,
             boolean inlineEnabled,
             boolean isUnitTestConfig,
-            boolean metaInfo
+            boolean metaInfo,
+            @NotNull Progress progress
     ) {
-        super(project, moduleId, ecmaVersion, sourceMap, inlineEnabled, metaInfo);
+        super(project, moduleId, ecmaVersion, sourceMap, inlineEnabled, metaInfo, progress);
         this.files = files;
         this.isUnitTestConfig = isUnitTestConfig;
     }
@@ -195,6 +197,8 @@ public class LibrarySourcesConfig extends Config {
         boolean inlineEnabled = true;
         boolean isUnitTestConfig = false;
         boolean metaInfo = false;
+        @Nullable
+        private Progress progress;
 
         public Builder(@NotNull Project project, @NotNull String moduleId, @NotNull List<String> files) {
             this.project = project;
@@ -227,8 +231,17 @@ public class LibrarySourcesConfig extends Config {
             return this;
         }
 
+        public Builder progress(@NotNull Progress progress) {
+            this.progress = progress;
+            return this;
+        }
+
         public Config build() {
-            return new LibrarySourcesConfig(project, moduleId, files, ecmaVersion, sourceMap, inlineEnabled, isUnitTestConfig, metaInfo);
+            if (progress == null) {
+                progress = Progress.DEAF;
+            }
+
+            return new LibrarySourcesConfig(project, moduleId, files, ecmaVersion, sourceMap, inlineEnabled, isUnitTestConfig, metaInfo, progress);
         }
     }
 
