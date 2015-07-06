@@ -62,7 +62,7 @@ public open class K2JVMCompiler : CLICompiler<K2JVMCompilerArguments>() {
         else
             PathUtil.getKotlinPathsForCompiler()
 
-        messageSeverityCollector.report(CompilerMessageSeverity.OUTPUT, "Using Kotlin home directory " + paths.getHomePath(), CompilerMessageLocation.NO_LOCATION)
+        messageSeverityCollector.report(CompilerMessageSeverity.INFO, "Using Kotlin home directory " + paths.getHomePath(), CompilerMessageLocation.NO_LOCATION)
         PerformanceCounter.setTimeCounterEnabled(arguments.reportPerf);
 
         val configuration = CompilerConfiguration()
