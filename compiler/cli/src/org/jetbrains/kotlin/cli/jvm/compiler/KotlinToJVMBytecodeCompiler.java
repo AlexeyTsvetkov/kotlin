@@ -365,7 +365,6 @@ public class KotlinToJVMBytecodeCompiler {
             @Nullable String moduleId,
             File outputDirectory
     ) {
-        reportProgress(getCollector(environment), "Translating Kotlin files to bytecode");
         CompilerConfiguration configuration = environment.getConfiguration();
         IncrementalCacheProvider incrementalCacheProvider = configuration.get(JVMConfigurationKeys.INCREMENTAL_CACHE_PROVIDER);
 
@@ -381,10 +380,11 @@ public class KotlinToJVMBytecodeCompiler {
             }
         }
         BindingTraceContext diagnosticHolder = new BindingTraceContext();
+        MessageCollector collector = getCollector(environment);
         GenerationState generationState = new GenerationState(
                 environment.getProject(),
                 ClassBuilderFactories.BINARIES,
-                Progress.DEAF,
+                new ProgressMessageCollectorAdapter(collector),
                 result.getModuleDescriptor(),
                 result.getBindingContext(),
                 sourceFiles,
