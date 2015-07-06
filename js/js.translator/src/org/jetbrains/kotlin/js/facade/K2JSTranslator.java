@@ -19,7 +19,6 @@ package org.jetbrains.kotlin.js.facade;
 import com.google.dart.compiler.backend.js.ast.JsProgram;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector;
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor;
 import org.jetbrains.kotlin.js.analyze.TopDownAnalyzerFacadeForJS;
 import org.jetbrains.kotlin.js.analyzer.JsAnalysisResult;
@@ -28,6 +27,7 @@ import org.jetbrains.kotlin.js.facade.exceptions.TranslationException;
 import org.jetbrains.kotlin.js.inline.JsInliner;
 import org.jetbrains.kotlin.js.translate.context.TranslationContext;
 import org.jetbrains.kotlin.js.translate.general.Translation;
+import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.resolve.BindingTrace;
@@ -35,7 +35,6 @@ import org.jetbrains.kotlin.resolve.diagnostics.Diagnostics;
 
 import java.util.List;
 
-import static org.jetbrains.kotlin.cli.common.messages.MessageCollectorUtil.reportProgress;
 import static org.jetbrains.kotlin.diagnostics.DiagnosticUtils.hasError;
 import static org.jetbrains.kotlin.js.translate.utils.UtilsPackage.expandIsCalls;
 
@@ -50,11 +49,11 @@ public final class K2JSTranslator {
     @NotNull
     private final Config config;
     @NotNull
-    private final MessageCollector messageCollector;
+    private final Progress progress;
 
-    public K2JSTranslator(@NotNull Config config, @NotNull MessageCollector messageCollector) {
+    public K2JSTranslator(@NotNull Config config, @NotNull Progress progress) {
         this.config = config;
-        this.messageCollector = messageCollector;
+        this.progress = progress;
     }
 
     @NotNull
@@ -81,7 +80,7 @@ public final class K2JSTranslator {
         ModuleDescriptor moduleDescriptor = analysisResult.getModuleDescriptor();
         Diagnostics diagnostics = bindingTrace.getBindingContext().getDiagnostics();
 
-        reportProgress(messageCollector, "Translating Kotlin to JavaScript");
+        progress.reportProgress("Translating Kotlin to JavaScript");
         TranslationContext context = Translation.generateAst(bindingTrace, files, mainCallParameters, moduleDescriptor, config);
         ProgressIndicatorAndCompilationCanceledStatus.checkCanceled();
         if (hasError(diagnostics)) return new TranslationResult.Fail(diagnostics);
@@ -89,7 +88,7 @@ public final class K2JSTranslator {
         JsProgram program = context.program();
 
         if (config.isInlineEnabled()) {
-            reportProgress(messageCollector, "Inlining Kotlin functions");
+            progress.reportProgress("Inlining Kotlin functions");
             program = JsInliner.process(context);
             ProgressIndicatorAndCompilationCanceledStatus.checkCanceled();
             if (hasError(diagnostics)) return new TranslationResult.Fail(diagnostics);

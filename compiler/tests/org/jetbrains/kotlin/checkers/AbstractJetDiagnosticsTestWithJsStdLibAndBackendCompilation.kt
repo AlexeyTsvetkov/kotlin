@@ -16,12 +16,12 @@
 
 package org.jetbrains.kotlin.checkers
 
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.context.ModuleContext
 import org.jetbrains.kotlin.diagnostics.DiagnosticUtils.hasError
 import org.jetbrains.kotlin.js.analyze.TopDownAnalyzerFacadeForJS
 import org.jetbrains.kotlin.js.facade.K2JSTranslator
 import org.jetbrains.kotlin.js.facade.MainCallParameters
+import org.jetbrains.kotlin.progress.Progress
 import org.jetbrains.kotlin.psi.JetFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 
@@ -35,7 +35,7 @@ public abstract class AbstractJetDiagnosticsTestWithJsStdLibAndBackendCompilatio
         val diagnostics = analysisResult.bindingTrace.getBindingContext().getDiagnostics()
 
         if (!hasError(diagnostics)) {
-            val translator = K2JSTranslator(getConfig(), MessageCollector.NONE)
+            val translator = K2JSTranslator(getConfig(), Progress.DEAF)
             translator.translate(jetFiles, MainCallParameters.noCall(), analysisResult)
         }
     }

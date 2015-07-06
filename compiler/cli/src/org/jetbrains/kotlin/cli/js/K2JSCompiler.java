@@ -53,6 +53,7 @@ import org.jetbrains.kotlin.js.facade.K2JSTranslator;
 import org.jetbrains.kotlin.js.facade.MainCallParameters;
 import org.jetbrains.kotlin.js.facade.TranslationResult;
 import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus;
+import org.jetbrains.kotlin.progress.ProgressMessageCollectorAdapter;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.utils.PathUtil;
 
@@ -176,7 +177,7 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
         MainCallParameters mainCallParameters = createMainCallParameters(arguments.main);
         TranslationResult translationResult;
 
-        K2JSTranslator translator = new K2JSTranslator(config, messageSeverityCollector);
+        K2JSTranslator translator = new K2JSTranslator(config, new ProgressMessageCollectorAdapter(messageSeverityCollector));
         try {
             //noinspection unchecked
             translationResult = translator.translate(sourcesFiles, mainCallParameters, jsAnalysisResult);
