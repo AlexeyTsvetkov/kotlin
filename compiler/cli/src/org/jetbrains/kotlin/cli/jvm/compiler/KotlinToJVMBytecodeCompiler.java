@@ -120,6 +120,7 @@ public class KotlinToJVMBytecodeCompiler {
 
     public static boolean compileModules(
             @NotNull KotlinCoreEnvironment environment,
+            @NotNull CompilerConfiguration configuration,
             @NotNull List<Module> chunk,
             @NotNull File directory,
             @Nullable File jarPath,
