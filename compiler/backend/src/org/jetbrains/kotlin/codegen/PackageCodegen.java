@@ -212,6 +212,7 @@ public class PackageCodegen {
         Map<CallableMemberDescriptor, Runnable> generateCallableMemberTasks = new HashMap<CallableMemberDescriptor, Runnable>();
 
         for (JetFile file : files) {
+            state.getProgress().reportProgress("Generating bytecode: " + file.getName());
             ProgressIndicatorAndCompilationCanceledStatus.checkCanceled();
             try {
                 ClassBuilder builder = generate(file, generateCallableMemberTasks);
