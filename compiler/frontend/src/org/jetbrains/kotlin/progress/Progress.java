@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.codegen.state;
+package org.jetbrains.kotlin.progress;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
