@@ -275,6 +275,12 @@ public class IncrementalJpsTestGenerated extends AbstractIncrementalJpsTest {
             doTest(fileName);
         }
 
+        @TestMetadata("inlineFunction")
+        public void testInlineFunction() throws Exception {
+            String fileName = JetTestUtils.navigationMetadata("jps-plugin/testData/incremental/pureKotlin/inlineFunction/");
+            doTest(fileName);
+        }
+
         @TestMetadata("inlineFunctionRemoved")
         public void testInlineFunctionRemoved() throws Exception {
             String fileName = JetTestUtils.navigationMetadata("jps-plugin/testData/incremental/pureKotlin/inlineFunctionRemoved/");
