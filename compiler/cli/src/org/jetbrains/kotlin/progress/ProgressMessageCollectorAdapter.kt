@@ -16,6 +16,8 @@
 
 package org.jetbrains.kotlin.progress
 
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.MessageCollectorUtil
 import java.io.File
@@ -26,5 +28,9 @@ public class ProgressMessageCollectorAdapter(private val collector: MessageColle
 
     override fun reportProgress(message: String) {
         MessageCollectorUtil.reportProgress(collector, message)
+    }
+
+    override fun reportInline(message: String) {
+        collector.report(CompilerMessageSeverity.INFO, message, CompilerMessageLocation.NO_LOCATION)
     }
 }

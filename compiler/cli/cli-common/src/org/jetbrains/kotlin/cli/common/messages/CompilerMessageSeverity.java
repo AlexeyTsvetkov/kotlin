@@ -30,7 +30,8 @@ public enum CompilerMessageSeverity {
      */
     OUTPUT,
     DEBUG,
-    PROGRESS;
+    PROGRESS,
+    INLINE;
 
     public static final EnumSet<CompilerMessageSeverity> ERRORS = EnumSet.of(ERROR, EXCEPTION);
     public static final EnumSet<CompilerMessageSeverity> VERBOSE = EnumSet.of(OUTPUT, PROGRESS, DEBUG);

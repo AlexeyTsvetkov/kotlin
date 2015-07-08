@@ -102,6 +102,7 @@ public class CompilerOutputParser {
                 .put("info", INFO)
                 .put("messages", INFO) // Root XML element
                 .put("debug", DEBUG)
+                .put("inline", INLINE)
                 .build();
 
         private final MessageCollector messageCollector;
