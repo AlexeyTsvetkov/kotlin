@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.load.kotlin.PackageClassUtils;
 import org.jetbrains.kotlin.name.ClassId;
 import org.jetbrains.kotlin.name.Name;
+import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.renderer.DescriptorRenderer;
 import org.jetbrains.kotlin.resolve.DescriptorToSourceUtils;
@@ -44,6 +45,7 @@ import org.jetbrains.kotlin.resolve.jvm.AsmTypes;
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodParameterKind;
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodParameterSignature;
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodSignature;
+import org.jetbrains.kotlin.resolve.source.PsiSourceElement;
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedSimpleFunctionDescriptor;
 import org.jetbrains.kotlin.types.expressions.LabelResolver;
 import org.jetbrains.org.objectweb.asm.Label;
@@ -119,6 +121,7 @@ public class InlineCodegen extends CallGenerator {
         isSameModule = JvmCodegenUtil.isCallInsideSameModuleAsDeclared(functionDescriptor, codegen.getContext(), state.getOutDirectory());
 
         sourceMapper = codegen.getParentCodegen().getOrCreateSourceMapper();
+        reportIncrementalInfo(functionDescriptor, codegen.getContext().getFunctionDescriptor(), state.getProgress());
     }
 
     @Override
@@ -733,6 +736,33 @@ public class InlineCodegen extends CallGenerator {
 
     private SourceMapper createNestedSourceMapper(@NotNull SMAPAndMethodNode nodeAndSmap) {
         return new NestedSourceMapper(sourceMapper, nodeAndSmap.getRanges(), nodeAndSmap.getClassSMAP().getSourceInfo());
+    }
+
+    private static void reportIncrementalInfo(
+            @NotNull FunctionDescriptor sourceDescriptor,
+            @NotNull FunctionDescriptor targetDescriptor,
+            @NotNull Progress progress
+    ) {
+        String sourceFile = getFilePath(sourceDescriptor);
+        String targetFile = getFilePath(targetDescriptor);
+
+        if (sourceFile == null || targetFile == null) return;
+
+        progress.reportInline();
+    }
+
+    @Nullable
+    private static String getFilePath(@NotNull FunctionDescriptor descriptor) {
+        SourceElement source = descriptor.getSource();
+        if (!(source instanceof PsiSourceElement)) return null;
+
+        PsiElement psi = ((PsiSourceElement) source).getPsi();
+        if (psi == null) return null;
+
+        VirtualFile file = psi.getContainingFile().getVirtualFile();
+        if (file == null) return null;
+
+        return file.getCanonicalPath();
     }
 
 }
