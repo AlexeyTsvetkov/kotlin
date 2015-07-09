@@ -55,7 +55,8 @@ public fun StorageComponentContainer.configureModule(
 public fun createContainerForBodyResolve(
         moduleContext: ModuleContext, bindingTrace: BindingTrace,
         additionalCheckerProvider: AdditionalCheckerProvider, statementFilter: StatementFilter,
-        dynamicTypesSettings: DynamicTypesSettings
+        dynamicTypesSettings: DynamicTypesSettings,
+        progress: Progress = Progress.DEAF
 ): StorageComponentContainer = createContainer("BodyResolve") {
     configureModule(moduleContext, additionalCheckerProvider, bindingTrace)
 
@@ -63,6 +64,7 @@ public fun createContainerForBodyResolve(
     useInstance(dynamicTypesSettings)
     useInstance(BodyResolveCache.ThrowException)
     useImpl<BodyResolver>()
+    useInstance(progress)
 }
 
 public fun createContainerForLazyBodyResolve(
