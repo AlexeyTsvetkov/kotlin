@@ -76,23 +76,22 @@ public class LazyTopDownAnalyzerForTopLevel {
     ) {
         TopDownAnalysisContext c = lazyTopDownAnalyzer.analyzeDeclarations(topDownAnalysisMode, elements, DataFlowInfo.EMPTY);
 
-        resolveImportsInAllFiles(c, resolveSession, progress);
+        resolveImportsInAllFiles(c, resolveSession);
 
         return c;
     }
 
-    private static void resolveImportsInAllFiles(TopDownAnalysisContext c, KotlinCodeAnalyzer resolveSession, @NotNull Progress progress) {
+    private static void resolveImportsInAllFiles(TopDownAnalysisContext c, KotlinCodeAnalyzer resolveSession) {
         for (JetFile file : c.getFiles()) {
-            resolveAndCheckImports(file, resolveSession, progress);
+            resolveAndCheckImports(file, resolveSession);
         }
 
         for (JetScript script : c.getScripts().keySet()) {
-            resolveAndCheckImports(script.getContainingJetFile(), resolveSession, progress);
+            resolveAndCheckImports(script.getContainingJetFile(), resolveSession);
         }
     }
 
-    private static void resolveAndCheckImports(@NotNull JetFile file, @NotNull KotlinCodeAnalyzer resolveSession, @NotNull Progress progress) {
-        progress.reportProgress("Resolving imports: " + file.getName());
+    private static void resolveAndCheckImports(@NotNull JetFile file, @NotNull KotlinCodeAnalyzer resolveSession) {
         LazyFileScope fileScope = resolveSession.getFileScopeProvider().getFileScope(file);
         fileScope.forceResolveAllImports();
     }
