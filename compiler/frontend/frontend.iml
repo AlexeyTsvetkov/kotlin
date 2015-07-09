@@ -14,6 +14,5 @@
     <orderEntry type="module" module-name="util" />
     <orderEntry type="module" module-name="plugin-api" exported="" />
     <orderEntry type="module" module-name="container" exported="" />
-    <orderEntry type="module" module-name="cli-common" />
   </component>
 </module>
