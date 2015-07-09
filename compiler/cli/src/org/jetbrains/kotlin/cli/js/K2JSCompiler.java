@@ -227,7 +227,7 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
                 return file.getName() + "(no virtual file)";
             }
         });
-        messageCollector.report(CompilerMessageSeverity.DETAILED_INFO, "Compiling source files: " + Joiner.on(", ").join(fileNames), getNO_LOCATION());
+        messageCollector.report(CompilerMessageSeverity.DEBUG, "Compiling source files: " + Joiner.on(", ").join(fileNames), getNO_LOCATION());
     }
 
     private static AnalyzerWithCompilerReport analyzeAndReportErrors(@NotNull MessageCollector messageCollector,
