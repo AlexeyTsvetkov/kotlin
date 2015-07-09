@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.container.*
 import org.jetbrains.kotlin.context.LazyResolveToken
 import org.jetbrains.kotlin.context.ModuleContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.progress.Progress
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.CallResolver
 import org.jetbrains.kotlin.resolve.lazy.FileScopeProvider
@@ -68,7 +69,8 @@ public fun createContainerForLazyBodyResolve(
         moduleContext: ModuleContext, kotlinCodeAnalyzer: KotlinCodeAnalyzer,
         bindingTrace: BindingTrace, additionalCheckerProvider: AdditionalCheckerProvider,
         dynamicTypesSettings: DynamicTypesSettings,
-        bodyResolveCache: BodyResolveCache
+        bodyResolveCache: BodyResolveCache,
+        progress: Progress = Progress.DEAF
 ): StorageComponentContainer = createContainer("LazyBodyResolve") {
     configureModule(moduleContext, additionalCheckerProvider, bindingTrace)
 
@@ -77,6 +79,7 @@ public fun createContainerForLazyBodyResolve(
     useInstance(dynamicTypesSettings)
     useInstance(bodyResolveCache)
     useImpl<LazyTopDownAnalyzerForTopLevel>()
+    useInstance(progress)
 }
 
 public fun createContainerForLazyLocalClassifierAnalyzer(
@@ -84,7 +87,8 @@ public fun createContainerForLazyLocalClassifierAnalyzer(
         bindingTrace: BindingTrace,
         additionalCheckerProvider: AdditionalCheckerProvider,
         dynamicTypesSettings: DynamicTypesSettings,
-        localClassDescriptorHolder: LocalClassDescriptorHolder
+        localClassDescriptorHolder: LocalClassDescriptorHolder,
+        progress: Progress = Progress.DEAF
 ): StorageComponentContainer = createContainer("LocalClassifierAnalyzer") {
     configureModule(moduleContext, additionalCheckerProvider, bindingTrace)
 
@@ -99,6 +103,7 @@ public fun createContainerForLazyLocalClassifierAnalyzer(
 
     useImpl<DeclarationScopeProviderForLocalClassifierAnalyzer>()
     useImpl<LocalLazyDeclarationResolver>()
+    useInstance(progress)
 }
 
 private fun createContainerForLazyResolve(

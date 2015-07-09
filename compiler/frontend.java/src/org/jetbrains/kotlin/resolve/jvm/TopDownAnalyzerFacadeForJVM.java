@@ -129,7 +129,8 @@ public enum TopDownAnalyzerFacadeForJVM {
                 moduleContext,
                 trace,
                 providerFactory,
-                GlobalSearchScope.allScope(project)
+                GlobalSearchScope.allScope(project),
+                progress
         );
 
         List<PackageFragmentProvider> additionalProviders = new ArrayList<PackageFragmentProvider>();
@@ -149,7 +150,7 @@ public enum TopDownAnalyzerFacadeForJVM {
         }
         additionalProviders.add(container.getJavaDescriptorResolver().getPackageFragmentProvider());
 
-        container.getLazyTopDownAnalyzerForTopLevel().analyzeFiles(topDownAnalysisMode, allFiles, additionalProviders, progress);
+        container.getLazyTopDownAnalyzerForTopLevel().analyzeFiles(topDownAnalysisMode, allFiles, additionalProviders);
 
         BindingContext bindingContext = trace.getBindingContext();
         ModuleDescriptor module = moduleContext.getModule();

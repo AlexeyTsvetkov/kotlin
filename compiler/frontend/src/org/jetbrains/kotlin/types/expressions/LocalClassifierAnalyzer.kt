@@ -84,8 +84,7 @@ public class LocalClassifierAnalyzer(
         container.get<LazyTopDownAnalyzer>().analyzeDeclarations(
                 TopDownAnalysisMode.LocalDeclarations,
                 listOf(classOrObject),
-                context.dataFlowInfo,
-                Progress.DEAF
+                context.dataFlowInfo
         )
     }
 }

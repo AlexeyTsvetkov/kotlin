@@ -47,6 +47,7 @@ public class LazyTopDownAnalyzer {
     private var topLevelDescriptorProvider: TopLevelDescriptorProvider? = null
     private var fileScopeProvider: FileScopeProvider? = null
     private var declarationScopeProvider: DeclarationScopeProvider? = null
+    private var progress: Progress? = null
 
     Inject
     public fun setLazyDeclarationResolver(lazyDeclarationResolver: LazyDeclarationResolver) {
@@ -103,11 +104,15 @@ public class LazyTopDownAnalyzer {
         this.bodyResolver = bodyResolver
     }
 
+    Inject
+    public fun setProgress(progress: Progress) {
+        this.progress = progress
+    }
+
     public fun analyzeDeclarations(
             topDownAnalysisMode: TopDownAnalysisMode,
             declarations: Collection<PsiElement>,
-            outerDataFlowInfo: DataFlowInfo,
-            progress: Progress
+            outerDataFlowInfo: DataFlowInfo
     ): TopDownAnalysisContext {
         val c = TopDownAnalysisContext(topDownAnalysisMode, outerDataFlowInfo, declarationScopeProvider!!)
 
@@ -130,7 +135,7 @@ public class LazyTopDownAnalyzer {
                 }
 
                 override fun visitJetFile(file: JetFile) {
-                    progress.reportProgress("Analyzing file: ${file.getName()}")
+                    progress!!.reportProgress("Analyzing file: ${file.getName()}")
                     if (file.isScript()) {
                         val script = file.getScript() ?: throw AssertionError("getScript() is null for file: $file")
 

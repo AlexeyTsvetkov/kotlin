@@ -97,9 +97,10 @@ public final class TopDownAnalyzerFacadeForJS {
 
         LazyTopDownAnalyzerForTopLevel analyzerForJs = DiPackage.createTopDownAnalyzerForJs(
                 moduleContext, trace,
-                new FileBasedDeclarationProviderFactory(moduleContext.getStorageManager(), allFiles)
+                new FileBasedDeclarationProviderFactory(moduleContext.getStorageManager(), allFiles),
+                config.getProgress()
         );
-        analyzerForJs.analyzeFiles(TopDownAnalysisMode.TopLevelDeclarations, files, Collections.<PackageFragmentProvider>emptyList(), config.getProgress());
+        analyzerForJs.analyzeFiles(TopDownAnalysisMode.TopLevelDeclarations, files, Collections.<PackageFragmentProvider>emptyList());
         return JsAnalysisResult.success(trace, moduleContext.getModule());
     }
 

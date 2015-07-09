@@ -22,7 +22,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.descriptors.PackageFragmentProvider;
 import org.jetbrains.kotlin.descriptors.impl.CompositePackageFragmentProvider;
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl;
-import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.psi.JetScript;
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo;
@@ -53,8 +52,7 @@ public class LazyTopDownAnalyzerForTopLevel {
     public TopDownAnalysisContext analyzeFiles(
             @NotNull TopDownAnalysisMode topDownAnalysisMode,
             @NotNull Collection<JetFile> files,
-            @NotNull List<? extends PackageFragmentProvider> additionalProviders,
-            @NotNull Progress progress
+            @NotNull List<? extends PackageFragmentProvider> additionalProviders
     ) {
         PackageFragmentProvider provider;
         if (additionalProviders.isEmpty()) {
@@ -68,7 +66,7 @@ public class LazyTopDownAnalyzerForTopLevel {
 
         ((ModuleDescriptorImpl) resolveSession.getModuleDescriptor()).initialize(provider);
 
-        return analyzeDeclarations(topDownAnalysisMode, files, progress);
+        return analyzeDeclarations(topDownAnalysisMode, files);
     }
 
     @NotNull
@@ -76,16 +74,7 @@ public class LazyTopDownAnalyzerForTopLevel {
             @NotNull TopDownAnalysisMode topDownAnalysisMode,
             @NotNull Collection<? extends PsiElement> elements
     ) {
-        return analyzeDeclarations(topDownAnalysisMode, elements, Progress.DEAF);
-    }
-
-    @NotNull
-    private TopDownAnalysisContext analyzeDeclarations(
-            @NotNull TopDownAnalysisMode topDownAnalysisMode,
-            @NotNull Collection<? extends PsiElement> elements,
-            @NotNull Progress progress
-    ) {
-        TopDownAnalysisContext c = lazyTopDownAnalyzer.analyzeDeclarations(topDownAnalysisMode, elements, DataFlowInfo.EMPTY, progress);
+        TopDownAnalysisContext c = lazyTopDownAnalyzer.analyzeDeclarations(topDownAnalysisMode, elements, DataFlowInfo.EMPTY);
 
         resolveImportsInAllFiles(c, resolveSession, progress);
 
