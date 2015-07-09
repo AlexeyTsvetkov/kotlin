@@ -197,8 +197,8 @@ public class LibrarySourcesConfig extends Config {
         boolean inlineEnabled = true;
         boolean isUnitTestConfig = false;
         boolean metaInfo = false;
-        @Nullable
-        private Progress progress;
+        @NotNull
+        private Progress progress = Progress.DEAF;
 
         public Builder(@NotNull Project project, @NotNull String moduleId, @NotNull List<String> files) {
             this.project = project;
@@ -237,10 +237,6 @@ public class LibrarySourcesConfig extends Config {
         }
 
         public Config build() {
-            if (progress == null) {
-                progress = Progress.DEAF;
-            }
-
             return new LibrarySourcesConfig(project, moduleId, files, ecmaVersion, sourceMap, inlineEnabled, isUnitTestConfig, metaInfo, progress);
         }
     }
