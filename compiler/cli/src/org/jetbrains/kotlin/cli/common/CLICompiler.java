@@ -147,6 +147,7 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
             messageCollector = new FilteringMessageCollector(messageCollector, not(equalTo(CompilerMessageSeverity.WARNING)));
         }
 
+        messageCollector = new UniqueMessageCollector(messageCollector);
         MessageSeverityCollector severityCollector = new MessageSeverityCollector(messageCollector);
         try {
             ExitCode exitCode = OK;
