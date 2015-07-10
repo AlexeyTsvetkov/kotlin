@@ -95,12 +95,13 @@ public class KotlinCompilerRunner {
         try {
             //noinspection IOResourceOpenedButNotSafelyClosed
             final PipedInputStream in = new PipedInputStream(out);
-            thread = new Thread(new Runnable() {
+            Runnable runnable = new Runnable() {
                 @Override
                 public void run() {
                     CompilerOutputParser.parseCompilerMessagesFromReader(messageCollector, new InputStreamReader(in), collector);
                 }
-            });
+            };
+            thread = new Thread(runnable, "Parsing messages from compiler");
         }
         catch (IOException e) {
             throw new RuntimeException(e);
