@@ -27,9 +27,7 @@ public class InlineMessage(
     companion object {
         platformStatic
         public fun serialize(message: InlineMessage): String {
-            val byteOut = ByteOutputStream()
-            val writer = byteOut.bufferedWriter(Charsets.UTF_8)
-            writer.write()
+            return "${message.sourceFilePath};${};${message.signature}"
         }
 
         platformStatic
