@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.frontend.java.di.configureJavaTopDownAnalysis
 import org.jetbrains.kotlin.load.java.JavaClassFinderImpl
 import org.jetbrains.kotlin.load.java.lazy.SingleModuleClassResolver
 import org.jetbrains.kotlin.load.kotlin.KotlinJvmCheckerProvider
+import org.jetbrains.kotlin.progress.Progress
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.BodyResolveCache
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzerForTopLevel
@@ -47,6 +48,7 @@ public fun createContainerForReplWithJava(
 
     useImpl<FileScopeProviderImpl>()
     useImpl<SingleModuleClassResolver>()
+    useInstance(Progress.DEAF)
 }.let {
     it.get<JavaClassFinderImpl>().initialize()
     it.get<JavaClassFinderPostConstruct>().postCreate()

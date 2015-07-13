@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.load.java.structure.impl.JavaPropertyInitializerEval
 import org.jetbrains.kotlin.load.kotlin.DeserializationComponentsForJava
 import org.jetbrains.kotlin.load.kotlin.JvmVirtualFileFinderFactory
 import org.jetbrains.kotlin.load.kotlin.KotlinJvmCheckerProvider
+import org.jetbrains.kotlin.progress.Progress
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.BodyResolveCache
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzer
@@ -80,6 +81,7 @@ public fun createContainerForLazyResolveWithJava(
     useInstance(BodyResolveCache.ThrowException)
     useImpl<FileScopeProviderImpl>()
     useImpl<LazyResolveToken>()
+    useInstance(Progress.DEAF)
 }.let {
     it.javaAnalysisInit()
 
@@ -90,7 +92,8 @@ public fun createContainerForLazyResolveWithJava(
 public fun createContainerForTopDownAnalyzerForJvm(
         moduleContext: ModuleContext, bindingTrace: BindingTrace,
         declarationProviderFactory: DeclarationProviderFactory,
-        moduleContentScope: GlobalSearchScope
+        moduleContentScope: GlobalSearchScope,
+        progress: Progress
 ): ContainerForTopDownAnalyzerForJvm = createContainer("TopDownAnalyzerForJvm") {
     configureModule(moduleContext, KotlinJvmCheckerProvider(moduleContext.module), bindingTrace)
     configureJavaTopDownAnalysis(moduleContentScope, moduleContext.project)
@@ -99,6 +102,7 @@ public fun createContainerForTopDownAnalyzerForJvm(
 
     useImpl<SingleModuleClassResolver>()
     useImpl<FileScopeProviderImpl>()
+    useInstance(progress)
 }.let {
     it.javaAnalysisInit()
 

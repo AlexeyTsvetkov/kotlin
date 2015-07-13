@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.name.FqName;
 import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.platform.JavaToKotlinClassMap;
 import org.jetbrains.kotlin.platform.PlatformToKotlinClassMap;
+import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.resolve.*;
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisCompletedHandlerExtension;
@@ -91,7 +92,7 @@ public enum TopDownAnalyzerFacadeForJVM {
             @NotNull BindingTrace trace,
             @NotNull TopDownAnalysisMode topDownAnalysisMode
     ) {
-        return analyzeFilesWithJavaIntegration(moduleContext, files, trace, topDownAnalysisMode, null, null);
+        return analyzeFilesWithJavaIntegration(moduleContext, files, trace, topDownAnalysisMode, null, null, Progress.DEAF);
     }
 
     @NotNull
@@ -100,10 +101,11 @@ public enum TopDownAnalyzerFacadeForJVM {
             @NotNull Collection<JetFile> files,
             @NotNull BindingTrace trace,
             @Nullable List<String> moduleIds,
-            @Nullable IncrementalCacheProvider incrementalCacheProvider
+            @Nullable IncrementalCacheProvider incrementalCacheProvider,
+            @NotNull Progress progress
     ) {
         return analyzeFilesWithJavaIntegration(
-                moduleContext, files, trace, TopDownAnalysisMode.TopLevelDeclarations, moduleIds, incrementalCacheProvider
+                moduleContext, files, trace, TopDownAnalysisMode.TopLevelDeclarations, moduleIds, incrementalCacheProvider, progress
         );
     }
 
@@ -114,7 +116,8 @@ public enum TopDownAnalyzerFacadeForJVM {
             @NotNull BindingTrace trace,
             @NotNull TopDownAnalysisMode topDownAnalysisMode,
             @Nullable List<String> moduleIds,
-            @Nullable IncrementalCacheProvider incrementalCacheProvider
+            @Nullable IncrementalCacheProvider incrementalCacheProvider,
+            @NotNull Progress progress
     ) {
         Project project = moduleContext.getProject();
         List<JetFile> allFiles = JvmAnalyzerFacade.getAllFilesToAnalyze(project, null, files);
@@ -126,7 +129,8 @@ public enum TopDownAnalyzerFacadeForJVM {
                 moduleContext,
                 trace,
                 providerFactory,
-                GlobalSearchScope.allScope(project)
+                GlobalSearchScope.allScope(project),
+                progress
         );
 
         List<PackageFragmentProvider> additionalProviders = new ArrayList<PackageFragmentProvider>();

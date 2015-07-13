@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.container.*
 import org.jetbrains.kotlin.context.LazyResolveToken
 import org.jetbrains.kotlin.context.ModuleContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.progress.Progress
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.CallResolver
 import org.jetbrains.kotlin.resolve.lazy.FileScopeProvider
@@ -62,6 +63,7 @@ public fun createContainerForBodyResolve(
     useInstance(dynamicTypesSettings)
     useInstance(BodyResolveCache.ThrowException)
     useImpl<BodyResolver>()
+    useInstance(Progress.DEAF)
 }
 
 public fun createContainerForLazyBodyResolve(
@@ -77,6 +79,7 @@ public fun createContainerForLazyBodyResolve(
     useInstance(dynamicTypesSettings)
     useInstance(bodyResolveCache)
     useImpl<LazyTopDownAnalyzerForTopLevel>()
+    useInstance(Progress.DEAF)
 }
 
 public fun createContainerForLazyLocalClassifierAnalyzer(
@@ -99,6 +102,7 @@ public fun createContainerForLazyLocalClassifierAnalyzer(
 
     useImpl<DeclarationScopeProviderForLocalClassifierAnalyzer>()
     useImpl<LocalLazyDeclarationResolver>()
+    useInstance(Progress.DEAF)
 }
 
 private fun createContainerForLazyResolve(
