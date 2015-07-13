@@ -17,6 +17,8 @@
 package org.jetbrains.kotlin.jps.build
 
 import com.intellij.util.PathUtil
+import org.jetbrains.jps.builders.BuildResult
+import org.jetbrains.jps.incremental.messages.BuildMessage
 import org.jetbrains.jps.model.java.JpsJavaExtensionService
 import org.jetbrains.kotlin.test.JetTestUtils
 
@@ -103,5 +105,48 @@ public class SimpleKotlinJpsBuildTest : AbstractKotlinJpsBuildTestCase() {
 
         addKotlinRuntimeDependency()
         rebuildAll()
+    }
+
+    public fun testProgressMessagesJvm() {
+        val progressMessages = makeSimpleModuleAndGetProgressMessages {
+            addKotlinRuntimeDependency()
+        }
+
+        assertContainsOrdered(progressMessages,
+                              "Started building Module 'm' production",
+                              "Loading plugins [m]",
+                              "Configuring the compilation environment [m]",
+                              "Analyzing file: Foo.kt [m]",
+                              "Generating bytecode: Foo.kt [m]",
+                              "Writing bytecode [m]",
+                              "Finished building Module 'm' production")
+    }
+
+    public fun testProgressMessagesJs() {
+        val progressMessages = makeSimpleModuleAndGetProgressMessages {
+            addKotlinJavaScriptStdlibDependency()
+        }
+
+        assertContainsOrdered(progressMessages,
+                              "Started building Module 'm' production",
+                              "Analyzing file: Foo.kt [m]",
+                              "Generating JavaScript: Foo.kt [m]",
+                              "Inlining functions [m]",
+                              "Writing JavaScript [m]",
+                              "Finished building Module 'm' production")
+    }
+
+    private fun makeSimpleModuleAndGetProgressMessages(addDepedencies: ()->Unit): Collection<String> {
+        val fooKt = createFile("m/Foo.kt",
+                               """
+                                   package m;
+
+                                   interface Foo
+                               """)
+        addModule("m", PathUtil.getParentPath(fooKt))
+        addDepedencies()
+        return makeAll().getMessages(BuildMessage.Kind.PROGRESS)
+                .filter { it.getKind() == BuildMessage.Kind.PROGRESS }
+                .map { it.getMessageText() }
     }
 }
