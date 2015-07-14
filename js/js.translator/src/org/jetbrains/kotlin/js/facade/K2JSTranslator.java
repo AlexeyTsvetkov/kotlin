@@ -19,7 +19,6 @@ package org.jetbrains.kotlin.js.facade;
 import com.google.dart.compiler.backend.js.ast.JsProgram;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus;
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor;
 import org.jetbrains.kotlin.js.analyze.TopDownAnalyzerFacadeForJS;
 import org.jetbrains.kotlin.js.analyzer.JsAnalysisResult;
@@ -28,6 +27,7 @@ import org.jetbrains.kotlin.js.facade.exceptions.TranslationException;
 import org.jetbrains.kotlin.js.inline.JsInliner;
 import org.jetbrains.kotlin.js.translate.context.TranslationContext;
 import org.jetbrains.kotlin.js.translate.general.Translation;
+import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus;
 import org.jetbrains.kotlin.psi.JetFile;
 import org.jetbrains.kotlin.resolve.BindingTrace;
 import org.jetbrains.kotlin.resolve.diagnostics.Diagnostics;
@@ -80,9 +80,14 @@ public final class K2JSTranslator {
         ProgressIndicatorAndCompilationCanceledStatus.checkCanceled();
         if (hasError(diagnostics)) return new TranslationResult.Fail(diagnostics);
 
-        JsProgram program = JsInliner.process(context);
-        ProgressIndicatorAndCompilationCanceledStatus.checkCanceled();
-        if (hasError(diagnostics)) return new TranslationResult.Fail(diagnostics);
+        JsProgram program = context.program();
+
+        if (config.isInlineEnabled()) {
+            config.getProgress().reportProgress("Inlining functions");
+            program = JsInliner.process(context);
+            ProgressIndicatorAndCompilationCanceledStatus.checkCanceled();
+            if (hasError(diagnostics)) return new TranslationResult.Fail(diagnostics);
+        }
 
         expandIsCalls(program, context);
         ProgressIndicatorAndCompilationCanceledStatus.checkCanceled();

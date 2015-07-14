@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.context.ModuleContext
 import org.jetbrains.kotlin.frontend.di.configureModule
 import org.jetbrains.kotlin.js.resolve.KotlinJsCheckerProvider
+import org.jetbrains.kotlin.progress.Progress
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.BodyResolveCache
 import org.jetbrains.kotlin.resolve.LazyTopDownAnalyzerForTopLevel
@@ -34,7 +35,8 @@ import org.jetbrains.kotlin.types.DynamicTypesAllowed
 public fun createTopDownAnalyzerForJs(
         moduleContext: ModuleContext,
         bindingTrace: BindingTrace,
-        declarationProviderFactory: DeclarationProviderFactory
+        declarationProviderFactory: DeclarationProviderFactory,
+        progress: Progress
 ): LazyTopDownAnalyzerForTopLevel {
     val storageComponentContainer = createContainer("TopDownAnalyzerForJs") {
         configureModule(moduleContext, KotlinJsCheckerProvider, bindingTrace)
@@ -45,6 +47,7 @@ public fun createTopDownAnalyzerForJs(
         useImpl<ResolveSession>()
         useImpl<LazyTopDownAnalyzerForTopLevel>()
         useImpl<DynamicTypesAllowed>()
+        useInstance(progress)
     }
     return storageComponentContainer.get<LazyTopDownAnalyzerForTopLevel>()
 }

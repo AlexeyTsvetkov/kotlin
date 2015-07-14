@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.diagnostics.DiagnosticUtils.hasError
 import org.jetbrains.kotlin.js.analyze.TopDownAnalyzerFacadeForJS
 import org.jetbrains.kotlin.js.facade.K2JSTranslator
 import org.jetbrains.kotlin.js.facade.MainCallParameters
+import org.jetbrains.kotlin.progress.Progress
 import org.jetbrains.kotlin.psi.JetFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 
