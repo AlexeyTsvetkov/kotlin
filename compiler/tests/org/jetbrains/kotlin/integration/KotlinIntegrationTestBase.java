@@ -84,7 +84,7 @@ public abstract class KotlinIntegrationTestBase extends TestCaseWithTmpdir {
         content = normalizePath(content, getKotlinProjectHome(), "[KotlinProjectHome]");
         content = content.replaceAll(KotlinVersion.VERSION, "[KotlinVersion]");
         content = StringUtil.convertLineSeparators(content);
-        content = CliBaseTest.removePerfOutput(content);
+        content = CliBaseTest.removeInfoOrPerfOutput(content);
         return content;
     }
 
@@ -109,7 +109,7 @@ public abstract class KotlinIntegrationTestBase extends TestCaseWithTmpdir {
         int exitCode = handler.getProcess().exitValue();
 
         appendIfNotEmpty(executionLog, "OUT:\n", outContent.toString());
-        appendIfNotEmpty(executionLog, "\nERR:\n", CliBaseTest.removePerfOutput(errContent.toString()));
+        appendIfNotEmpty(executionLog, "\nERR:\n", CliBaseTest.removeInfoOrPerfOutput(errContent.toString()));
 
         executionLog.append("\nReturn code: ").append(exitCode).append("\n");
 

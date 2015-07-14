@@ -74,16 +74,16 @@ public class CliBaseTest {
                 .replace("expected ABI version is " + Integer.toString(JvmAbi.VERSION), "expected ABI version is $ABI_VERSION$")
                 .replace("\\", "/");
 
-        return removePerfOutput(normalizedOutputWithoutExitCode) + exitCode;
+        return removeInfoOrPerfOutput(normalizedOutputWithoutExitCode) + exitCode;
     }
 
-    public static String removePerfOutput(String output) {
+    public static String removeInfoOrPerfOutput(String output) {
         String[] lines = StringUtil.splitByLinesKeepSeparators(output);
         StringBuilder result = new StringBuilder();
         for (String line : lines) {
-            if (!line.contains("PERF:")) {
-                result.append(line);
-            }
+            if (line.startsWith("info:") || line.contains("PERF:")) continue;
+
+            result.append(line);
         }
         return result.toString();
     }
