@@ -737,7 +737,7 @@ public class InlineCodegen extends CallGenerator {
         return new NestedSourceMapper(sourceMapper, nodeAndSmap.getRanges(), nodeAndSmap.getClassSMAP().getSourceInfo());
     }
 
-    private static void reportIncrementalInfo(
+    private void reportIncrementalInfo(
             @NotNull FunctionDescriptor sourceDescriptor,
             @NotNull FunctionDescriptor targetDescriptor
     ) {
@@ -745,6 +745,7 @@ public class InlineCodegen extends CallGenerator {
         String targetFile = getFilePath(targetDescriptor);
 
         assert sourceFile != null && targetFile != null;
+        state.get
     }
 
     @Nullable
