@@ -41,6 +41,7 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.IncrementalCompilation
 import org.jetbrains.kotlin.config.Services
 import org.jetbrains.kotlin.config.addKotlinSourceRoot
+import org.jetbrains.kotlin.jps.incremental.InlineEventHandler
 import org.jetbrains.kotlin.load.kotlin.incremental.cache.IncrementalCacheProvider
 import org.jetbrains.kotlin.resolve.AnalyzerScriptParameter
 import org.jetbrains.kotlin.util.PerformanceCounter
@@ -71,6 +72,8 @@ public open class K2JVMCompiler : CLICompiler<K2JVMCompilerArguments>() {
         if (IncrementalCompilation.ENABLED) {
             val incrementalCacheProvider = services.get(javaClass<IncrementalCacheProvider>())
             configuration.put(JVMConfigurationKeys.INCREMENTAL_CACHE_PROVIDER, incrementalCacheProvider)
+            val inlineEventHandler = services.get(javaClass<InlineEventHandler>()) ?: InlineEventHandler.DEFAULT
+            configuration.put(JVMConfigurationKeys.INLINE_EVENT_HANDLER, inlineEventHandler)
         }
 
         val locator = services.get(javaClass<CompilerJarLocator>())

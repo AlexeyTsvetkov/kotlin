@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.cli.jvm.config;
 
 import org.jetbrains.kotlin.cli.jvm.compiler.CompilerJarLocator;
 import org.jetbrains.kotlin.config.CompilerConfigurationKey;
+import org.jetbrains.kotlin.jps.incremental.InlineEventHandler;
 import org.jetbrains.kotlin.load.kotlin.incremental.cache.IncrementalCacheProvider;
 import org.jetbrains.kotlin.resolve.AnalyzerScriptParameter;
 
@@ -44,6 +45,9 @@ public class JVMConfigurationKeys {
 
     public static final CompilerConfigurationKey<IncrementalCacheProvider> INCREMENTAL_CACHE_PROVIDER =
             CompilerConfigurationKey.create("incremental cache provider");
+
+    public static final CompilerConfigurationKey<InlineEventHandler> INLINE_EVENT_HANDLER =
+            CompilerConfigurationKey.create("inline event handler");
 
     public static final CompilerConfigurationKey<CompilerJarLocator> COMPILER_JAR_LOCATOR =
             CompilerConfigurationKey.create("Compiler jar locator");
