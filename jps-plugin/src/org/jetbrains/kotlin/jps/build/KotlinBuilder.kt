@@ -275,6 +275,15 @@ public class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR
                 .register(javaClass<CompilationCanceledStatus>(), object: CompilationCanceledStatus {
                     override fun checkCanceled(): Unit = if (context.getCancelStatus().isCanceled()) throw CompilationCanceledException()
                     })
+                .register(javaClass<InlineEventHandler>(), object : InlineEventHandler {
+                    override fun handleInlineEvent(
+                            moduleId: String,
+                            functionSignature: String,
+                            sourceFile: String,
+                            targetFile: String,
+                            outFile: String
+                    ) {}
+                })
                 .build()
 
         return CompilerEnvironment.getEnvironmentFor(
@@ -285,6 +294,7 @@ public class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR
                     || className.startsWith("org.apache.log4j.") // For logging from compiler
                     || className == "org.jetbrains.kotlin.progress.CompilationCanceledStatus"
                     || className == "org.jetbrains.kotlin.progress.CompilationCanceledException"
+                    || className == "org.jetbrains.kotlin.jps.incremental.InlineEventHandler"
                 },
                 compilerServices
         )
