@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.codegen.when.MappingsClassesForWhenByEnum;
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor;
 import org.jetbrains.kotlin.descriptors.ScriptDescriptor;
 import org.jetbrains.kotlin.diagnostics.DiagnosticSink;
+import org.jetbrains.kotlin.jps.incremental.InlineEventHandler;
 import org.jetbrains.kotlin.name.FqName;
 import org.jetbrains.kotlin.psi.JetClassOrObject;
 import org.jetbrains.kotlin.psi.JetFile;
@@ -102,6 +103,9 @@ public class GenerationState {
     @Nullable
     private final String moduleId; // for PackageCodegen in incremental compilation mode
 
+    @NotNull
+    private final InlineEventHandler inlineEventHandler;
+
     @Nullable
     private final File outDirectory; // TODO: temporary hack, see JetTypeMapperWithOutDirectory state for details
 
@@ -113,7 +117,7 @@ public class GenerationState {
             @NotNull List<JetFile> files
     ) {
         this(project, builderFactory, Progress.DEAF, module, bindingContext, files, true, true, GenerateClassFilter.GENERATE_ALL,
-             false, false, null, null, DiagnosticSink.DO_NOTHING, null);
+             false, false, null, null, DiagnosticSink.DO_NOTHING, null, InlineEventHandler.DEFAULT.INSTANCE$);
     }
 
     public GenerationState(
@@ -131,7 +135,8 @@ public class GenerationState {
             @Nullable Collection<FqName> packagesWithObsoleteParts,
             @Nullable String moduleId,
             @NotNull DiagnosticSink diagnostics,
-            @Nullable File outDirectory
+            @Nullable File outDirectory,
+            @NotNull InlineEventHandler inlineEventHandler
     ) {
         this.project = project;
         this.progress = progress;
@@ -175,6 +180,7 @@ public class GenerationState {
         this.runtimeTypes = new JvmRuntimeTypes();
 
         this.inlineCycleReporter = new InlineCycleReporter(diagnostics);
+        this.inlineEventHandler = inlineEventHandler;
     }
 
     @NotNull
@@ -313,5 +319,10 @@ public class GenerationState {
     @Nullable
     public File getOutDirectory() {
         return outDirectory;
+    }
+
+    @Nullable
+    public InlineEventHandler getInlineEventHandler() {
+        return inlineEventHandler;
     }
 }

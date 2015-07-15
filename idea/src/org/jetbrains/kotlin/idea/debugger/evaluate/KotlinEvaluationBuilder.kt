@@ -49,7 +49,6 @@ import org.jetbrains.eval4j.jdi.makeInitialFrame
 import org.jetbrains.kotlin.codegen.*
 import org.jetbrains.kotlin.codegen.binding.CodegenBinding
 import org.jetbrains.kotlin.codegen.state.GenerationState
-import org.jetbrains.kotlin.progress.Progress
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.diagnostics.DiagnosticSink
@@ -66,10 +65,12 @@ import org.jetbrains.kotlin.idea.util.DebuggerUtils
 import org.jetbrains.kotlin.idea.util.application.runReadAction
 import org.jetbrains.kotlin.idea.util.attachment.attachmentByPsiFile
 import org.jetbrains.kotlin.idea.util.attachment.mergeAttachments
+import org.jetbrains.kotlin.jps.incremental.InlineEventHandler
 import org.jetbrains.kotlin.load.java.structure.impl.JavaClassImpl
 import org.jetbrains.kotlin.load.kotlin.PackageClassUtils
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.platform.JavaToKotlinClassMap
+import org.jetbrains.kotlin.progress.Progress
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.codeFragmentUtil.debugTypeInfo
 import org.jetbrains.kotlin.psi.codeFragmentUtil.suppressDiagnosticsInDebugMode
@@ -81,7 +82,8 @@ import org.jetbrains.kotlin.types.Flexibility
 import org.jetbrains.org.objectweb.asm.*
 import org.jetbrains.org.objectweb.asm.Opcodes.ASM5
 import org.jetbrains.org.objectweb.asm.tree.MethodNode
-import java.util.*
+import java.util.Collections
+import java.util.HashMap
 
 private val RECEIVER_NAME = "\$receiver"
 private val THIS_NAME = "this"
@@ -365,7 +367,8 @@ class KotlinEvaluator(val codeFragment: JetCodeFragment,
                         false, false,
                         null, null,
                         DiagnosticSink.DO_NOTHING,
-                        null)
+                        null,
+                        InlineEventHandler.DEFAULT)
 
                 val frameVisitor = FrameVisitor(context)
 

@@ -24,4 +24,10 @@ public interface InlineEventHandler {
             targetFile: String,
             outFile: String
     )
+
+    object DEFAULT : InlineEventHandler {
+        override fun handleInlineEvent(moduleId: String, functionSignature: String, sourceFile: String, targetFile: String, outFile: String) {
+
+        }
+    }
 }

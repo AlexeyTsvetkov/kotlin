@@ -20,6 +20,7 @@ import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.analyzer.AnalysisResult;
 import org.jetbrains.kotlin.codegen.state.GenerationState;
+import org.jetbrains.kotlin.jps.incremental.InlineEventHandler;
 import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.diagnostics.DiagnosticSink;
 import org.jetbrains.kotlin.psi.JetFile;
@@ -62,7 +63,8 @@ public class GenerationUtils {
                 project, ClassBuilderFactories.TEST, Progress.DEAF,
                 analysisResult.getModuleDescriptor(), analysisResult.getBindingContext(),
                 files, false, false, GenerationState.GenerateClassFilter.GENERATE_ALL,
-                false, false, null, null, DiagnosticSink.DO_NOTHING, null
+                false, false, null, null, DiagnosticSink.DO_NOTHING, null,
+                InlineEventHandler.DEFAULT.INSTANCE$
         );
         KotlinCodegenFacade.compileCorrectFiles(state, CompilationErrorHandler.THROW_EXCEPTION);
         return state;

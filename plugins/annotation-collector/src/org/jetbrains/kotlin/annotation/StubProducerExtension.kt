@@ -18,13 +18,12 @@ package org.jetbrains.kotlin.annotation
 
 import com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.analyzer.AnalysisResult
-import org.jetbrains.kotlin.cli.common.CLICompiler
-import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.output.outputUtils.writeAllTo
 import org.jetbrains.kotlin.codegen.*
 import org.jetbrains.kotlin.codegen.state.GenerationState
-import org.jetbrains.kotlin.progress.Progress
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.jps.incremental.InlineEventHandler
+import org.jetbrains.kotlin.progress.Progress
 import org.jetbrains.kotlin.psi.JetFile
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTraceContext
@@ -58,7 +57,9 @@ public class StubProducerExtension(val stubsOutputDir: File) : AnalysisCompleted
                 /*packagesWithObsoleteParts =*/ null,
                 /*moduleId =*/ null,
                 forExtraDiagnostics,
-                /*outDirectory =*/ null)
+                /*outDirectory =*/ null,
+                InlineEventHandler.DEFAULT
+        )
 
         KotlinCodegenFacade.compileCorrectFiles(generationState, CompilationErrorHandler.THROW_EXCEPTION)
 

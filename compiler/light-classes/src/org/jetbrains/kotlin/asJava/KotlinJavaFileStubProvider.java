@@ -45,6 +45,7 @@ import org.jetbrains.kotlin.codegen.KotlinCodegenFacade;
 import org.jetbrains.kotlin.codegen.PackageCodegen;
 import org.jetbrains.kotlin.codegen.binding.CodegenBinding;
 import org.jetbrains.kotlin.codegen.state.GenerationState;
+import org.jetbrains.kotlin.jps.incremental.InlineEventHandler;
 import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.descriptors.ClassDescriptor;
 import org.jetbrains.kotlin.name.FqName;
@@ -345,7 +346,8 @@ public class KotlinJavaFileStubProvider<T extends WithFileStubAndExtraDiagnostic
                     null,
                     null,
                     forExtraDiagnostics,
-                    null
+                    null,
+                    InlineEventHandler.DEFAULT.INSTANCE$
             );
             KotlinCodegenFacade.prepareForCompilation(state);
 
