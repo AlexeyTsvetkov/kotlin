@@ -99,6 +99,7 @@ public class IncrementalCacheImpl(targetDataRoot: File) : StorageOwner, Incremen
         val PACKAGE_PARTS = "package-parts.tab"
         val SOURCE_TO_CLASSES = "source-to-classes.tab"
         val DIRTY_OUTPUT_CLASSES = "dirty-output-classes.tab"
+        val INLINE_FUNCTIONS_OUT_CLASSES = "inline-functions-out-classes.tab"
     }
 
     private val baseDir = File(targetDataRoot, CACHE_DIRECTORY_NAME)
@@ -439,6 +440,28 @@ public class IncrementalCacheImpl(targetDataRoot: File) : StorageOwner, Incremen
         private enum class Kind {
             INT, FLOAT, LONG, DOUBLE, STRING
         }
+    }
+
+    private inner class InlineFunctionsOutClasses : BasicMap<List<String>>() {
+        override fun createMap(): PersistentHashMap<String, List<String>> = PersistentHashMap(
+                File(baseDir, INLINE_FUNCTIONS_OUT_CLASSES),
+                EnumeratorStringDescriptor(),
+                StringListExternalizer
+        )
+
+        public fun clearOutputsForSource(sourceFile: File) {
+            storage.remove(sourceFile.getAbsolutePath())
+        }
+
+        public fun addSourceToClass(sourceFile: File, className: JvmClassName) {
+            storage.appendData(sourceFile.getAbsolutePath(), { out -> IOUtil.writeUTF(out, className.getInternalName()) })
+        }
+
+        public fun get(sourceFile: File): Collection<JvmClassName> {
+            return storage[sourceFile.getAbsolutePath()].orEmpty().map { JvmClassName.byInternalName(it) }
+        }
+
+        override fun dumpValue(value: List<String>) = value.toString()
     }
 
     private inner class InlineFunctionsMap : BasicMap<Map<String, Long>>() {
