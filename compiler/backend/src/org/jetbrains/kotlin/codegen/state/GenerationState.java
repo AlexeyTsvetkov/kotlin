@@ -321,7 +321,7 @@ public class GenerationState {
         return outDirectory;
     }
 
-    @Nullable
+    @NotNull
     public InlineEventHandler getInlineEventHandler() {
         return inlineEventHandler;
     }
