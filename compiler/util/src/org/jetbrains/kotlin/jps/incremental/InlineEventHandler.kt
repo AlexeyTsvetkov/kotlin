@@ -17,17 +17,10 @@
 package org.jetbrains.kotlin.jps.incremental
 
 public interface InlineEventHandler {
-    fun handleInlineEvent(
-            moduleId: String,
-            functionSignature: String,
-            sourceFile: String,
-            targetFile: String,
-            outFile: String
-    )
+    fun handleInlineEvent(signature: String, sourceFile: String, targetFile: String)
 
     object DEFAULT : InlineEventHandler {
-        override fun handleInlineEvent(moduleId: String, functionSignature: String, sourceFile: String, targetFile: String, outFile: String) {
-
+        override fun handleInlineEvent(signature: String, sourceFile: String, targetFile: String) {
         }
     }
 }
