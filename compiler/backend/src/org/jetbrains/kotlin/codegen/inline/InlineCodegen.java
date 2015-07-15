@@ -745,7 +745,7 @@ public class InlineCodegen extends CallGenerator {
         String targetFile = getFilePath(targetDescriptor);
 
         assert sourceFile != null && targetFile != null;
-        state.get
+        state.getInlineEventHandler().handleInlineEvent(sourceFile, targetFile, jvmSignature.toString());
     }
 
     @Nullable
