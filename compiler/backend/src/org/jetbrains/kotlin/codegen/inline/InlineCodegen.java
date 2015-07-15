@@ -33,7 +33,6 @@ import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.load.kotlin.PackageClassUtils;
 import org.jetbrains.kotlin.name.ClassId;
 import org.jetbrains.kotlin.name.Name;
-import org.jetbrains.kotlin.progress.Progress;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.renderer.DescriptorRenderer;
 import org.jetbrains.kotlin.resolve.DescriptorToSourceUtils;
@@ -121,7 +120,7 @@ public class InlineCodegen extends CallGenerator {
         isSameModule = JvmCodegenUtil.isCallInsideSameModuleAsDeclared(functionDescriptor, codegen.getContext(), state.getOutDirectory());
 
         sourceMapper = codegen.getParentCodegen().getOrCreateSourceMapper();
-        reportIncrementalInfo(functionDescriptor, codegen.getContext().getFunctionDescriptor(), state.getProgress());
+        reportIncrementalInfo(functionDescriptor, codegen.getContext().getFunctionDescriptor());
     }
 
     @Override
@@ -740,15 +739,12 @@ public class InlineCodegen extends CallGenerator {
 
     private static void reportIncrementalInfo(
             @NotNull FunctionDescriptor sourceDescriptor,
-            @NotNull FunctionDescriptor targetDescriptor,
-            @NotNull Progress progress
+            @NotNull FunctionDescriptor targetDescriptor
     ) {
         String sourceFile = getFilePath(sourceDescriptor);
         String targetFile = getFilePath(targetDescriptor);
 
-        if (sourceFile == null || targetFile == null) return;
-
-        progress.reportInline();
+        assert sourceFile != null && targetFile != null;
     }
 
     @Nullable
