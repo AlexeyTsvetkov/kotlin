@@ -1,0 +1,6 @@
+Module 'module1' production
+Module 'module1' tests
+Module 'module2' production
+Module 'module2' tests
+Module 'module3' production
+Module 'module3' tests

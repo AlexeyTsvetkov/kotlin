@@ -99,6 +99,7 @@ import org.jetbrains.kotlin.j2k.AbstractJavaToKotlinConverterMultiFileTest
 import org.jetbrains.kotlin.j2k.AbstractJavaToKotlinConverterSingleFileTest
 import org.jetbrains.kotlin.jps.build.AbstractIncrementalJpsTest
 import org.jetbrains.kotlin.jps.build.AbstractIncrementalLazyCachesTest
+import org.jetbrains.kotlin.jps.build.AbstractKotlinIncrementalCompilationOffTest
 import org.jetbrains.kotlin.jps.build.AbstractLookupTrackerTest
 import org.jetbrains.kotlin.jps.build.android.AbstractAndroidJpsTestCase
 import org.jetbrains.kotlin.jps.incremental.AbstractProtoComparisonTest
@@ -839,6 +840,10 @@ fun main(args: Array<String>) {
 
         testClass(AbstractIncrementalLazyCachesTest::class.java) {
             model("incremental/lazyKotlinCaches", extension = null, excludeParentDirs = true)
+        }
+
+        testClass(AbstractKotlinIncrementalCompilationOffTest::class.java) {
+            model("incremental/incrementalOff", extension = null, excludeParentDirs = true)
         }
     }
 

@@ -17,7 +17,6 @@
 package org.jetbrains.kotlin.jps.build
 
 import com.intellij.testFramework.UsefulTestCase
-import org.jetbrains.kotlin.config.IncrementalCompilation
 import org.jetbrains.kotlin.jps.incremental.IncrementalCacheImpl
 import org.jetbrains.kotlin.jps.incremental.getCacheDirectoryName
 import org.jetbrains.kotlin.jps.incremental.getKotlinCacheVersion
@@ -26,44 +25,11 @@ import java.io.File
 
 public abstract class AbstractIncrementalLazyCachesTest : AbstractIncrementalJpsTest() {
     override fun doTest(testDataPath: String) {
-        try {
-            super.doTest(testDataPath)
+        super.doTest(testDataPath)
 
-            val actual = dumpKotlinCachesFileNames()
-            val expectedFile = File(testDataPath, "expected-kotlin-caches.txt")
-            UsefulTestCase.assertSameLinesWithFile(expectedFile.canonicalPath, actual)
-        }
-        finally {
-            IncrementalCompilation.enableIncrementalCompilation()
-        }
-    }
-
-    override fun performAdditionalModifications(modifications: List<AbstractIncrementalJpsTest.Modification>) {
-        super.performAdditionalModifications(modifications)
-
-        var modified = 0
-
-        for (modification in modifications) {
-            if (!modification.path.endsWith("incremental_compilation_off")) continue
-
-            when (modification) {
-                is AbstractIncrementalJpsTest.ModifyContent -> {
-                    IncrementalCompilation.disableIncrementalCompilation()
-                }
-                is AbstractIncrementalJpsTest.DeleteFile -> {
-                    IncrementalCompilation.enableIncrementalCompilation()
-                }
-                else -> {
-                    throw IllegalStateException("Unknown modification type: ${modification.javaClass}")
-                }
-            }
-
-            modified++
-        }
-
-        if (modified > 1) {
-            throw IllegalStateException("Incremental compilation was enabled/disable more than once")
-        }
+        val actual = dumpKotlinCachesFileNames()
+        val expectedFile = File(testDataPath, "expected-kotlin-caches.txt")
+        UsefulTestCase.assertSameLinesWithFile(expectedFile.canonicalPath, actual)
     }
 
     private fun dumpKotlinCachesFileNames(): String {
