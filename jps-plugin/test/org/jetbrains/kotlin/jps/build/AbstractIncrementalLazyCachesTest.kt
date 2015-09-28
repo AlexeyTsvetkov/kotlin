@@ -24,12 +24,24 @@ import org.jetbrains.kotlin.utils.Printer
 import java.io.File
 
 public abstract class AbstractIncrementalLazyCachesTest : AbstractIncrementalJpsTest() {
+    var kotlinCachesLog = StringBuilder()
+
     override fun doTest(testDataPath: String) {
+        kotlinCachesLog = StringBuilder()
+
         super.doTest(testDataPath)
 
-        val actual = dumpKotlinCachesFileNames()
         val expectedFile = File(testDataPath, "expected-kotlin-caches.txt")
-        UsefulTestCase.assertSameLinesWithFile(expectedFile.canonicalPath, actual)
+        UsefulTestCase.assertSameLinesWithFile(expectedFile.canonicalPath, kotlinCachesLog.toString())
+    }
+
+    override fun make(): AbstractIncrementalJpsTest.MakeResult {
+        val makeResult = super.make()
+
+        kotlinCachesLog.append(dumpKotlinCachesFileNames())
+        kotlinCachesLog.append("\n=====================\n\n")
+
+        return makeResult
     }
 
     private fun dumpKotlinCachesFileNames(): String {

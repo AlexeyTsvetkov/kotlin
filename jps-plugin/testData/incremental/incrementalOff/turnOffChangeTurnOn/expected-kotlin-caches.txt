@@ -1,7 +1,15 @@
-Module 'module1' production
+Module 'module' production
+Module 'module' tests
+
+=====================
+
+Module 'module' production
     format-version.txt
     inline-functions.tab
+    inlined-to.tab
     package-parts.tab
     proto.tab
     source-to-classes.tab
-Module 'module1' tests
+Module 'module' tests
+
+=====================
