@@ -1,3 +1,3 @@
-package module1
+package other
 
 fun other() {}

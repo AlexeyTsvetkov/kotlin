@@ -4,8 +4,8 @@ out/production/module/inline/InlineKt.class
 out/production/module/inline/InlinePackage.class
 End of files
 Cleaning output files:
-out/production/module/module1/Module1Package.class
-out/production/module/module1/OtherKt.class
+out/production/module/other/OtherKt.class
+out/production/module/other/OtherPackage.class
 out/production/module/usage/UsageKt.class
 out/production/module/usage/UsagePackage.class
 End of files
@@ -28,8 +28,8 @@ Cleaning output files:
 out/production/module/META-INF/module.kotlin_module
 out/production/module/inline/InlineKt.class
 out/production/module/inline/InlinePackage.class
-out/production/module/module1/Module1Package.class
-out/production/module/module1/OtherKt.class
+out/production/module/other/OtherKt.class
+out/production/module/other/OtherPackage.class
 out/production/module/usage/UsageKt.class
 out/production/module/usage/UsagePackage.class
 End of files
