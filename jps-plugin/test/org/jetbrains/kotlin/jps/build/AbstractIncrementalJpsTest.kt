@@ -337,7 +337,7 @@ public abstract class AbstractIncrementalJpsTest(
         return byteArrayOutputStream.toString()
     }
 
-    protected class MakeResult(val log: String, val makeFailed: Boolean, val mappingsDump: String?)
+    protected data class MakeResult(val log: String, val makeFailed: Boolean, val mappingsDump: String?)
 
     private fun performModificationsAndMake(moduleNames: Set<String>?): List<MakeResult> {
         val results = arrayListOf<MakeResult>()
