@@ -1,0 +1,14 @@
+Cleaning output files:
+out/production/module/foo/X.class
+out/production/module/foo/Y.class
+End of files
+Cleaning output files:
+out/production/module/foo/Z.class
+End of files
+Compiling files:
+src/X.kt
+src/Y.kt
+End of files
+Compiling files:
+src/Z.java
+End of files

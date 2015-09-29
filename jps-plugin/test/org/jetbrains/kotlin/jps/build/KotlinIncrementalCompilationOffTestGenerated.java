@@ -35,6 +35,12 @@ public class KotlinIncrementalCompilationOffTestGenerated extends AbstractKotlin
         JetTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("jps-plugin/testData/incremental/incrementalOff"), Pattern.compile("^([^\\.]+)$"), true);
     }
 
+    @TestMetadata("offChangeOnMultiModule")
+    public void testOffChangeOnMultiModule() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("jps-plugin/testData/incremental/incrementalOff/offChangeOnMultiModule/");
+        doTest(fileName);
+    }
+
     @TestMetadata("turnOff")
     public void testTurnOff() throws Exception {
         String fileName = JetTestUtils.navigationMetadata("jps-plugin/testData/incremental/incrementalOff/turnOff/");
@@ -44,6 +50,12 @@ public class KotlinIncrementalCompilationOffTestGenerated extends AbstractKotlin
     @TestMetadata("turnOffChangeTurnOn")
     public void testTurnOffChangeTurnOn() throws Exception {
         String fileName = JetTestUtils.navigationMetadata("jps-plugin/testData/incremental/incrementalOff/turnOffChangeTurnOn/");
+        doTest(fileName);
+    }
+
+    @TestMetadata("turnOffChangeTurnOn2")
+    public void testTurnOffChangeTurnOn2() throws Exception {
+        String fileName = JetTestUtils.navigationMetadata("jps-plugin/testData/incremental/incrementalOff/turnOffChangeTurnOn2/");
         doTest(fileName);
     }
 

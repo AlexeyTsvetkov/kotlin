@@ -1,0 +1,36 @@
+Module 'module1' production
+Module 'module1' tests
+Module 'module2' production
+Module 'module2' tests
+
+
+Module 'module1' production
+    format-version.txt
+    inline-functions.tab
+    package-parts.tab
+    proto.tab
+    source-to-classes.tab
+Module 'module1' tests
+Module 'module2' production
+    format-version.txt
+    inlined-to.tab
+    package-parts.tab
+    proto.tab
+    source-to-classes.tab
+Module 'module2' tests
+
+
+Module 'module1' production
+    format-version.txt
+    inline-functions.tab
+    package-parts.tab
+    proto.tab
+    source-to-classes.tab
+Module 'module1' tests
+Module 'module2' production
+    format-version.txt
+    inlined-to.tab
+    package-parts.tab
+    proto.tab
+    source-to-classes.tab
+Module 'module2' tests
