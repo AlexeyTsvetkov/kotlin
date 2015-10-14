@@ -137,7 +137,6 @@ public abstract class KotlinBuiltIns {
 
         public final FqName throwable = fqName("Throwable");
 
-        public final FqName data = fqName("data");
         public final FqName deprecated = fqName("Deprecated");
         public final FqName tailRecursive = fqName("tailrec");
         public final FqName inline = fqName("inline");
@@ -1029,10 +1028,6 @@ public abstract class KotlinBuiltIns {
 
     public static boolean isCloneable(@NotNull ClassDescriptor descriptor) {
         return FQ_NAMES.cloneable.equals(getFqName(descriptor));
-    }
-
-    public static boolean isData(@NotNull ClassDescriptor classDescriptor) {
-        return containsAnnotation(classDescriptor, FQ_NAMES.data);
     }
 
     public static boolean isDeprecated(@NotNull DeclarationDescriptor declarationDescriptor) {
