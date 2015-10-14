@@ -35,6 +35,7 @@ public class Flags {
     public static final FlagField<ProtoBuf.Class.Kind> CLASS_KIND = FlagField.after(MODALITY, ProtoBuf.Class.Kind.values());
     public static final BooleanFlagField IS_INNER = FlagField.booleanAfter(CLASS_KIND);
     public static final BooleanFlagField IS_DATA = FlagField.booleanAfter(IS_INNER);
+    public static final BooleanFlagField IS_ANNOTATION = FlagField.booleanAfter(IS_DATA);
 
     // Callables
 

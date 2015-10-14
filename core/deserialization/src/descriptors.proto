@@ -162,6 +162,7 @@ message Class {
     ClassKind
     isInner
     isData
+    isAnnotation
   */
   optional int32 flags = 1 [default = 6 /* public final class, no annotations */];
 
