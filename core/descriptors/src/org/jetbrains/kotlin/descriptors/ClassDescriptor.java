@@ -89,6 +89,8 @@ public interface ClassDescriptor extends ClassifierDescriptor, MemberDescriptor,
 
     boolean isData();
 
+    boolean isAnnotation();
+
     @NotNull
     ReceiverParameterDescriptor getThisAsReceiverParameter();
 

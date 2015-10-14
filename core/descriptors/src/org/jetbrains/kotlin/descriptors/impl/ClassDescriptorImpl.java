@@ -139,6 +139,11 @@ public class ClassDescriptorImpl extends ClassDescriptorBase {
     }
 
     @Override
+    public boolean isAnnotation() {
+        return false;
+    }
+
+    @Override
     public boolean isInner() {
         return false;
     }

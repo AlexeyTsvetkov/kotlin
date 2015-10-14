@@ -106,6 +106,11 @@ public class MutableClassDescriptor extends ClassDescriptorBase implements Class
     }
 
     @Override
+    public boolean isAnnotation() {
+        return kind == ClassKind.ANNOTATION_CLASS;
+    }
+
+    @Override
     public boolean isCompanionObject() {
         return false;
     }

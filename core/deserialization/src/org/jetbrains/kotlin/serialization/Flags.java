@@ -90,7 +90,8 @@ public class Flags {
             ClassKind kind,
             boolean inner,
             boolean isCompanionObject,
-            boolean isData
+            boolean isData,
+            boolean isAnnotation
     ) {
         return HAS_ANNOTATIONS.toFlags(hasAnnotations)
                | MODALITY.toFlags(modality(modality))
@@ -98,6 +99,7 @@ public class Flags {
                | CLASS_KIND.toFlags(classKind(kind, isCompanionObject))
                | IS_INNER.toFlags(inner)
                | IS_DATA.toFlags(isData)
+               | IS_ANNOTATION.toFlags(isAnnotation)
                ;
     }
 

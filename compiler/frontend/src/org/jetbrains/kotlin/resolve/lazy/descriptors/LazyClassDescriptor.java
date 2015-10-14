@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.descriptors.annotations.Annotations;
 import org.jetbrains.kotlin.descriptors.impl.ClassDescriptorBase;
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation;
+import org.jetbrains.kotlin.lexer.JetModifierKeywordToken;
 import org.jetbrains.kotlin.lexer.JetTokens;
 import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.psi.*;
@@ -85,6 +86,7 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
     private final NotNullLazyValue<ClassKind> kind;
     private final NotNullLazyValue<Boolean> isInner;
     private final NotNullLazyValue<Boolean> isData;
+    private final NotNullLazyValue<Boolean> isAnnotation;
 
     private final Annotations annotations;
     private final Annotations danglingAnnotations;
@@ -155,12 +157,8 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
             }
         });
 
-        this.isData = storageManager.createLazyValue(new Function0<Boolean>() {
-            @Override
-            public Boolean invoke() {
-                return modifierList != null && modifierList.hasModifier(JetTokens.DATA_KEYWORD);
-            }
-        });
+        this.isData = lazyModifierCheck(storageManager, modifierList, JetTokens.DATA_KEYWORD);
+        this.isAnnotation = lazyModifierCheck(storageManager, modifierList, JetTokens.ANNOTATION_KEYWORD);
 
         this.kind = storageManager.createLazyValue(new Function0<ClassKind>() {
             @Override
@@ -417,6 +415,11 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
     @Override
     public boolean isData() {
         return isData.invoke();
+    }
+
+    @Override
+    public boolean isAnnotation() {
+        return isAnnotation.invoke();
     }
 
     @Override
@@ -704,5 +707,19 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
             ForceResolveUtil.forceResolveAllContents(getSupertypes());
             ForceResolveUtil.forceResolveAllContents(getParameters());
         }
+    }
+
+    @NotNull
+    private static NotNullLazyValue<Boolean> lazyModifierCheck(
+            @NotNull StorageManager storageManager,
+            @Nullable final JetModifierList modifierList,
+            @NotNull final JetModifierKeywordToken tokenType
+    ) {
+        return storageManager.createLazyValue(new Function0<Boolean>() {
+            @Override
+            public Boolean invoke() {
+                return modifierList != null && modifierList.hasModifier(tokenType);
+            }
+        });
     }
 }

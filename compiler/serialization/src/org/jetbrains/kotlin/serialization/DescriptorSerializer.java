@@ -100,7 +100,8 @@ public class DescriptorSerializer {
 
         int flags = Flags.getClassFlags(hasAnnotations(classDescriptor), classDescriptor.getVisibility(), classDescriptor.getModality(),
                                         classDescriptor.getKind(), classDescriptor.isInner(), classDescriptor.isCompanionObject(),
-                                        classDescriptor.isData());
+                                        classDescriptor.isData(),
+                                        classDescriptor.isAnnotation());
         if (flags != builder.getFlags()) {
             builder.setFlags(flags);
         }

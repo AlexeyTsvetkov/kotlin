@@ -83,6 +83,7 @@ public class FunctionClassDescriptor(
     override fun isCompanionObject() = false
     override fun isInner() = false
     override fun isData() = false
+    override fun isAnnotation() = false
     override fun getAnnotations() = Annotations.EMPTY
     override fun getSource() = SourceElement.NO_SOURCE
 

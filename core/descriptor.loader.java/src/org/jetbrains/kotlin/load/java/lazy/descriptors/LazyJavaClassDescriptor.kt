@@ -74,6 +74,7 @@ class LazyJavaClassDescriptor(
     override fun getVisibility() = visibility
     override fun isInner() = isInner
     override fun isData() = false
+    override fun isAnnotation() = jClass.isAnnotationType
 
     private val typeConstructor = c.storageManager.createLazyValue { LazyJavaClassTypeConstructor() }
     override fun getTypeConstructor(): TypeConstructor = typeConstructor()
