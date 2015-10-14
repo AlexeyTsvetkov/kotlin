@@ -83,7 +83,7 @@ package test {
         public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
     }
 
-    @test.AnnotationTargets.base() @test.AnnotationTargets.meta() @test.AnnotationTargets.type() @test.AnnotationTargets.konstructor() @kotlin.annotation.annotation() public final class KMeta : kotlin.Annotation {
+    @test.AnnotationTargets.base() @test.AnnotationTargets.meta() @test.AnnotationTargets.type() @test.AnnotationTargets.konstructor() public final class KMeta : kotlin.Annotation {
         public constructor KMeta()
         public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
         public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int

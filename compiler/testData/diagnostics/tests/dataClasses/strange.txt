@@ -22,7 +22,7 @@ public final enum class First : kotlin.Enum<First> {
     public final /*synthesized*/ fun values(): kotlin.Array<First>
 }
 
-@kotlin.annotation.annotation() public final class Fourth : kotlin.Annotation {
+public final class Fourth : kotlin.Annotation {
     public constructor Fourth(/*0*/ x: kotlin.Int)
     public final val x: kotlin.Int
     public final operator /*synthesized*/ fun component1(): kotlin.Int
