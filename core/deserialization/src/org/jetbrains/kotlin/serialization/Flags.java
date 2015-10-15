@@ -53,6 +53,7 @@ public class Flags {
 
     public static final BooleanFlagField IS_OPERATOR = FlagField.booleanAfter(MEMBER_KIND);
     public static final BooleanFlagField IS_INFIX = FlagField.booleanAfter(IS_OPERATOR);
+    public static final BooleanFlagField IS_INLINE = FlagField.booleanAfter(IS_INFIX);
 
     // Properties
 

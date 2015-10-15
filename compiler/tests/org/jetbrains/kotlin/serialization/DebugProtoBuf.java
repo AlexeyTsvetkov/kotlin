@@ -13493,6 +13493,7 @@ public final class DebugProtoBuf {
      *MemberKind
      *isOperator
      *isInfix
+     *isInline
      * </pre>
      */
     boolean hasFlags();
@@ -13507,6 +13508,7 @@ public final class DebugProtoBuf {
      *MemberKind
      *isOperator
      *isInfix
+     *isInline
      * </pre>
      */
     int getFlags();
@@ -13762,6 +13764,7 @@ public final class DebugProtoBuf {
      *MemberKind
      *isOperator
      *isInfix
+     *isInline
      * </pre>
      */
     public boolean hasFlags() {
@@ -13778,6 +13781,7 @@ public final class DebugProtoBuf {
      *MemberKind
      *isOperator
      *isInfix
+     *isInline
      * </pre>
      */
     public int getFlags() {
@@ -14399,6 +14403,7 @@ public final class DebugProtoBuf {
        *MemberKind
        *isOperator
        *isInfix
+       *isInline
        * </pre>
        */
       public boolean hasFlags() {
@@ -14415,6 +14420,7 @@ public final class DebugProtoBuf {
        *MemberKind
        *isOperator
        *isInfix
+       *isInline
        * </pre>
        */
       public int getFlags() {
@@ -14431,6 +14437,7 @@ public final class DebugProtoBuf {
        *MemberKind
        *isOperator
        *isInfix
+       *isInline
        * </pre>
        */
       public Builder setFlags(int value) {
@@ -14450,6 +14457,7 @@ public final class DebugProtoBuf {
        *MemberKind
        *isOperator
        *isInfix
+       *isInline
        * </pre>
        */
       public Builder clearFlags() {

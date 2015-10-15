@@ -212,6 +212,7 @@ message Function {
     MemberKind
     isOperator
     isInfix
+    isInline
   */
   optional int32 flags = 1 [default = 6];
 
