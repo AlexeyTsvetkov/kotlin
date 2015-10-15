@@ -55,4 +55,9 @@ public class ScriptCodeDescriptor extends FunctionDescriptorImpl {
     public FunctionDescriptor copy(DeclarationDescriptor newOwner, Modality modality, Visibility visibility, Kind kind, boolean copyOverrides) {
         throw new IllegalStateException("no need to copy script code descriptor");
     }
+
+    @Override
+    public boolean isInline() {
+        return false;
+    }
 }

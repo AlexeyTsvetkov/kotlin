@@ -102,4 +102,9 @@ public class SimpleFunctionDescriptorImpl extends FunctionDescriptorImpl impleme
                 TypeSubstitutor.EMPTY, newOwner, modality, visibility, isOperator(), isInfix(), null, copyOverrides, kind
         );
     }
+
+    @Override
+    public boolean isInline() {
+        return getOriginal().isInline();
+    }
 }

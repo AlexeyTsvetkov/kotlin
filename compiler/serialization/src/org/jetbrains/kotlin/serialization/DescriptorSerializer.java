@@ -238,7 +238,7 @@ public class DescriptorSerializer {
 
         int flags = Flags.getFunctionFlags(
                 hasAnnotations(descriptor), descriptor.getVisibility(), descriptor.getModality(), descriptor.getKind(),
-                descriptor.isOperator(), descriptor.isInfix()
+                descriptor.isOperator(), descriptor.isInfix(), descriptor.isInline()
         );
         if (flags != builder.getFlags()) {
             builder.setFlags(flags);

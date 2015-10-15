@@ -46,6 +46,8 @@ public class FunctionInvokeDescriptor private constructor(
         return FunctionInvokeDescriptor(newOwner, original as FunctionInvokeDescriptor?, kind)
     }
 
+    override fun isInline(): Boolean = false
+
     companion object Factory {
         fun create(functionClass: FunctionClassDescriptor): FunctionInvokeDescriptor {
             val typeParameters = functionClass.getTypeConstructor().getParameters()

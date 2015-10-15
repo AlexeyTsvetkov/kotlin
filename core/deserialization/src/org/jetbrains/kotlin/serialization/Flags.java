@@ -141,7 +141,8 @@ public class Flags {
             @NotNull Modality modality,
             @NotNull CallableMemberDescriptor.Kind memberKind,
             boolean isOperator,
-            boolean isInfix
+            boolean isInfix,
+            boolean isInline
     ) {
         return HAS_ANNOTATIONS.toFlags(hasAnnotations)
                | VISIBILITY.toFlags(visibility(visibility))
@@ -149,6 +150,7 @@ public class Flags {
                | MEMBER_KIND.toFlags(memberKind(memberKind))
                | IS_OPERATOR.toFlags(isOperator)
                | IS_INFIX.toFlags(isInfix)
+               | IS_INLINE.toFlags(isInline)
                 ;
     }
 
