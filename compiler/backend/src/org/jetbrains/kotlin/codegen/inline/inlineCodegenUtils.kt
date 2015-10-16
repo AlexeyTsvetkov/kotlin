@@ -24,12 +24,21 @@ import org.jetbrains.kotlin.load.kotlin.VirtualFileKotlinClass
 import org.jetbrains.kotlin.load.kotlin.header.KotlinClassHeader
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCache
 import org.jetbrains.kotlin.resolve.jvm.JvmClassName
+import org.jetbrains.kotlin.resolve.source.PsiSourceElement
 import org.jetbrains.kotlin.serialization.Flags
 import org.jetbrains.kotlin.serialization.ProtoBuf
 import org.jetbrains.kotlin.serialization.deserialization.NameResolver
 import org.jetbrains.kotlin.serialization.deserialization.TypeTable
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.serialization.jvm.JvmProtoBufUtil
+
+public val FunctionDescriptor.sourceFilePath: String
+    get() {
+        val source = source as PsiSourceElement
+        val containingFile = source.psi?.containingFile
+        return containingFile?.virtualFile?.canonicalPath!!
+    }
+
 
 public fun FunctionDescriptor.getClassFilePath(cache: IncrementalCache): String {
     val container = containingDeclaration as? DeclarationDescriptorWithSource
