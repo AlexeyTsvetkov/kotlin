@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.serialization.ProtoBuf
 import org.jetbrains.kotlin.serialization.deserialization.NameResolver
 import org.jetbrains.kotlin.serialization.deserialization.TypeTable
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedSimpleFunctionDescriptor
+import org.jetbrains.kotlin.serialization.jvm.BitEncoding
 import org.jetbrains.kotlin.serialization.jvm.JvmProtoBufUtil
 
 public val FunctionDescriptor.sourceFilePath: String
@@ -60,14 +61,20 @@ public fun FunctionDescriptor.getClassFilePath(cache: IncrementalCache): String 
 
 public fun inlineFunctionsJvmNames(bytes: ByteArray): Set<String> {
     val header = readKotlinHeader(bytes)
+    val annotationData = header.annotationData
+    val strings = header.strings
+
+    if (annotationData == null || strings == null) return emptySet()
 
     return when (header.kind) {
         KotlinClassHeader.Kind.CLASS -> {
-            val classData = JvmProtoBufUtil.readClassDataFrom(bytes, header.strings!!)
+            val classData = JvmProtoBufUtil.readClassDataFrom(BitEncoding.decodeBytes(annotationData), strings)
             inlineFunctionsJvmNames(classData.classProto.functionList, classData.nameResolver, classData.classProto.typeTable)
         }
-        KotlinClassHeader.Kind.PACKAGE_FACADE -> {
-            val packageData = JvmProtoBufUtil.readPackageDataFrom(bytes, header.strings!!)
+        KotlinClassHeader.Kind.FILE_FACADE,
+        KotlinClassHeader.Kind.MULTIFILE_CLASS,
+        KotlinClassHeader.Kind.MULTIFILE_CLASS_PART -> {
+            val packageData = JvmProtoBufUtil.readPackageDataFrom(BitEncoding.decodeBytes(annotationData), strings)
             inlineFunctionsJvmNames(packageData.packageProto.functionList, packageData.nameResolver, packageData.packageProto.typeTable)
         }
         else -> emptySet<String>()
