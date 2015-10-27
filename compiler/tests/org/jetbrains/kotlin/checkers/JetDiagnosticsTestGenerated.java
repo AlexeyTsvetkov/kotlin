@@ -13164,12 +13164,6 @@ public class JetDiagnosticsTestGenerated extends AbstractJetDiagnosticsTest {
                 doTest(fileName);
             }
 
-            @TestMetadata("invisibleSetter.kt")
-            public void testInvisibleSetter() throws Exception {
-                String fileName = JetTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/scopes/invisibleSetter.kt");
-                doTest(fileName);
-            }
-
             @TestMetadata("kt1078.kt")
             public void testKt1078() throws Exception {
                 String fileName = JetTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/scopes/kt1078.kt");
@@ -13323,6 +13317,18 @@ public class JetDiagnosticsTestGenerated extends AbstractJetDiagnosticsTest {
             @TestMetadata("sameClassNameResolve.kt")
             public void testSameClassNameResolve() throws Exception {
                 String fileName = JetTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/scopes/sameClassNameResolve.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("setterVisibilities.kt")
+            public void testSetterVisibilities() throws Exception {
+                String fileName = JetTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/scopes/setterVisibilities.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("setterVisibilitiesGenericClass.kt")
+            public void testSetterVisibilitiesGenericClass() throws Exception {
+                String fileName = JetTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/scopes/setterVisibilitiesGenericClass.kt");
                 doTest(fileName);
             }
 

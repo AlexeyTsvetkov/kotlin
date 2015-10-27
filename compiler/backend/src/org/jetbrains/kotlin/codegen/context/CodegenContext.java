@@ -556,15 +556,8 @@ public abstract class CodegenContext<T extends DeclarationDescriptor> {
             PropertyDescriptor propertyDescriptor = (PropertyDescriptor) descriptor;
             int propertyAccessFlag = getVisibilityAccessFlag(descriptor);
 
-            PropertyGetterDescriptor getter = propertyDescriptor.getGetter();
-            int getterAccessFlag = getter == null ? propertyAccessFlag
-                                                  : propertyAccessFlag | getVisibilityAccessFlag(getter);
-            boolean getterAccessorRequired = isAccessorRequired(getterAccessFlag, unwrappedDescriptor, descriptorContext);
-
-            PropertySetterDescriptor setter = propertyDescriptor.getSetter();
-            int setterAccessFlag = setter == null ? propertyAccessFlag
-                                                  : propertyAccessFlag | getVisibilityAccessFlag(setter);
-            boolean setterAccessorRequired = isAccessorRequired(setterAccessFlag, unwrappedDescriptor, descriptorContext);
+            boolean getterAccessorRequired = isAccessorRequired(propertyAccessFlag, propertyDescriptor.getGetter(), unwrappedDescriptor, descriptorContext);
+            boolean setterAccessorRequired = isAccessorRequired(propertyAccessFlag, propertyDescriptor.getSetter(), unwrappedDescriptor, descriptorContext);
 
             if (!getterAccessorRequired && !setterAccessorRequired) {
                 return descriptor;
@@ -578,6 +571,23 @@ public abstract class CodegenContext<T extends DeclarationDescriptor> {
             }
             return (D) descriptorContext.getAccessor(descriptor, superCallExpression);
         }
+    }
+
+    private static boolean isAccessorRequired(
+            int propertyAccessFlag,
+            @Nullable PropertyAccessorDescriptor accessor,
+            @NotNull CallableMemberDescriptor unwrappedDescriptor,
+            @NotNull CodegenContext descriptorContext
+    ) {
+        int accessFlag = propertyAccessFlag;
+
+        if (accessor != null) {
+            if (accessor.getVisibility() == Visibilities.INVISIBLE_FAKE) return false;
+
+            accessFlag |= getVisibilityAccessFlag(accessor);
+        }
+
+        return isAccessorRequired(accessFlag, unwrappedDescriptor, descriptorContext);
     }
 
     private static boolean isAccessorRequired(

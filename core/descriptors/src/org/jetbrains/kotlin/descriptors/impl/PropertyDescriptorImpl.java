@@ -256,7 +256,7 @@ public class PropertyDescriptorImpl extends VariableDescriptorWithInitializerImp
         substitutedDescriptor.setType(outType, substitutedTypeParameters, substitutedDispatchReceiver, substitutedReceiverType);
 
         PropertyGetterDescriptorImpl newGetter = getter == null ? null : new PropertyGetterDescriptorImpl(
-                substitutedDescriptor, getter.getAnnotations(), newModality, getter.getVisibility(),
+                substitutedDescriptor, getter.getAnnotations(), newModality, convertVisibility(getter.getVisibility(), newVisibility, kind),
                 getter.hasBody(), getter.isDefault(), getter.isExternal(), kind, original == null ? null : original.getGetter(), SourceElement.NO_SOURCE
         );
         if (newGetter != null) {
@@ -264,7 +264,7 @@ public class PropertyDescriptorImpl extends VariableDescriptorWithInitializerImp
             newGetter.initialize(returnType != null ? substitutor.substitute(returnType, Variance.OUT_VARIANCE) : null);
         }
         PropertySetterDescriptorImpl newSetter = setter == null ? null : new PropertySetterDescriptorImpl(
-                substitutedDescriptor, setter.getAnnotations(), newModality, setter.getVisibility(),
+                substitutedDescriptor, setter.getAnnotations(), newModality, convertVisibility(setter.getVisibility(), newVisibility, kind),
                 setter.hasBody(), setter.isDefault(), setter.isExternal(), kind, original == null ? null : original.getSetter(), SourceElement.NO_SOURCE
         );
         if (newSetter != null) {
@@ -313,13 +313,13 @@ public class PropertyDescriptorImpl extends VariableDescriptorWithInitializerImp
     }
 
     @NotNull
-    private static Visibility convertVisibility(Visibility orig, Visibility candidate) {
-        if (candidate == Visibilities.INHERITED) {
-            return candidate;
-        }
+    private static Visibility convertVisibility(Visibility orig, Visibility candidate, Kind kind) {
+        if (kind == Kind.FAKE_OVERRIDE && orig == Visibilities.PRIVATE) return Visibilities.INVISIBLE_FAKE;
+
+        if (kind != Kind.FAKE_OVERRIDE && orig == Visibilities.INVISIBLE_FAKE) return Visibilities.PRIVATE;
 
         Integer result = Visibilities.compare(orig, candidate);
-        return result != null && result < 0 ? candidate : orig;
+        return result != null && result > 0 ? candidate : orig;
     }
 
     @Override

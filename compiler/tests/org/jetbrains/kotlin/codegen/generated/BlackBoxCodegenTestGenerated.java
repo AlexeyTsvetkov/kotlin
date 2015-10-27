@@ -1648,6 +1648,12 @@ public class BlackBoxCodegenTestGenerated extends AbstractBlackBoxCodegenTest {
             doTest(fileName);
         }
 
+        @TestMetadata("protectedMemberInSibling.kt")
+        public void testProtectedMemberInSibling() throws Exception {
+            String fileName = JetTestUtils.navigationMetadata("compiler/testData/codegen/box/classes/protectedMemberInSibling.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("rightHandOverride.kt")
         public void testRightHandOverride() throws Exception {
             String fileName = JetTestUtils.navigationMetadata("compiler/testData/codegen/box/classes/rightHandOverride.kt");

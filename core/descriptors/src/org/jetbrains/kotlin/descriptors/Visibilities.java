@@ -103,10 +103,25 @@ public class Visibilities {
 
         @Override
         public boolean isVisible(@NotNull ReceiverValue receiver, @NotNull DeclarationDescriptorWithVisibility what, @NotNull DeclarationDescriptor from) {
-            ClassDescriptor classDescriptor = DescriptorUtils.getParentOfType(what, ClassDescriptor.class);
-            if (DescriptorUtils.isCompanionObject(classDescriptor)) {
-                classDescriptor = DescriptorUtils.getParentOfType(classDescriptor, ClassDescriptor.class);
+            ClassDescriptor classDescriptor = null;
+
+            if (what instanceof CallableMemberDescriptor) {
+                CallableMemberDescriptor callableMemberDescriptor = (CallableMemberDescriptor) what;
+
+                if (callableMemberDescriptor.getKind() == CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
+                    CallableMemberDescriptor declaration = DescriptorUtils.unwrapFakeOverride(callableMemberDescriptor);
+                    classDescriptor = DescriptorUtils.getParentOfType(declaration, ClassDescriptor.class);
+                }
             }
+
+            if (classDescriptor == null) {
+                classDescriptor = DescriptorUtils.getParentOfType(what, ClassDescriptor.class);
+
+                if (DescriptorUtils.isCompanionObject(classDescriptor)) {
+                    classDescriptor = DescriptorUtils.getParentOfType(classDescriptor, ClassDescriptor.class);
+                }
+            }
+
             if (classDescriptor == null) return false;
 
             ClassDescriptor fromClass = DescriptorUtils.getParentOfType(from, ClassDescriptor.class, false);

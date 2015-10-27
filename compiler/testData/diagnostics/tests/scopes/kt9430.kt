@@ -7,7 +7,7 @@ class B: A()
 class C: A() {
     fun bar() {
         A().foo()
-        B().<!INVISIBLE_MEMBER!>foo<!>()
+        B().foo()
     }
 }
 

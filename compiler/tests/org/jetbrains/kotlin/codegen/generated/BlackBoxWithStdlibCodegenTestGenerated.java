@@ -1468,6 +1468,12 @@ public class BlackBoxWithStdlibCodegenTestGenerated extends AbstractBlackBoxCode
             doTestWithStdlib(fileName);
         }
 
+        @TestMetadata("setterVisibilities.kt")
+        public void testSetterVisibilities() throws Exception {
+            String fileName = JetTestUtils.navigationMetadata("compiler/testData/codegen/boxWithStdlib/delegatedProperty/setterVisibilities.kt");
+            doTestWithStdlib(fileName);
+        }
+
         @TestMetadata("stackOverflowOnCallFromGetValue.kt")
         public void testStackOverflowOnCallFromGetValue() throws Exception {
             String fileName = JetTestUtils.navigationMetadata("compiler/testData/codegen/boxWithStdlib/delegatedProperty/stackOverflowOnCallFromGetValue.kt");

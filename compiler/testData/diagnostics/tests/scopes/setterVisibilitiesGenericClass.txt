@@ -1,0 +1,49 @@
+package
+
+public fun main(/*0*/ args: kotlin.Array<kotlin.String>): kotlin.Unit
+
+public open class A</*0*/ T> {
+    public constructor A</*0*/ T>()
+    internal final var internalPropertyInternalSet: kotlin.Int
+    internal final var internalPropertyPrivateSet: kotlin.Int
+    internal final var internalPropertyProtectedSet: kotlin.Int
+    internal final var internalPropertyPublicSet: kotlin.Int
+    private final var privatePropertyInternalSet: kotlin.Int
+    private final var privatePropertyPrivateSet: kotlin.Int
+    private final var privatePropertyProtectedSet: kotlin.Int
+    private final var privatePropertyPublicSet: kotlin.Int
+    protected final var protectedPropertyInternalSet: kotlin.Int
+    protected final var protectedPropertyPrivateSet: kotlin.Int
+    protected final var protectedPropertyProtectedSet: kotlin.Int
+    protected final var protectedPropertyPublicSet: kotlin.Int
+    public final var publicPropertyInternalSet: kotlin.Int
+    public final var publicPropertyPrivateSet: kotlin.Int
+    public final var publicPropertyProtectedSet: kotlin.Int
+    public final var publicPropertyPublicSet: kotlin.Int
+    public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
+    public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
+    public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
+}
+
+public final class B</*0*/ T> : A<T> {
+    public constructor B</*0*/ T>()
+    internal final override /*1*/ /*fake_override*/ var internalPropertyInternalSet: kotlin.Int
+    internal final override /*1*/ /*fake_override*/ var internalPropertyPrivateSet: kotlin.Int
+    internal final override /*1*/ /*fake_override*/ var internalPropertyProtectedSet: kotlin.Int
+    internal final override /*1*/ /*fake_override*/ var internalPropertyPublicSet: kotlin.Int
+    invisible_fake final override /*1*/ /*fake_override*/ var privatePropertyInternalSet: kotlin.Int
+    invisible_fake final override /*1*/ /*fake_override*/ var privatePropertyPrivateSet: kotlin.Int
+    invisible_fake final override /*1*/ /*fake_override*/ var privatePropertyProtectedSet: kotlin.Int
+    invisible_fake final override /*1*/ /*fake_override*/ var privatePropertyPublicSet: kotlin.Int
+    protected final override /*1*/ /*fake_override*/ var protectedPropertyInternalSet: kotlin.Int
+    protected final override /*1*/ /*fake_override*/ var protectedPropertyPrivateSet: kotlin.Int
+    protected final override /*1*/ /*fake_override*/ var protectedPropertyProtectedSet: kotlin.Int
+    protected final override /*1*/ /*fake_override*/ var protectedPropertyPublicSet: kotlin.Int
+    public final override /*1*/ /*fake_override*/ var publicPropertyInternalSet: kotlin.Int
+    public final override /*1*/ /*fake_override*/ var publicPropertyPrivateSet: kotlin.Int
+    public final override /*1*/ /*fake_override*/ var publicPropertyProtectedSet: kotlin.Int
+    public final override /*1*/ /*fake_override*/ var publicPropertyPublicSet: kotlin.Int
+    public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
+    public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
+    public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
+}
