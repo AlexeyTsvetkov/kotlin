@@ -103,32 +103,50 @@ public class Visibilities {
 
         @Override
         public boolean isVisible(@NotNull ReceiverValue receiver, @NotNull DeclarationDescriptorWithVisibility what, @NotNull DeclarationDescriptor from) {
-            ClassDescriptor classDescriptor = null;
+            Set<ClassDescriptor> containingClassDescriptors = new HashSet<ClassDescriptor>();
 
             if (what instanceof CallableMemberDescriptor) {
                 CallableMemberDescriptor callableMemberDescriptor = (CallableMemberDescriptor) what;
+                Queue<CallableMemberDescriptor> overriddenDescriptors = new LinkedList<CallableMemberDescriptor>(callableMemberDescriptor.getOverriddenDescriptors());
 
-                if (callableMemberDescriptor.getKind() == CallableMemberDescriptor.Kind.FAKE_OVERRIDE) {
-                    CallableMemberDescriptor declaration = DescriptorUtils.unwrapFakeOverride(callableMemberDescriptor);
-                    classDescriptor = DescriptorUtils.getParentOfType(declaration, ClassDescriptor.class);
+                while (!overriddenDescriptors.isEmpty()) {
+                    CallableMemberDescriptor overriddenDescriptor = overriddenDescriptors.poll();
+                    Collection<? extends CallableMemberDescriptor> descriptors = overriddenDescriptor.getOverriddenDescriptors();
+
+                    if (descriptors.isEmpty()) {
+                        ClassDescriptor containingClass = DescriptorUtils.getParentOfType(overriddenDescriptor, ClassDescriptor.class);
+                        containingClassDescriptors.add(containingClass);
+                        continue;
+                    }
+
+                    for (CallableMemberDescriptor descriptor : descriptors) {
+                        overriddenDescriptors.add(descriptor);
+                    }
                 }
             }
 
-            if (classDescriptor == null) {
-                classDescriptor = DescriptorUtils.getParentOfType(what, ClassDescriptor.class);
+            if (containingClassDescriptors.isEmpty()) {
+                ClassDescriptor classDescriptor = DescriptorUtils.getParentOfType(what, ClassDescriptor.class);
 
                 if (DescriptorUtils.isCompanionObject(classDescriptor)) {
                     classDescriptor = DescriptorUtils.getParentOfType(classDescriptor, ClassDescriptor.class);
                 }
+
+                if (classDescriptor != null) {
+                    containingClassDescriptors.add(classDescriptor);
+                }
             }
 
-            if (classDescriptor == null) return false;
+            if (containingClassDescriptors.isEmpty()) return false;
 
             ClassDescriptor fromClass = DescriptorUtils.getParentOfType(from, ClassDescriptor.class, false);
+
             if (fromClass == null) return false;
-            if (DescriptorUtils.isSubclass(fromClass, classDescriptor)) {
-                return true;
+
+            for (ClassDescriptor classDescriptor : containingClassDescriptors) {
+                if (DescriptorUtils.isSubclass(fromClass, classDescriptor)) return true;
             }
+
             return isVisible(receiver, what, fromClass.getContainingDeclaration());
         }
     };

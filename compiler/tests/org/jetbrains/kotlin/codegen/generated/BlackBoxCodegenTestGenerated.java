@@ -1648,9 +1648,9 @@ public class BlackBoxCodegenTestGenerated extends AbstractBlackBoxCodegenTest {
             doTest(fileName);
         }
 
-        @TestMetadata("protectedMemberInSibling.kt")
-        public void testProtectedMemberInSibling() throws Exception {
-            String fileName = JetTestUtils.navigationMetadata("compiler/testData/codegen/box/classes/protectedMemberInSibling.kt");
+        @TestMetadata("protectedVisibility.kt")
+        public void testProtectedVisibility() throws Exception {
+            String fileName = JetTestUtils.navigationMetadata("compiler/testData/codegen/box/classes/protectedVisibility.kt");
             doTest(fileName);
         }
 
