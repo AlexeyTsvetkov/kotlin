@@ -101,12 +101,6 @@ public class ExperimentalIncrementalClassHierarchyChangedTestGenerated extends A
         doTest(fileName);
     }
 
-    @TestMetadata("primaryConstructorBecamePrivate")
-    public void testPrimaryConstructorBecamePrivate() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("jps-plugin/testData/incremental/classHierarchyChanged/primaryConstructorBecamePrivate/");
-        doTest(fileName);
-    }
-
     @TestMetadata("renameClass")
     public void testRenameClass() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("jps-plugin/testData/incremental/classHierarchyChanged/renameClass/");
@@ -116,6 +110,12 @@ public class ExperimentalIncrementalClassHierarchyChangedTestGenerated extends A
     @TestMetadata("renameInterface")
     public void testRenameInterface() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("jps-plugin/testData/incremental/classHierarchyChanged/renameInterface/");
+        doTest(fileName);
+    }
+
+    @TestMetadata("visibilityPrimaryConstructorPrivate")
+    public void testVisibilityPrimaryConstructorPrivate() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("jps-plugin/testData/incremental/classHierarchyChanged/visibilityPrimaryConstructorPrivate/");
         doTest(fileName);
     }
 
