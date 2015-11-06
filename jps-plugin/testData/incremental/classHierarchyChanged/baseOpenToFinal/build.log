@@ -1,0 +1,14 @@
+Cleaning output files:
+out/production/module/Base.class
+End of files
+Compiling files:
+src/Base.kt
+End of files
+Cleaning output files:
+out/production/module/Child.class
+End of files
+Compiling files:
+src/Child.kt
+End of files
+COMPILATION FAILED
+This type is final, so it cannot be inherited from
