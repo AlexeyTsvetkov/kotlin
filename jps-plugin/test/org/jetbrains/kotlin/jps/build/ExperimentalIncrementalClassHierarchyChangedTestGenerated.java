@@ -113,6 +113,12 @@ public class ExperimentalIncrementalClassHierarchyChangedTestGenerated extends A
         doTest(fileName);
     }
 
+    @TestMetadata("visibilityClassPublicToPrivate")
+    public void testVisibilityClassPublicToPrivate() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("jps-plugin/testData/incremental/classHierarchyChanged/visibilityClassPublicToPrivate/");
+        doTest(fileName);
+    }
+
     @TestMetadata("visibilityPrimaryConstructorPrivate")
     public void testVisibilityPrimaryConstructorPrivate() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("jps-plugin/testData/incremental/classHierarchyChanged/visibilityPrimaryConstructorPrivate/");
