@@ -16,6 +16,8 @@
 
 package org.jetbrains.kotlin.jps.build
 
+import org.jetbrains.jps.model.JpsElementFactory
+
 abstract class AbstractExperimentalIncrementalJpsTest : AbstractIncrementalJpsTest() {
     override val enableExperimentalIncrementalCompilation = true
 }
@@ -26,4 +28,19 @@ abstract class AbstractExperimentalIncrementalLazyCachesTest : AbstractIncrement
 
 abstract class AbstractExperimentalIncrementalCacheVersionChangedTest : AbstractIncrementalCacheVersionChangedTest() {
     override val enableExperimentalIncrementalCompilation = true
+}
+
+abstract class AbstractExperimentalIncrementalClassHierarchyChangedTest : AbstractIncrementalJpsTest() {
+    override val enableExperimentalIncrementalCompilation = true
+
+    override fun setUp() {
+        super.setUp()
+        val dataContainer = JpsElementFactory.getInstance().createSimpleElement(ChangesProcessor.DO_NOTHING)
+        projectDescriptor.project.container.setChild(KotlinBuilder.CHANGES_PROCESSOR, dataContainer)
+    }
+
+    override fun tearDown() {
+        projectDescriptor.project.container.setChild(KotlinBuilder.CHANGES_PROCESSOR, null)
+        super.tearDown()
+    }
 }

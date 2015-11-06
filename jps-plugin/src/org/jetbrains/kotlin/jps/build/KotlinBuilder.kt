@@ -31,7 +31,6 @@ import org.jetbrains.jps.builders.java.JavaSourceRootDescriptor
 import org.jetbrains.jps.builders.java.dependencyView.Mappings
 import org.jetbrains.jps.incremental.*
 import org.jetbrains.jps.incremental.ModuleLevelBuilder.ExitCode.*
-import org.jetbrains.jps.incremental.fs.CompilationRound
 import org.jetbrains.jps.incremental.java.JavaBuilder
 import org.jetbrains.jps.incremental.messages.BuildMessage
 import org.jetbrains.jps.incremental.messages.CompilerMessage
@@ -77,6 +76,7 @@ public class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR
     companion object {
         public val KOTLIN_BUILDER_NAME: String = "Kotlin Builder"
         public val LOOKUP_TRACKER: JpsElementChildRoleBase<JpsSimpleElement<out LookupTracker>> = JpsElementChildRoleBase.create("lookup tracker")
+        public val CHANGES_PROCESSOR: JpsElementChildRoleBase<JpsSimpleElement<out ChangesProcessor>> = JpsElementChildRoleBase.create("changes processor")
 
         val LOG = Logger.getInstance("#org.jetbrains.kotlin.jps.build.KotlinBuilder")
     }
@@ -214,54 +214,10 @@ public class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR
         }
 
         val caches = filesToCompile.keySet().map { incrementalCaches[it]!! }
-        val marker = ChangesProcessor(context, chunk, allCompiledFiles, caches)
+        val marker = project.container.getChild(KotlinBuilder.CHANGES_PROCESSOR)?.data
+                     ?: ChangesProcessorImpl(context, chunk, allCompiledFiles, caches)
         marker.processChanges(changesInfo)
         return ADDITIONAL_PASS_REQUIRED
-    }
-
-    class ChangesProcessor(
-            val context: CompileContext,
-            val chunk: ModuleChunk,
-            val allCompiledFiles: MutableSet<File>,
-            val caches: List<IncrementalCacheImpl>
-    ) {
-        fun processChanges(changesInfo: ChangesInfo) {
-            changesInfo.doProcessChanges()
-        }
-
-        private fun ChangesInfo.doProcessChanges() {
-            fun isKotlin(file: File) = KotlinSourceFileCollector.isKotlinSourceFile(file)
-            fun isNotCompiled(file: File) = file !in allCompiledFiles
-
-            when {
-                inlineAdded -> {
-                    allCompiledFiles.clear()
-                    FSOperations.markDirtyRecursively(context, CompilationRound.NEXT, chunk, ::isKotlin)
-                    return
-                }
-                constantsChanged -> {
-                    FSOperations.markDirtyRecursively(context, CompilationRound.NEXT, chunk, ::isNotCompiled)
-                    return
-                }
-                protoChanged -> {
-                    FSOperations.markDirty(context, CompilationRound.NEXT, chunk, { isKotlin(it) && isNotCompiled(it) })
-                }
-            }
-
-            if (inlineChanged) {
-                recompileInlined()
-            }
-        }
-
-        private fun recompileInlined() {
-            for (cache in caches) {
-                val filesToReinline = cache.getFilesToReinline()
-
-                filesToReinline.forEach {
-                    FSOperations.markDirty(context, CompilationRound.NEXT, it)
-                }
-            }
-        }
     }
 
     private fun doCompileModuleChunk(
