@@ -113,6 +113,12 @@ public class ExperimentalIncrementalClassHierarchyChangedTestGenerated extends A
         doTest(fileName);
     }
 
+    @TestMetadata("methodDuplicateAddedToBase")
+    public void testMethodDuplicateAddedToBase() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("jps-plugin/testData/incremental/classHierarchyChanged/methodDuplicateAddedToBase/");
+        doTest(fileName);
+    }
+
     @TestMetadata("renameClass")
     public void testRenameClass() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("jps-plugin/testData/incremental/classHierarchyChanged/renameClass/");
