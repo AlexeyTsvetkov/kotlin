@@ -46,8 +46,8 @@ import org.jetbrains.jps.util.JpsPathUtil
 import org.jetbrains.kotlin.config.IncrementalCompilation
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.jps.build.classFilesComparison.assertEqualDirectories
-import org.jetbrains.kotlin.jps.incremental.LookupStorageProvider
 import org.jetbrains.kotlin.jps.incremental.KotlinDataContainerTarget
+import org.jetbrains.kotlin.jps.incremental.LookupStorageProvider
 import org.jetbrains.kotlin.jps.incremental.LookupSymbol
 import org.jetbrains.kotlin.jps.incremental.getKotlinCache
 import org.jetbrains.kotlin.test.KotlinTestUtils
@@ -148,6 +148,7 @@ public abstract class AbstractIncrementalJpsTest(
             val builder = IncProjectBuilder(projectDescriptor, BuilderRegistry.getInstance(), myBuildParams, CanceledStatus.NULL, mockConstantSearch, true)
             val buildResult = BuildResult()
             builder.addMessageHandler(buildResult)
+            preBuild()
             builder.build(scope.build(), false)
 
             if (checkLookups) {
@@ -171,10 +172,14 @@ public abstract class AbstractIncrementalJpsTest(
             }
         }
         finally {
+            postBuild()
             projectDescriptor.dataManager.flush(false)
             projectDescriptor.release()
         }
     }
+
+    protected open fun preBuild() {}
+    protected open fun postBuild() {}
 
     private fun initialMake(): MakeResult {
         val makeResult = build()

@@ -33,14 +33,12 @@ abstract class AbstractExperimentalIncrementalCacheVersionChangedTest : Abstract
 abstract class AbstractExperimentalIncrementalClassHierarchyChangedTest : AbstractIncrementalJpsTest() {
     override val enableExperimentalIncrementalCompilation = true
 
-    override fun setUp() {
-        super.setUp()
+    override fun preBuild() {
         val dataContainer = JpsElementFactory.getInstance().createSimpleElement(ChangesProcessor.DO_NOTHING)
         projectDescriptor.project.container.setChild(KotlinBuilder.CHANGES_PROCESSOR, dataContainer)
     }
 
-    override fun tearDown() {
-        projectDescriptor.project.container.setChild(KotlinBuilder.CHANGES_PROCESSOR, null)
-        super.tearDown()
+    override fun postBuild() {
+        projectDescriptor.project.container.removeChild(KotlinBuilder.CHANGES_PROCESSOR)
     }
 }
