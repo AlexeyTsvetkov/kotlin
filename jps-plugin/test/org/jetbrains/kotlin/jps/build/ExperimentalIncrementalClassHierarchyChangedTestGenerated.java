@@ -77,6 +77,12 @@ public class ExperimentalIncrementalClassHierarchyChangedTestGenerated extends A
         doTest(fileName);
     }
 
+    @TestMetadata("changePackage")
+    public void testChangePackage() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("jps-plugin/testData/incremental/classHierarchyChanged/changePackage/");
+        doTest(fileName);
+    }
+
     @TestMetadata("listOfBasesAddClass")
     public void testListOfBasesAddClass() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("jps-plugin/testData/incremental/classHierarchyChanged/listOfBasesAddClass/");
