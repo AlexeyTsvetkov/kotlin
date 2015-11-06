@@ -36,8 +36,12 @@ import org.jetbrains.kotlin.load.kotlin.ModuleMapping
 import org.jetbrains.kotlin.load.kotlin.header.*
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCache
 import org.jetbrains.kotlin.load.kotlin.incremental.components.JvmPackagePartProto
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.jvm.JvmClassName
+import org.jetbrains.kotlin.serialization.deserialization.TypeTable
+import org.jetbrains.kotlin.serialization.deserialization.supertypes
 import org.jetbrains.kotlin.serialization.jvm.BitEncoding
+import org.jetbrains.kotlin.serialization.jvm.JvmProtoBufUtil
 import org.jetbrains.org.objectweb.asm.*
 import java.io.File
 import java.security.MessageDigest
@@ -64,6 +68,7 @@ public class IncrementalCacheImpl(
         val DIRTY_OUTPUT_CLASSES = "dirty-output-classes"
         val DIRTY_INLINE_FUNCTIONS = "dirty-inline-functions"
         val INLINED_TO = "inlined-to"
+        val CLASS_TO_SUBCLASS = "class-to-subclass"
 
         private val MODULE_MAPPING_FILE_NAME = "." + ModuleMapping.MAPPING_FILE_EXT
     }
@@ -83,6 +88,7 @@ public class IncrementalCacheImpl(
     private val dirtyOutputClassesMap = registerMap(DirtyOutputClassesMap(DIRTY_OUTPUT_CLASSES.storageFile))
     private val dirtyInlineFunctionsMap = registerMap(DirtyInlineFunctionsMap(DIRTY_INLINE_FUNCTIONS.storageFile))
     private val inlinedTo = registerMap(InlineFunctionsFilesMap(INLINED_TO.storageFile))
+    private val classToSubclass = registerMap(ClassToSubclassMap(CLASS_TO_SUBCLASS.storageFile))
 
     private val cacheFormatVersion = CacheFormatVersion(targetDataRoot)
     private val dependents = arrayListOf<IncrementalCacheImpl>()
@@ -145,7 +151,7 @@ public class IncrementalCacheImpl(
     public fun saveFileToCache(generatedClass: GeneratedJvmClass): ChangesInfo {
         val sourceFiles: Collection<File> = generatedClass.sourceFiles
         val kotlinClass: LocalFileKotlinClass = generatedClass.outputClass
-        val className = JvmClassName.byClassId(kotlinClass.classId)
+        val className = kotlinClass.className
 
         dirtyOutputClassesMap.notDirty(className.internalName)
         sourceFiles.forEach {
@@ -183,6 +189,8 @@ public class IncrementalCacheImpl(
                 inlineFunctionsMap.process(kotlinClass)
             }
             header.isCompatibleClassKind() && !header.isLocalClass -> {
+                classToSubclass.process(kotlinClass)
+
                 protoMap.process(kotlinClass, isPackage = false) +
                 constantsMap.process(kotlinClass) +
                 inlineFunctionsMap.process(kotlinClass)
@@ -221,6 +229,9 @@ public class IncrementalCacheImpl(
             constantsMap.remove(it)
             inlineFunctionsMap.remove(it)
         }
+
+        classToSubclass.remove(dirtyClasses)
+
         dirtyOutputClassesMap.clean()
         return changesInfo
     }
@@ -496,6 +507,52 @@ public class IncrementalCacheImpl(
 
         private fun remove(path: String) {
             storage.remove(path)
+        }
+    }
+
+    private inner class ClassToSubclassMap(storageFile: File) : BasicStringMap<List<String>>(storageFile, StringListExternalizer) {
+        override fun dumpValue(value: List<String>) = value.toString()
+
+        fun process(kotlinClass: LocalFileKotlinClass): ChangesInfo {
+            val classData = JvmProtoBufUtil.readClassDataFrom(kotlinClass.classHeader.annotationData!!, kotlinClass.classHeader.strings!!)
+
+            val supertypes = classData.classProto.supertypes(TypeTable(classData.classProto.typeTable)).map {
+                classData.nameResolver.getClassId(it.className).asSingleFqName()
+            }.filter { it.asString() != "kotlin.Any" }
+
+            add(kotlinClass.className, supertypes)
+
+            return ChangesInfo.NO_CHANGES
+        }
+
+        fun add(className: JvmClassName, parents: Collection<FqName>) {
+
+            parents.forEach {
+                val fq = it.asString()
+                if (storage.contains(fq)) {
+                    val t = storage[fq]!!
+                    if (className.internalName !in t)
+                        storage[fq] = t + className.internalName
+                }
+                else {
+                    storage[fq] = listOf(className.internalName)
+                }
+            }
+        }
+
+        fun remove(classes: Collection<JvmClassName>) {
+            val classesNames = classes.map { it.internalName }
+            classesNames.forEach {
+                storage.remove(it)
+            }
+
+            storage.keys.forEach {
+                storage[it] = storage[it]!!.filter { it !in classesNames }
+            }
+        }
+
+        fun get(className: JvmClassName): Collection<String> {
+            return storage[className.internalName] ?: emptyList()
         }
     }
 
