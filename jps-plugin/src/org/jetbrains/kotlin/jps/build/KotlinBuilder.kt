@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.jps.build
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.io.FileUtil
+import com.intellij.util.containers.ContainerUtil
 import com.intellij.util.containers.MultiMap
 import gnu.trove.THashSet
 import org.jetbrains.jps.ModuleChunk
@@ -37,6 +38,9 @@ import org.jetbrains.jps.incremental.storage.BuildDataManager
 import org.jetbrains.jps.model.JpsProject
 import org.jetbrains.jps.model.JpsSimpleElement
 import org.jetbrains.jps.model.ex.JpsElementChildRoleBase
+import org.jetbrains.jps.model.java.JpsJavaClasspathKind
+import org.jetbrains.jps.model.java.JpsJavaExtensionService
+import org.jetbrains.jps.model.module.JpsModule
 import org.jetbrains.kotlin.cli.common.KotlinVersion
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
@@ -256,9 +260,8 @@ public class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR
             return OK
         }
 
-        val caches = filesToCompile.keySet().map { incrementalCaches[it]!! }
-        processChanges(filesToCompile.values().toSet(), allCompiledFiles, dataManager, caches, changesInfo, fsOperations)
-        caches.forEach { it.cleanDirtyInlineFunctions() }
+        processChanges(filesToCompile.values().toSet(), allCompiledFiles, dataManager, incrementalCaches.values, changesInfo, fsOperations)
+        incrementalCaches.values.forEach { it.cleanDirtyInlineFunctions() }
 
         return ADDITIONAL_PASS_REQUIRED
     }
@@ -801,39 +804,54 @@ private fun getLookupTracker(project: JpsProject): LookupTracker {
 }
 
 private fun getIncrementalCaches(chunk: ModuleChunk, context: CompileContext): Map<ModuleBuildTarget, IncrementalCacheImpl> {
+    val dependentTargets = getDependentTargets(chunk, context)
+
     val dataManager = context.projectDescriptor.dataManager
-    val targets = chunk.targets
+    val chunkCaches = chunk.targets.keysToMap { dataManager.getKotlinCache(it) }
+    val dependentCaches = dependentTargets.keysToMap { dataManager.getKotlinCache(it) }
 
-    val buildRegistry = BuildTargetRegistryImpl(context.projectDescriptor.model)
-    val outputIndex = TargetOutputIndexImpl(targets, context)
-
-    val allTargets = buildRegistry.allTargets.moduleTargets
-    val allDependencies = allTargets.keysToMap { target ->
-        target.computeDependencies(buildRegistry, outputIndex).moduleTargets
-    }
-
-    val dependents = targets.keysToMap { hashSetOf<ModuleBuildTarget>() }
-    val targetsWithDependents = HashSet<ModuleBuildTarget>(targets)
-
-    for ((target, dependencies) in allDependencies) {
-        for (dependency in dependencies) {
-            if (dependency !in targets) continue
-
-            dependents[dependency]!!.add(target)
-            targetsWithDependents.add(target)
+    for (chunkCache in chunkCaches.values) {
+        for (dependentCache in dependentCaches.values) {
+            chunkCache.addDependentCache(dependentCache)
         }
     }
 
-    val caches = targetsWithDependents.keysToMap { dataManager.getKotlinCache(it) }
-
-    for ((target, cache) in caches) {
-        dependents[target]?.forEach {
-            cache.addDependentCache(caches[it]!!)
-        }
-    }
-
-    return caches
+    return chunkCaches
 }
+
+private fun getDependentTargets(
+        compilingChunk: ModuleChunk,
+        context: CompileContext
+): Set<ModuleBuildTarget> {
+    val classpathKind = JpsJavaClasspathKind.compile(compilingChunk.targets.any { it.isTests })
+
+    fun dependsOnCompilingChunk(target: BuildTarget<*>): Boolean {
+        if (target !is ModuleBuildTarget) return false
+
+        val dependencies = getDependenciesRecursively(target.module, classpathKind)
+        return ContainerUtil.intersects(dependencies, compilingChunk.modules)
+    }
+
+    val dependentTargets = HashSet<ModuleBuildTarget>()
+    val sortedChunks = context.projectDescriptor.buildTargetIndex.getSortedTargetChunks(context).iterator()
+
+    // skip chunks that are compiled before compilingChunk
+    while (sortedChunks.hasNext()) {
+        if (sortedChunks.next().targets == compilingChunk.targets) break
+    }
+
+    // process chunks that compiled after compilingChunk
+    for (followingChunk in sortedChunks) {
+        if (followingChunk.targets.none(::dependsOnCompilingChunk)) continue
+
+        dependentTargets.addAll(followingChunk.targets.filterIsInstance<ModuleBuildTarget>())
+    }
+
+    return dependentTargets
+}
+
+private fun getDependenciesRecursively(module: JpsModule, kind: JpsJavaClasspathKind): Set<JpsModule> =
+        JpsJavaExtensionService.dependencies(module).includedIn(kind).recursivelyExportedOnly().modules
 
 // TODO: investigate thread safety
 private val ALL_COMPILED_FILES_KEY = Key.create<MutableSet<File>>("_all_kotlin_compiled_files_")
