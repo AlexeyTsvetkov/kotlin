@@ -580,7 +580,7 @@ public class IncrementalCacheImpl(
         }
 
         public fun add(sourceFile: File, className: JvmClassName) {
-            storage.append(sourceFile.absolutePath, { out -> IOUtil.writeUTF(out, className.internalName) })
+            storage.append(sourceFile.absolutePath, { out -> out.writeUTF(className.internalName) })
         }
 
         public operator fun get(sourceFile: File): Collection<JvmClassName> =
