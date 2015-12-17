@@ -59,6 +59,7 @@ import org.jetbrains.kotlin.load.kotlin.ModuleMapping
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCache
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
 import org.jetbrains.kotlin.modules.TargetId
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.progress.CompilationCanceledException
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
 import org.jetbrains.kotlin.utils.LibraryUtils
@@ -686,12 +687,12 @@ private fun processChanges(
         compiledFiles: Set<File>,
         allCompiledFiles: MutableSet<File>,
         dataManager: BuildDataManager,
-        caches: List<IncrementalCacheImpl>,
+        caches: Collection<IncrementalCacheImpl>,
         compilationResult: CompilationResult,
         fsOperations: FSOperationsHelper
 ) {
     if (IncrementalCompilation.isExperimental()) {
-        compilationResult.doProcessChangesUsingLookups(compiledFiles, dataManager, fsOperations)
+        doProcessChangesUsingLookups(compilationResult.changes.toList(), compiledFiles, dataManager, fsOperations, caches)
     }
     else {
         compilationResult.doProcessChanges(compiledFiles, allCompiledFiles, caches, fsOperations)
@@ -727,29 +728,57 @@ private fun CompilationResult.doProcessChanges(
     }
 }
 
-private fun CompilationResult.doProcessChangesUsingLookups(
+private fun doProcessChangesUsingLookups(
+        changes: Iterable<ChangeInfo>,
         compiledFiles: Set<File>,
         dataManager: BuildDataManager,
-        fsOperations: FSOperationsHelper
+        fsOperations: FSOperationsHelper,
+        caches: Collection<IncrementalCacheImpl>
 ) {
+    val additionalDirtyFiles = HashSet<File>()
     val lookupStorage = dataManager.getStorage(KotlinDataContainerTarget, LookupStorageProvider)
 
     KotlinBuilder.LOG.debug("Start processing changes")
 
-    // TODO group by fqName?
-    for (change in changes) {
-        KotlinBuilder.LOG.debug("Process $change")
-
-        if (change !is ChangeInfo.MembersChanged) continue
-
-        val files = change.names.asSequence()
-                .flatMap { lookupStorage.get(LookupSymbol(it, change.fqName.asString())).asSequence() }
-                .map(::File)
-
-        fsOperations.markFiles(files.asIterable(), excludeFiles = compiledFiles)
+    val changedSignatureFqNames = changes.filterIsInstance<ChangeInfo.SignatureChanged>().map { it.fqName }
+    for (classFqName in getSubtypesOf(changedSignatureFqNames, caches)) {
+        val scope = classFqName.parent().asString()
+        val name = classFqName.shortName().identifier
+        lookupStorage.get(LookupSymbol(name, scope)).mapTo(additionalDirtyFiles, ::File)
     }
 
+    for (change in changes.filterIsInstance<ChangeInfo.MembersChanged>()) {
+        change.names.asSequence()
+                .flatMap { lookupStorage.get(LookupSymbol(it, change.fqName.asString())).asSequence() }
+                .mapTo(additionalDirtyFiles, ::File)
+    }
+
+    fsOperations.markFiles(additionalDirtyFiles.asIterable(), excludeFiles = compiledFiles)
     KotlinBuilder.LOG.debug("End of processing changes")
+}
+
+/**
+ * Gets subtypes of given types inclusively
+ */
+private fun getSubtypesOf(
+        typeFqNames: Iterable<FqName>,
+        caches: Collection<IncrementalCacheImpl>
+): Set<FqName> {
+    val types = typeFqNames.toCollection(LinkedList())
+    val subtypes = hashSetOf<FqName>()
+
+    while (types.isNotEmpty()) {
+        val unprocessedType = types.pollFirst()
+
+        caches.asSequence()
+                .flatMap { it.getSubtypesOf(unprocessedType) }
+                .filter { it !in subtypes }
+                .forEach { types.addLast(it) }
+
+        subtypes.add(unprocessedType)
+    }
+
+    return subtypes
 }
 
 private val Iterable<BuildTarget<*>>.moduleTargets: Iterable<ModuleBuildTarget>
