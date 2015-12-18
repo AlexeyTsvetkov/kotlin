@@ -693,7 +693,7 @@ private fun processChanges(
         fsOperations: FSOperationsHelper
 ) {
     if (IncrementalCompilation.isExperimental()) {
-        doProcessChangesUsingLookups(compilationResult.changes.toList(), compiledFiles, dataManager, fsOperations, caches)
+        doProcessChangesUsingLookups(compilationResult.changes.asIterable(), compiledFiles, dataManager, fsOperations, caches)
     }
     else {
         compilationResult.doProcessChanges(compiledFiles, allCompiledFiles, caches, fsOperations)
@@ -775,6 +775,9 @@ private fun doProcessChangesUsingLookups(
 /**
  * Gets subtypes of given types inclusively
  */
+/* TODO: in case of chunk containing more than one target,
+   depending targets would be asked about same subtype more than once.
+   Can be solved by putting all caches in set */
 private fun getSubtypesOf(
         typeFqNames: Iterable<FqName>,
         caches: Collection<IncrementalCacheImpl>
@@ -817,10 +820,10 @@ private fun getIncrementalCaches(chunk: ModuleChunk, context: CompileContext): M
 
     val dataManager = context.projectDescriptor.dataManager
     val chunkCaches = chunk.targets.keysToMap { dataManager.getKotlinCache(it) }
-    val dependentCaches = dependentTargets.keysToMap { dataManager.getKotlinCache(it) }
+    val dependentCaches = dependentTargets.map { dataManager.getKotlinCache(it) }
 
     for (chunkCache in chunkCaches.values) {
-        for (dependentCache in dependentCaches.values) {
+        for (dependentCache in dependentCaches) {
             chunkCache.addDependentCache(dependentCache)
         }
     }
