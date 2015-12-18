@@ -25,8 +25,6 @@ import gnu.trove.THashSet
 import org.jetbrains.jps.ModuleChunk
 import org.jetbrains.jps.builders.BuildTarget
 import org.jetbrains.jps.builders.DirtyFilesHolder
-import org.jetbrains.jps.builders.impl.BuildTargetRegistryImpl
-import org.jetbrains.jps.builders.impl.TargetOutputIndexImpl
 import org.jetbrains.jps.builders.java.JavaBuilderUtil
 import org.jetbrains.jps.builders.java.JavaSourceRootDescriptor
 import org.jetbrains.jps.incremental.*
@@ -738,7 +736,7 @@ private fun doProcessChangesUsingLookups(
         fsOperations: FSOperationsHelper,
         caches: Collection<IncrementalCacheImpl>
 ) {
-    val additionalDirtyFiles = HashSet<File>()
+    val dirtyLookupSymbols = HashSet<LookupSymbol>()
     val lookupStorage = dataManager.getStorage(KotlinDataContainerTarget, LookupStorageProvider)
 
     KotlinBuilder.LOG.debug("Start processing changes")
@@ -747,13 +745,23 @@ private fun doProcessChangesUsingLookups(
     for (classFqName in getSubtypesOf(changedSignatureFqNames, caches)) {
         val scope = classFqName.parent().asString()
         val name = classFqName.shortName().identifier
-        lookupStorage.get(LookupSymbol(name, scope)).mapTo(additionalDirtyFiles, ::File)
+        dirtyLookupSymbols.add(LookupSymbol(name, scope))
     }
 
     for (change in changes.filterIsInstance<ChangeInfo.MembersChanged>()) {
-        change.names.asSequence()
-                .flatMap { lookupStorage.get(LookupSymbol(it, change.fqName.asString())).asSequence() }
-                .mapTo(additionalDirtyFiles, ::File)
+        val scopes = getSubtypesOf(listOf(change.fqName), caches).map { it.asString() }
+
+        for (name in change.names) {
+            for (scope in scopes) {
+                dirtyLookupSymbols.add(LookupSymbol(name, scope))
+            }
+        }
+    }
+
+    val additionalDirtyFiles = HashSet<File>()
+
+    for (lookup in dirtyLookupSymbols) {
+        additionalDirtyFiles.addAll(lookupStorage.get(lookup).map(::File))
     }
 
     fsOperations.markFiles(additionalDirtyFiles.asIterable(), excludeFiles = compiledFiles)
