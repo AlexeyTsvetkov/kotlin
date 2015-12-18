@@ -796,9 +796,6 @@ private fun getSubtypesOf(
     return subtypes
 }
 
-private val Iterable<BuildTarget<*>>.moduleTargets: Iterable<ModuleBuildTarget>
-    get() = filterIsInstance(javaClass<ModuleBuildTarget>())
-
 private fun getLookupTracker(project: JpsProject): LookupTracker {
     var lookupTracker = LookupTracker.DO_NOTHING
 
