@@ -761,7 +761,11 @@ private fun doProcessChangesUsingLookups(
     val additionalDirtyFiles = HashSet<File>()
 
     for (lookup in dirtyLookupSymbols) {
-        additionalDirtyFiles.addAll(lookupStorage.get(lookup).map(::File))
+        val affectedFiles = lookupStorage.get(lookup).map(::File)
+
+        KotlinBuilder.LOG.lazyDebug { "${lookup.scope}#${lookup.name} caused recompilation of: $affectedFiles" }
+
+        additionalDirtyFiles.addAll(affectedFiles)
     }
 
     fsOperations.markFiles(additionalDirtyFiles.asIterable(), excludeFiles = compiledFiles)
@@ -907,5 +911,11 @@ class GeneratedJvmClass (
 ) : GeneratedFile(target, sourceFiles, outputFile) {
     val outputClass = LocalFileKotlinClass.create(outputFile).sure {
         "Couldn't load KotlinClass from $outputFile; it may happen because class doesn't have valid Kotlin annotations"
+    }
+}
+
+private inline fun Logger.lazyDebug(message: ()->String) {
+    if (isDebugEnabled) {
+        debug(message())
     }
 }
