@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.jps.incremental.storage
 
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.util.io.DataExternalizer
+import com.intellij.util.io.EnumeratorStringDescriptor
 import com.intellij.util.io.IOUtil
 import com.intellij.util.io.KeyDescriptor
 import gnu.trove.THashSet
@@ -191,14 +192,6 @@ object IntExternalizer : DataExternalizer<Int> {
     }
 }
 
-object StringExternalizer : DataExternalizer<String> {
-    override fun save(output: DataOutput, value: String) {
-        output.writeUTF(value)
-    }
-
-    override fun read(input:DataInput): String = input.readUTF()
-}
-
 object FileKeyDescriptor : KeyDescriptor<File> {
     override fun read(input: DataInput): File = File(input.readUTF())
 
@@ -233,7 +226,7 @@ open class CollectionExternalizer<T>(
     }
 }
 
-object StringCollectionExternalizer : CollectionExternalizer<String>(StringExternalizer, { HashSet() })
+object StringCollectionExternalizer : CollectionExternalizer<String>(EnumeratorStringDescriptor(), { HashSet() })
 
 object PathCollectionExternalizer : CollectionExternalizer<String>(PathStringDescriptor(), { THashSet(FileUtil.PATH_HASHING_STRATEGY) })
 
