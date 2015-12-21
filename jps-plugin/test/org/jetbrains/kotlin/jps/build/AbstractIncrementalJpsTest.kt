@@ -38,7 +38,6 @@ import org.jetbrains.jps.incremental.BuilderRegistry
 import org.jetbrains.jps.incremental.IncProjectBuilder
 import org.jetbrains.jps.incremental.ModuleBuildTarget
 import org.jetbrains.jps.incremental.messages.BuildMessage
-import org.jetbrains.jps.model.JpsElementFactory
 import org.jetbrains.jps.model.JpsModuleRootModificationUtil
 import org.jetbrains.jps.model.java.JpsJavaDependencyScope
 import org.jetbrains.jps.model.java.JpsJavaExtensionService
@@ -587,4 +586,10 @@ private fun parseDependency(dependency: String): DependencyDescriptor =
 
 private val EXPORTED_SUFFIX = "[exported]"
 
-private class TestingContextImpl(override val lookupTracker: LookupTracker) : TestingContext
+private class TestingContextImpl(override val lookupTracker: LookupTracker) : TestingContext {
+    val dirtyFiles = hashSetOf<File>()
+
+    override fun registerDirtyFiles(files: Iterable<File>) {
+        dirtyFiles.addAll(files)
+    }
+}

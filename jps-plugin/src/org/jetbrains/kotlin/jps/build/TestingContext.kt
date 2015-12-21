@@ -21,6 +21,7 @@ import org.jetbrains.jps.model.JpsProject
 import org.jetbrains.jps.model.JpsSimpleElement
 import org.jetbrains.jps.model.ex.JpsElementChildRoleBase
 import org.jetbrains.kotlin.incremental.components.LookupTracker
+import java.io.File
 
 interface TestingContext {
     companion object {
@@ -40,4 +41,6 @@ interface TestingContext {
     }
 
     val lookupTracker: LookupTracker
+
+    fun registerDirtyFiles(files: Iterable<File>)
 }

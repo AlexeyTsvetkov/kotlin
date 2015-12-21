@@ -255,7 +255,7 @@ public class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR
             return OK
         }
 
-        processChanges(filesToCompile.values().toSet(), allCompiledFiles, dataManager, incrementalCaches.values, changesInfo, fsOperations)
+        processChanges(context, filesToCompile.values().toSet(), allCompiledFiles, incrementalCaches.values, changesInfo, fsOperations)
         incrementalCaches.values.forEach { it.cleanDirtyInlineFunctions() }
 
         return ADDITIONAL_PASS_REQUIRED
@@ -682,15 +682,15 @@ public class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR
 }
 
 private fun processChanges(
+        context: CompileContext,
         compiledFiles: Set<File>,
         allCompiledFiles: MutableSet<File>,
-        dataManager: BuildDataManager,
         caches: Collection<IncrementalCacheImpl>,
         compilationResult: CompilationResult,
         fsOperations: FSOperationsHelper
 ) {
     if (IncrementalCompilation.isExperimental()) {
-        compilationResult.doProcessChangesUsingLookups(compiledFiles, dataManager, fsOperations, caches)
+        compilationResult.doProcessChangesUsingLookups(context, compiledFiles, fsOperations, caches)
     }
     else {
         compilationResult.doProcessChanges(compiledFiles, allCompiledFiles, caches, fsOperations)
@@ -727,13 +727,15 @@ private fun CompilationResult.doProcessChanges(
 }
 
 private fun CompilationResult.doProcessChangesUsingLookups(
+        context: CompileContext,
         compiledFiles: Set<File>,
-        dataManager: BuildDataManager,
         fsOperations: FSOperationsHelper,
         caches: Collection<IncrementalCacheImpl>
 ) {
-    val dirtyLookupSymbols = HashSet<LookupSymbol>()
+    val project = context.projectDescriptor.project
+    val dataManager = context.projectDescriptor.dataManager
     val lookupStorage = dataManager.getStorage(KotlinDataContainerTarget, LookupStorageProvider)
+    val dirtyLookupSymbols = HashSet<LookupSymbol>()
 
     KotlinBuilder.LOG.debug("Start processing changes")
 
@@ -762,6 +764,10 @@ private fun CompilationResult.doProcessChangesUsingLookups(
         KotlinBuilder.LOG.debug { "${lookup.scope}#${lookup.name} caused recompilation of: $affectedFiles" }
 
         dirtyFiles.addAll(affectedFiles)
+    }
+
+    TestingContext.ifExists(project) {
+        it.registerDirtyFiles(dirtyFiles)
     }
 
     fsOperations.markFiles(dirtyFiles.asIterable(), excludeFiles = compiledFiles)
