@@ -693,7 +693,7 @@ private fun processChanges(
         fsOperations: FSOperationsHelper
 ) {
     if (IncrementalCompilation.isExperimental()) {
-        doProcessChangesUsingLookups(compilationResult.changes.asIterable(), compiledFiles, dataManager, fsOperations, caches)
+        compilationResult.doProcessChangesUsingLookups(compiledFiles, dataManager, fsOperations, caches)
     }
     else {
         compilationResult.doProcessChanges(compiledFiles, allCompiledFiles, caches, fsOperations)
@@ -729,8 +729,7 @@ private fun CompilationResult.doProcessChanges(
     }
 }
 
-private fun doProcessChangesUsingLookups(
-        changes: Iterable<ChangeInfo>,
+private fun CompilationResult.doProcessChangesUsingLookups(
         compiledFiles: Set<File>,
         dataManager: BuildDataManager,
         fsOperations: FSOperationsHelper,
