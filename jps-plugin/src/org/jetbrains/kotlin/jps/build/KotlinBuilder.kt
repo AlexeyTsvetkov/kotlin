@@ -763,7 +763,7 @@ private fun doProcessChangesUsingLookups(
     for (lookup in dirtyLookupSymbols) {
         val affectedFiles = lookupStorage.get(lookup).map(::File)
 
-        KotlinBuilder.LOG.lazyDebug { "${lookup.scope}#${lookup.name} caused recompilation of: $affectedFiles" }
+        KotlinBuilder.LOG.debug { "${lookup.scope}#${lookup.name} caused recompilation of: $affectedFiles" }
 
         additionalDirtyFiles.addAll(affectedFiles)
     }
@@ -928,7 +928,7 @@ private inline fun <T, R> Iterable<T>.forAllPairs(other: Iterable<R>, fn: (T, R)
     }
 }
 
-private inline fun Logger.lazyDebug(message: ()->String) {
+private inline fun Logger.debug(message: ()->String) {
     if (isDebugEnabled) {
         debug(message())
     }
