@@ -151,8 +151,7 @@ public abstract class AbstractIncrementalJpsTest(
         projectDescriptor = createProjectDescriptor(BuildLoggingManager(logger))
 
         val lookupTracker = createLookupTracker()
-        val dataContainer = JpsElementFactory.getInstance().createSimpleElement(lookupTracker)
-        projectDescriptor.project.container.setChild(KotlinBuilder.LOOKUP_TRACKER, dataContainer)
+        TestingContext.set(projectDescriptor.project, TestingContextImpl(lookupTracker))
 
         try {
             val builder = IncProjectBuilder(projectDescriptor, BuilderRegistry.getInstance(), myBuildParams, CanceledStatus.NULL, mockConstantSearch, true)
@@ -587,3 +586,5 @@ private fun parseDependency(dependency: String): DependencyDescriptor =
         DependencyDescriptor(dependency.removeSuffix(EXPORTED_SUFFIX), dependency.endsWith(EXPORTED_SUFFIX))
 
 private val EXPORTED_SUFFIX = "[exported]"
+
+private class TestingContextImpl(override val lookupTracker: LookupTracker) : TestingContext

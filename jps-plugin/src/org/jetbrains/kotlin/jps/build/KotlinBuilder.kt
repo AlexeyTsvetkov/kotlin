@@ -34,8 +34,6 @@ import org.jetbrains.jps.incremental.messages.BuildMessage
 import org.jetbrains.jps.incremental.messages.CompilerMessage
 import org.jetbrains.jps.incremental.storage.BuildDataManager
 import org.jetbrains.jps.model.JpsProject
-import org.jetbrains.jps.model.JpsSimpleElement
-import org.jetbrains.jps.model.ex.JpsElementChildRoleBase
 import org.jetbrains.jps.model.java.JpsJavaClasspathKind
 import org.jetbrains.jps.model.java.JpsJavaExtensionService
 import org.jetbrains.jps.model.module.JpsModule
@@ -75,7 +73,6 @@ import java.util.*
 public class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
     companion object {
         public val KOTLIN_BUILDER_NAME: String = "Kotlin Builder"
-        public val LOOKUP_TRACKER: JpsElementChildRoleBase<JpsSimpleElement<out LookupTracker>> = JpsElementChildRoleBase.create("lookup tracker")
         val LOG = Logger.getInstance("#org.jetbrains.kotlin.jps.build.KotlinBuilder")
     }
 
@@ -807,12 +804,8 @@ private fun withSubtypes(
 private fun getLookupTracker(project: JpsProject): LookupTracker {
     var lookupTracker = LookupTracker.DO_NOTHING
 
-    if ("true".equals(System.getProperty("kotlin.jps.tests"), ignoreCase = true)) {
-        val testTracker = project.container.getChild(KotlinBuilder.LOOKUP_TRACKER)?.data
-
-        if (testTracker != null) {
-            lookupTracker = testTracker
-        }
+    TestingContext.ifExists(project) {
+        lookupTracker = it.lookupTracker
     }
 
     if (IncrementalCompilation.isExperimental()) return LookupTrackerImpl(lookupTracker)
