@@ -758,17 +758,17 @@ private fun doProcessChangesUsingLookups(
         }
     }
 
-    val additionalDirtyFiles = HashSet<File>()
+    val dirtyFiles = HashSet<File>()
 
     for (lookup in dirtyLookupSymbols) {
         val affectedFiles = lookupStorage.get(lookup).map(::File)
 
         KotlinBuilder.LOG.debug { "${lookup.scope}#${lookup.name} caused recompilation of: $affectedFiles" }
 
-        additionalDirtyFiles.addAll(affectedFiles)
+        dirtyFiles.addAll(affectedFiles)
     }
 
-    fsOperations.markFiles(additionalDirtyFiles.asIterable(), excludeFiles = compiledFiles)
+    fsOperations.markFiles(dirtyFiles.asIterable(), excludeFiles = compiledFiles)
     KotlinBuilder.LOG.debug("End of processing changes")
 }
 
