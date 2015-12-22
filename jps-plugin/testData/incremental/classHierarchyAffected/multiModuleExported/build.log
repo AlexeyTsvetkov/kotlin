@@ -1,3 +1,4 @@
+======== Step #1 ========
 Cleaning output files:
 out/production/module1/foo/A.class
 End of files
@@ -13,8 +14,13 @@ End of files
 COMPILATION FAILED
 Cannot access 'A': it is 'private' in file
 Subclass effective visibility 'public' should be the same or less permissive than its superclass effective visibility 'private'
+Marked dirty by Kotlin builder:
+src/module2_AChild.kt
+src/module3_AGrandChild.kt
+src/module3_importAGrandChild.kt
+src/module4_importAGrandChild.kt
 
-
+======== Step #2 ========
 Cleaning output files:
 out/production/module1/foo/A.class
 End of files
@@ -34,3 +40,8 @@ End of files
 Compiling files:
 module4/src/module4_importAGrandChild.kt
 End of files
+Marked dirty by Kotlin builder:
+src/module2_AChild.kt
+src/module3_AGrandChild.kt
+src/module3_importAGrandChild.kt
+src/module4_importAGrandChild.kt

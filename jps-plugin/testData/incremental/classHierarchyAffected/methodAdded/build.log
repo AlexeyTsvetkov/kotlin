@@ -1,3 +1,4 @@
+======== Step #1 ========
 Cleaning output files:
 out/production/module/foo/A.class
 End of files
@@ -11,3 +12,5 @@ End of files
 Compiling files:
 src/useAChild.kt
 End of files
+Marked dirty by Kotlin builder:
+src/useAChild.kt

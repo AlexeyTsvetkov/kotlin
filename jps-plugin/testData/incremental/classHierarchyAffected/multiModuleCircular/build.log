@@ -1,3 +1,4 @@
+======== Step #1 ========
 Cleaning output files:
 out/production/module1/foo/A.class
 End of files
@@ -20,8 +21,14 @@ module1/src/module1_D.kt
 End of files
 COMPILATION FAILED
 This type is final, so it cannot be inherited from
+Marked dirty by Kotlin builder:
+src/module1_D.kt
+src/module2_B.kt
+src/module3_C.kt
+src/module4_E.kt
+src/module5_F.kt
 
-
+======== Step #2 ========
 Cleaning output files:
 out/production/module1/foo/A.class
 End of files
@@ -47,3 +54,6 @@ End of files
 Compiling files:
 module5/src/module5_F.kt
 End of files
+Marked dirty by Kotlin builder:
+src/module4_E.kt
+src/module5_F.kt

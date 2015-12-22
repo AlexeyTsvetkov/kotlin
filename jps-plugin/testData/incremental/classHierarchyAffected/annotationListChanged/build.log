@@ -1,3 +1,4 @@
+======== Step #1 ========
 Cleaning output files:
 out/production/module/foo/A.class
 End of files
@@ -29,8 +30,20 @@ src/referencedByFqName.kt
 src/returnType.kt
 src/returnTypeImplicit.kt
 End of files
+Marked dirty by Kotlin builder:
+src/AChild.kt
+src/AGrandChild.kt
+src/ATypeParameter.kt
+src/classLiteral.kt
+src/functionParameter.kt
+src/importA.kt
+src/importAGrandChild.kt
+src/importStar.kt
+src/referencedByFqName.kt
+src/returnType.kt
+src/returnTypeImplicit.kt
 
-
+======== Step #2 ========
 Cleaning output files:
 out/production/module/foo/A.class
 out/production/module/foo/Ann.class
@@ -63,3 +76,15 @@ src/referencedByFqName.kt
 src/returnType.kt
 src/returnTypeImplicit.kt
 End of files
+Marked dirty by Kotlin builder:
+src/AChild.kt
+src/AGrandChild.kt
+src/ATypeParameter.kt
+src/classLiteral.kt
+src/functionParameter.kt
+src/importA.kt
+src/importAGrandChild.kt
+src/importStar.kt
+src/referencedByFqName.kt
+src/returnType.kt
+src/returnTypeImplicit.kt

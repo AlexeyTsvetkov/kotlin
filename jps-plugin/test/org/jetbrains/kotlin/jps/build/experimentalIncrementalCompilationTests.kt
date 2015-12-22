@@ -16,11 +16,36 @@
 
 package org.jetbrains.kotlin.jps.build
 
+import com.intellij.testFramework.UsefulTestCase
 import org.jetbrains.jps.incremental.ModuleBuildTarget
 import org.jetbrains.kotlin.jps.incremental.CacheVersionProvider
+import java.io.File
 
 abstract class AbstractExperimentalIncrementalJpsTest : AbstractIncrementalJpsTest() {
     override val enableExperimentalIncrementalCompilation = true
+}
+
+abstract class AbstractClassHierarchyAffectedTest : AbstractExperimentalIncrementalJpsTest() {
+    override fun checkLogs(makeResults: List<MakeResult>) {
+        val dirtyFilesLogs = makeResults.map { makeResult ->
+            val dirtyFilesNames = makeResult.dirtyFiles.map { it.parentFile.name + "/" + it.name }
+
+            buildString {
+                append(makeResult.log)
+
+                if (dirtyFilesNames.isNotEmpty()) {
+                    append("Marked dirty by Kotlin builder:\n")
+                    append(dirtyFilesNames.sorted().joinToString(separator = "\n"))
+                }
+            }
+        }
+
+        val actualLog = dirtyFilesLogs.withIndex()
+                .map { "======== Step #${it.index + 1} ========\n${it.value}" }
+                .joinToString(separator = "\n\n")
+        val expectedFile = File(testDataDir, AbstractIncrementalJpsTest.BUILD_LOG_FILE_NAME)
+        UsefulTestCase.assertSameLinesWithFile(expectedFile.canonicalPath, actualLog)
+    }
 }
 
 abstract class AbstractExperimentalIncrementalLazyCachesTest : AbstractIncrementalLazyCachesTest() {

@@ -1,3 +1,4 @@
+======== Step #1 ========
 Cleaning output files:
 out/production/module/foo/A.class
 End of files
@@ -46,8 +47,20 @@ Cannot access 'A': it is 'private' in file
 Cannot access 'A': it is 'private' in file
 Function effective visibility 'public' should be the same or less permissive than its return type effective visibility 'private'
 Cannot access 'A': it is 'private' in file
+Marked dirty by Kotlin builder:
+src/AChild.kt
+src/AGrandChild.kt
+src/ATypeParameter.kt
+src/classLiteral.kt
+src/functionParameter.kt
+src/importA.kt
+src/importAGrandChild.kt
+src/importStar.kt
+src/referencedByFqName.kt
+src/returnType.kt
+src/returnTypeImplicit.kt
 
-
+======== Step #2 ========
 Cleaning output files:
 out/production/module/foo/A.class
 End of files

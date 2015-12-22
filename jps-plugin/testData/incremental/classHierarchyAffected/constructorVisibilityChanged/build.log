@@ -1,3 +1,4 @@
+======== Step #1 ========
 Cleaning output files:
 out/production/module/foo/A.class
 End of files
@@ -18,6 +19,7 @@ Cannot access '<init>': it is 'private' in 'A'
 Cannot access '<init>': it is 'private' in 'A'
 
 
+======== Step #2 ========
 Cleaning output files:
 out/production/module/foo/A.class
 End of files

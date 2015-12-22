@@ -1,3 +1,4 @@
+======== Step #1 ========
 Cleaning output files:
 out/production/module/foo/A.class
 End of files
@@ -40,8 +41,20 @@ Please specify it explicitly.
 Type argument expected
 Type inference failed: Not enough information to infer parameter T in constructor A<T>()
 Please specify it explicitly.
+Marked dirty by Kotlin builder:
+src/AChild.kt
+src/AGrandChild.kt
+src/ATypeParameter.kt
+src/classLiteral.kt
+src/functionParameter.kt
+src/importA.kt
+src/importAGrandChild.kt
+src/importStar.kt
+src/referencedByFqName.kt
+src/returnType.kt
+src/returnTypeImplicit.kt
 
-
+======== Step #2 ========
 Cleaning output files:
 out/production/module/foo/A.class
 End of files
@@ -73,6 +86,7 @@ Type inference failed: Not enough information to infer parameter T in constructo
 Please specify it explicitly.
 
 
+======== Step #3 ========
 Compiling files:
 src/A.kt
 src/AChild.kt

@@ -77,7 +77,7 @@ public abstract class AbstractIncrementalJpsTest(
         private val COMMANDS = listOf("new", "touch", "delete")
         private val COMMANDS_AS_REGEX_PART = COMMANDS.joinToString("|")
         private val COMMANDS_AS_MESSAGE_PART = COMMANDS.joinToString("/") { "\".$it\"" }
-        private val BUILD_LOG_FILE_NAME = "build.log"
+        val BUILD_LOG_FILE_NAME = "build.log"
     }
 
     protected open val enableExperimentalIncrementalCompilation = false
@@ -150,7 +150,8 @@ public abstract class AbstractIncrementalJpsTest(
         projectDescriptor = createProjectDescriptor(BuildLoggingManager(logger))
 
         val lookupTracker = createLookupTracker()
-        TestingContext.set(projectDescriptor.project, TestingContextImpl(lookupTracker))
+        val testingContext = TestingContextImpl(lookupTracker)
+        TestingContext.set(projectDescriptor.project, testingContext)
 
         try {
             val builder = IncProjectBuilder(projectDescriptor, BuilderRegistry.getInstance(), myBuildParams, CanceledStatus.NULL, mockConstantSearch, true)
@@ -172,10 +173,11 @@ public abstract class AbstractIncrementalJpsTest(
                                 .map { it.messageText }
                                 .map { it.replace("^.+:\\d+:\\s+".toRegex(), "").trim() }
                                 .joinToString("\n")
-                return MakeResult(logger.log + "$COMPILATION_FAILED\n" + errorMessages + "\n", true, null)
+
+                return MakeResult.fail(logger.log + "$COMPILATION_FAILED\n" + errorMessages + "\n", testingContext.dirtyFiles)
             }
             else {
-                return MakeResult(logger.log, false, createMappingsDump(projectDescriptor))
+                return MakeResult.success(logger.log, createMappingsDump(projectDescriptor), testingContext.dirtyFiles)
             }
         }
         finally {
@@ -340,24 +342,27 @@ public abstract class AbstractIncrementalJpsTest(
         initialMake()
 
         val otherMakeResults = performModificationsAndMake(moduleNames)
-
-        val buildLogFile = File(testDataDir, BUILD_LOG_FILE_NAME)
-        val experimentalBuildLog = File(testDataDir, experimentalBuildLogFileName)
-
-        if (enableExperimentalIncrementalCompilation && experimentalBuildLog.exists()) {
-            val logs = createExperimentalBuildLog(otherMakeResults)
-            UsefulTestCase.assertSameLinesWithFile(experimentalBuildLog.absolutePath, logs)
-        }
-        else if (buildLogFile.exists() || !allowNoBuildLogFileInTestData) {
-            val logs = createDefaultBuildLog(otherMakeResults)
-            UsefulTestCase.assertSameLinesWithFile(buildLogFile.absolutePath, logs)
-        }
+        checkLogs(otherMakeResults)
 
         if (!enableExperimentalIncrementalCompilation && File(testDataDir, "dont-check-caches-in-non-experimental-ic.txt").exists()) return
 
         val lastMakeResult = otherMakeResults.last()
         rebuildAndCheckOutput(lastMakeResult)
         clearCachesRebuildAndCheckOutput(lastMakeResult)
+    }
+
+    protected open fun checkLogs(makeResults: List<MakeResult>) {
+        val buildLogFile = File(testDataDir, BUILD_LOG_FILE_NAME)
+        val experimentalBuildLog = File(testDataDir, experimentalBuildLogFileName)
+
+        if (enableExperimentalIncrementalCompilation && experimentalBuildLog.exists()) {
+            val logs = createExperimentalBuildLog(makeResults)
+            UsefulTestCase.assertSameLinesWithFile(experimentalBuildLog.absolutePath, logs)
+        }
+        else if (buildLogFile.exists() || !allowNoBuildLogFileInTestData) {
+            val logs = createDefaultBuildLog(makeResults)
+            UsefulTestCase.assertSameLinesWithFile(buildLogFile.absolutePath, logs)
+        }
     }
 
     private fun createMappingsDump(project: ProjectDescriptor) =
@@ -427,7 +432,20 @@ public abstract class AbstractIncrementalJpsTest(
         return byteArrayOutputStream.toString()
     }
 
-    protected data class MakeResult(val log: String, val makeFailed: Boolean, val mappingsDump: String?)
+    protected data class MakeResult private constructor (
+            val log: String,
+            val dirtyFiles: Set<File>,
+            val mappingsDump: String?,
+            val makeFailed: Boolean
+    ) {
+        companion object {
+            fun success(log: String, mappingsDump: String, dirtyFiles: Set<File>) =
+                    MakeResult(log, dirtyFiles, mappingsDump, makeFailed = false)
+
+            fun fail(log: String, dirtyFiles: Set<File>) =
+                    MakeResult(log, dirtyFiles, mappingsDump = null, makeFailed = true)
+        }
+    }
 
     private fun performModificationsAndMake(moduleNames: Set<String>?): List<MakeResult> {
         val results = arrayListOf<MakeResult>()

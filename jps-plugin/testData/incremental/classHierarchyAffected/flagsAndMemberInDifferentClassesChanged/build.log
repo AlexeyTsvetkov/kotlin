@@ -1,3 +1,4 @@
+======== Step #1 ========
 Cleaning output files:
 out/production/module/foo/A.class
 out/production/module/foo/B.class
@@ -18,3 +19,8 @@ src/importA.kt
 src/importAChild.kt
 src/useB.kt
 End of files
+Marked dirty by Kotlin builder:
+src/AChild.kt
+src/importA.kt
+src/importAChild.kt
+src/useB.kt
