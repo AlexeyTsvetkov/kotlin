@@ -59,31 +59,3 @@ src/referencedByFqName.kt
 src/returnType.kt
 src/returnTypeImplicit.kt
 End of files
-COMPILATION FAILED
-Type argument expected
-Type argument expected
-Type argument expected
-Type argument expected
-Type inference failed: Not enough information to infer parameter T in constructor A<T : [ERROR : A]>()
-Please specify it explicitly.
-Type inference failed: Not enough information to infer parameter T in constructor A<T : [ERROR : A]>()
-Please specify it explicitly.
-Type argument expected
-Type inference failed: Not enough information to infer parameter T in constructor A<T : [ERROR : A]>()
-Please specify it explicitly.
-
-
-Compiling files:
-src/A.kt
-src/AChild.kt
-src/AGrandChild.kt
-src/ATypeParameter.kt
-src/classLiteral.kt
-src/functionParameter.kt
-src/importA.kt
-src/importAGrandChild.kt
-src/importStar.kt
-src/referencedByFqName.kt
-src/returnType.kt
-src/returnTypeImplicit.kt
-End of files
