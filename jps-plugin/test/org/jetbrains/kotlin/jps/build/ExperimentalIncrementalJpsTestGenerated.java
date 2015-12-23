@@ -1135,6 +1135,12 @@ public class ExperimentalIncrementalJpsTestGenerated extends AbstractExperimenta
             doTest(fileName);
         }
 
+        @TestMetadata("starProjectionUpperBoundChanged")
+        public void testStarProjectionUpperBoundChanged() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("jps-plugin/testData/incremental/classHierarchyAffected/starProjectionUpperBoundChanged/");
+            doTest(fileName);
+        }
+
         @TestMetadata("supertypesListChanged")
         public void testSupertypesListChanged() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("jps-plugin/testData/incremental/classHierarchyAffected/supertypesListChanged/");
