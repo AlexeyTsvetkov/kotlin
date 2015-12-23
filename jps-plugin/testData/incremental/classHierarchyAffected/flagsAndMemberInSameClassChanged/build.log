@@ -1,0 +1,33 @@
+Cleaning output files:
+out/production/module/A.class
+End of files
+Compiling files:
+src/A.kt
+End of files
+Cleaning output files:
+out/production/module/B.class
+out/production/module/GetAKt.class
+out/production/module/GetBKt.class
+out/production/module/META-INF/module.kotlin_module
+End of files
+Compiling files:
+src/B.kt
+src/getA.kt
+src/getB.kt
+End of files
+COMPILATION FAILED
+Cannot access 'A': it is 'private' in file
+Subclass effective visibility 'public' should be the same or less permissive than its superclass effective visibility 'private'
+Function effective visibility 'public' should be the same or less permissive than its return type effective visibility 'private'
+Cannot access 'A': it is 'private' in file
+
+
+Cleaning output files:
+out/production/module/A.class
+End of files
+Compiling files:
+src/A.kt
+src/B.kt
+src/getA.kt
+src/getB.kt
+End of files
