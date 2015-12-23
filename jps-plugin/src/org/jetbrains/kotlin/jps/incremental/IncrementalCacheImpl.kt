@@ -371,18 +371,18 @@ public class IncrementalCacheImpl(
 
             val diff = difference(oldData, data)
 
-            if (!IncrementalCompilation.isExperimental()) return CompilationResult(protoChanged = diff != DifferenceKind.NONE)
+            if (!IncrementalCompilation.isExperimental()) return CompilationResult(protoChanged = diff != Difference.NONE)
 
             val fqName = if (isPackage) className.packageFqName else className.fqNameForClassNameWithoutDollars
 
             val changes =
                     when (diff) {
-                        is DifferenceKind.NONE -> emptySequence<ChangeInfo>()
-                        is DifferenceKind.CLASS_SIGNATURE -> sequenceOf(ChangeInfo.SignatureChanged(fqName))
-                        is DifferenceKind.MEMBERS -> sequenceOf(ChangeInfo.MembersChanged(fqName, diff.names))
+                        is Difference.NONE -> emptySequence<ChangeInfo>()
+                        is Difference.CLASS_SIGNATURE -> sequenceOf(ChangeInfo.SignatureChanged(fqName))
+                        is Difference.MEMBERS -> sequenceOf(ChangeInfo.MembersChanged(fqName, diff.names))
                     }
 
-            return CompilationResult(protoChanged = diff != DifferenceKind.NONE, changes = changes)
+            return CompilationResult(protoChanged = diff != Difference.NONE, changes = changes)
         }
 
         operator fun contains(className: JvmClassName): Boolean =

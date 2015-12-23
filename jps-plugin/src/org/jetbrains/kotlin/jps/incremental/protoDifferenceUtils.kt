@@ -29,14 +29,14 @@ import org.jetbrains.kotlin.serialization.jvm.JvmProtoBufUtil
 import org.jetbrains.kotlin.utils.HashSetUtil
 import java.util.*
 
-public sealed class DifferenceKind() {
-    public object NONE: DifferenceKind()
-    public object CLASS_SIGNATURE: DifferenceKind()
-    public class MEMBERS(val names: Collection<String>): DifferenceKind()
+public sealed class Difference() {
+    public object NONE: Difference()
+    public object CLASS_SIGNATURE: Difference()
+    public class MEMBERS(val names: Collection<String>): Difference()
 }
 
-public fun difference(oldData: ProtoMapValue, newData: ProtoMapValue): DifferenceKind {
-    if (oldData.isPackageFacade != newData.isPackageFacade) return DifferenceKind.CLASS_SIGNATURE
+public fun difference(oldData: ProtoMapValue, newData: ProtoMapValue): Difference {
+    if (oldData.isPackageFacade != newData.isPackageFacade) return Difference.CLASS_SIGNATURE
 
     val differenceObject =
             if (oldData.isPackageFacade) DifferenceCalculatorForPackageFacade(oldData, newData) else DifferenceCalculatorForClass(oldData, newData)
@@ -70,9 +70,9 @@ private abstract class DifferenceCalculator() {
 
     protected val compareObject by lazy { ProtoCompareGenerated(oldNameResolver, newNameResolver) }
 
-    abstract fun difference(): DifferenceKind
+    abstract fun difference(): Difference
 
-    protected fun membersOrNone(names: Collection<String>): DifferenceKind = if (names.isEmpty()) DifferenceKind.NONE else DifferenceKind.MEMBERS(names)
+    protected fun membersOrNone(names: Collection<String>): Difference = if (names.isEmpty()) Difference.NONE else Difference.MEMBERS(names)
 
     protected fun calcDifferenceForMembers(oldList: List<MessageLite>, newList: List<MessageLite>): Collection<String> {
         val result = hashSetOf<String>()
@@ -172,10 +172,10 @@ private class DifferenceCalculatorForClass(oldData: ProtoMapValue, newData: Prot
 
     val diff = compareObject.difference(oldProto, newProto)
 
-    override fun difference(): DifferenceKind {
-        if (diff.isEmpty()) return DifferenceKind.NONE
+    override fun difference(): Difference {
+        if (diff.isEmpty()) return Difference.NONE
 
-        CLASS_SIGNATURE_ENUMS.forEach { if (it in diff) return DifferenceKind.CLASS_SIGNATURE }
+        CLASS_SIGNATURE_ENUMS.forEach { if (it in diff) return Difference.CLASS_SIGNATURE }
 
         return membersOrNone(getChangedMembersNames())
     }
@@ -239,8 +239,8 @@ private class DifferenceCalculatorForPackageFacade(oldData: ProtoMapValue, newDa
 
     val diff = compareObject.difference(oldProto, newProto)
 
-    override fun difference(): DifferenceKind {
-        if (diff.isEmpty()) return DifferenceKind.NONE
+    override fun difference(): Difference {
+        if (diff.isEmpty()) return Difference.NONE
 
         return membersOrNone(getChangedMembersNames())
     }

@@ -113,11 +113,11 @@ public abstract class AbstractProtoComparisonTest : UsefulTestCase() {
         }
 
         val changes = when (diff) {
-            is DifferenceKind.NONE ->
+            is Difference.NONE ->
                 "NONE"
-            is DifferenceKind.CLASS_SIGNATURE ->
+            is Difference.CLASS_SIGNATURE ->
                 "CLASS_SIGNATURE"
-            is DifferenceKind.MEMBERS ->
+            is Difference.MEMBERS ->
                 "MEMBERS\n    ${diff.names.sorted()}"
         }
 
