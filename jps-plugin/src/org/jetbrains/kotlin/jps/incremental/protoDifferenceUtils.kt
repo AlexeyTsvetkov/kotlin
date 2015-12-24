@@ -195,8 +195,13 @@ private class DifferenceCalculatorForClass(oldData: ProtoMapValue, newData: Prot
                 }
                 ProtoBufClassKind.NESTED_CLASS_NAME_LIST ->
                     names.addAll(calcDifferenceForNames(oldProto.nestedClassNameList, newProto.nestedClassNameList))
-                ProtoBufClassKind.CONSTRUCTOR_LIST ->
-                    names.addAll(calcDifferenceForNonPrivateMembers(ProtoBuf.Class::getConstructorList))
+                ProtoBufClassKind.CONSTRUCTOR_LIST -> {
+                    val differentNonPrivateConstructors = calcDifferenceForNonPrivateMembers(ProtoBuf.Class::getConstructorList)
+
+                    if (differentNonPrivateConstructors.isNotEmpty()) {
+                        isClassSignatureChanged = true
+                    }
+                }
                 ProtoBufClassKind.FUNCTION_LIST ->
                     names.addAll(calcDifferenceForNonPrivateMembers(ProtoBuf.Class::getFunctionList))
                 ProtoBufClassKind.PROPERTY_LIST ->
