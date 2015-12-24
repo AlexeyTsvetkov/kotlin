@@ -153,6 +153,12 @@ public class ProtoComparisonTestGenerated extends AbstractProtoComparisonTest {
             doTest(fileName);
         }
 
+        @TestMetadata("objectBecameCompanion")
+        public void testObjectBecameCompanion() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("jps-plugin/testData/comparison/classMembersOnlyChanged/objectBecameCompanion/");
+            doTest(fileName);
+        }
+
     }
 
     @TestMetadata("jps-plugin/testData/comparison/packageMembers")
