@@ -92,12 +92,11 @@ open class IncrementalCacheImpl<Target>(
     private val dependents = arrayListOf<IncrementalCacheImpl<Target>>()
     private val outputDir by lazy(LazyThreadSafetyMode.NONE) { requireNotNull(targetOutputDir) { "Target is expected to have output directory: $target" } }
 
-    // TODO: review
-    val dependentsWithThis: Sequence<IncrementalCacheImpl<Target>>
-        get() = sequenceOf(this).plus(dependents.asSequence())
-
-    internal val dependentCaches: Iterable<IncrementalCacheImpl<Target>>
-        get() = dependents
+    val thisWithDependentCaches: Iterable<IncrementalCacheImpl<Target>> by lazy {
+        val result = arrayListOf(this)
+        result.addAll(dependents)
+        result
+    }
 
     override fun registerInline(fromPath: String, jvmSignature: String, toPath: String) {
     }

@@ -195,13 +195,86 @@ fun<Target> CompilationResult.dirtyLookups(
             }
         }
 
+data class RecompilationDecision(
+        val dirtyLookupSymbols: Iterable<LookupSymbol>,
+        val dirtyClassesFqNames: Iterable<FqName>
+)
+
+fun <TargetId> CompilationResult.getRecompilationDecision(
+        caches: Iterable<IncrementalCacheImpl<TargetId>>,
+        log: (()->String)->Unit
+): RecompilationDecision {
+    val dirtyLookupSymbols = HashSet<LookupSymbol>()
+    val dirtyClassesFqNames = HashSet<FqName>()
+
+    for (change in changes) {
+        log { "Process $change" }
+
+        if (change is ChangeInfo.SignatureChanged) {
+            val fqNames = if (!change.areSubclassesAffected) listOf(change.fqName) else withSubtypes(change.fqName, caches.asSequence())
+
+            for (classFqName in fqNames) {
+                assert(!classFqName.isRoot) { "classFqName is root when processing $change" }
+
+                val scope = classFqName.parent().asString()
+                val name = classFqName.shortName().identifier
+                dirtyLookupSymbols.add(LookupSymbol(name, scope))
+            }
+        }
+        else if (change is ChangeInfo.MembersChanged) {
+            val fqNames = withSubtypes(change.fqName, caches.asSequence())
+            // need to recompile subtypes because changed member might break override
+            dirtyClassesFqNames.addAll(fqNames)
+
+            for (name in change.names) {
+                for (fqName in fqNames) {
+                    dirtyLookupSymbols.add(LookupSymbol(name, fqName.asString()))
+                }
+            }
+        }
+    }
+
+    return RecompilationDecision(dirtyLookupSymbols, dirtyClassesFqNames)
+}
+
+fun <Target> mapLookupSymbolsToFiles(
+        lookupStorage: LookupStorage,
+        lookupSymbols: Iterable<LookupSymbol>,
+        log: (()->String)->Unit
+): Iterable<File> {
+    val dirtyFiles = HashSet<File>()
+
+    for (lookup in lookupSymbols) {
+        val affectedFiles = lookupStorage.get(lookup).map(::File)
+        log { "${lookup.scope}#${lookup.name} caused recompilation of: $affectedFiles" }
+        dirtyFiles.addAll(affectedFiles)
+    }
+
+    return dirtyFiles
+}
+
+fun <Target> mapClassesFqNamesToFiles(
+        caches: Iterable<IncrementalCacheImpl<TargetId>>,
+        classesFqNames: Iterable<FqName>
+): Iterable<File> {
+    val dirtyFiles = HashSet<File>()
+
+    for (cache in caches) {
+        for (dirtyClassFqName in classesFqNames) {
+            val srcFile = cache.getSourceFileIfClass(dirtyClassFqName) ?: continue
+            dirtyFiles.add(srcFile)
+        }
+    }
+
+    return dirtyFiles
+}
 
 private fun File.isJavaFile() = extension.equals(JavaFileType.INSTANCE.defaultExtension, ignoreCase = true)
 
 private fun findSrcDirRoot(file: File, roots: Iterable<File>): File? =
         roots.firstOrNull { FileUtil.isAncestor(it, file, false) }
 
-private fun<TargetId> withSubtypes(
+private fun <TargetId> withSubtypes(
         typeFqName: FqName,
         caches: Sequence<IncrementalCacheImpl<TargetId>>
 ): Set<FqName> {
@@ -212,8 +285,8 @@ private fun<TargetId> withSubtypes(
         val unprocessedType = types.pollFirst()
 
         caches.flatMap { it.getSubtypesOf(unprocessedType) }
-                .filter { it !in subtypes }
-                .forEach { types.addLast(it) }
+              .filter { it !in subtypes }
+              .forEach { types.addLast(it) }
 
         subtypes.add(unprocessedType)
     }
