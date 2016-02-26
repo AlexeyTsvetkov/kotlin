@@ -1,10 +1,7 @@
 package org.jetbrains.kotlin.gradle.tasks
 
-import org.gradle.api.tasks.compile.AbstractCompile
-import org.gradle.api.Task
 import org.gradle.api.Project
-import org.gradle.api.tasks.SourceTask
-import java.net.URLClassLoader
+import org.gradle.api.tasks.compile.AbstractCompile
 
 /**
  * Tasks provider to be used wrapper
@@ -20,7 +17,7 @@ public open class KotlinTasksProvider(val tasksLoader: ClassLoader) {
             tasksLoader.loadClass("org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile") as Class<AbstractCompile>
 
     val kotlinJVMOptionsClass: Class<Any> =
-            tasksLoader.loadClass("org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments") as Class<Any>
+            tasksLoader.loadClass("org.jetbrains.kotlin.gradle.tasks.K2JVMGradleCompilerArguments") as Class<Any>
 
 
     public fun createKotlinJVMTask(project: Project, name: String): AbstractCompile {
