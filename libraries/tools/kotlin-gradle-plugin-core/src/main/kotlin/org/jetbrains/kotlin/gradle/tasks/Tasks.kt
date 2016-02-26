@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.cli.common.CLICompiler
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
-import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
@@ -58,7 +57,7 @@ val AbstractTask.kotlinCachesDir: File
     get() = File(project.buildDir, KOTLIN_CACHES_DIR_NAME)
 
 abstract class AbstractKotlinCompile<T : CommonCompilerArguments>() : AbstractCompile() {
-    abstract protected val compiler: CLICompiler<T>
+    abstract protected val compiler: CLICompiler<in T>
     abstract protected fun createBlankArgs(): T
     open protected fun beforeCompileHook(args: T) {
     }
@@ -147,9 +146,9 @@ abstract class AbstractKotlinCompile<T : CommonCompilerArguments>() : AbstractCo
 }
 
 
-open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
+open class KotlinCompile() : AbstractKotlinCompile<K2JVMGradleCompilerArguments>() {
     override val compiler = K2JVMCompiler()
-    override fun createBlankArgs(): K2JVMCompilerArguments = K2JVMCompilerArguments()
+    override fun createBlankArgs(): K2JVMGradleCompilerArguments = K2JVMGradleCompilerArguments()
     private val kotlinClassFiles = HashSet<File>()
 
     // Should be SourceDirectorySet or File
@@ -164,7 +163,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
     // TODO: find out whether we really need to be able to override destination dir here, and how it should work with destinationDir property
     private val compilerDestinationDir: String get() = if (StringUtils.isEmpty(kotlinOptions.destination)) { kotlinDestinationDir?.path.orEmpty() } else { kotlinOptions.destination }
 
-    override fun populateTargetSpecificArgs(args: K2JVMCompilerArguments) {
+    override fun populateTargetSpecificArgs(args: K2JVMGradleCompilerArguments) {
         // show kotlin compiler where to look for java source files
 //        args.freeArgs = (args.freeArgs + getJavaSourceRoots().map { it.getAbsolutePath() }).toSet().toList()
         logger.kotlinDebug("args.freeArgs = ${args.freeArgs}")
@@ -194,6 +193,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
         args.noCallAssertions = kotlinOptions.noCallAssertions
         args.noParamAssertions = kotlinOptions.noParamAssertions
         args.moduleName = kotlinOptions.moduleName ?: extraProperties.getOrNull<String>("defaultModuleName")
+        experimentalIncremental = experimentalIncremental || kotlinOptions.experimentalIncremental
 
         fun  addFriendPathForTestTask(taskName: String) {
             logger.kotlinDebug("try to determine the output directory of corresponding $taskName task")
@@ -216,7 +216,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
         logger.kotlinDebug("args.moduleName = ${args.moduleName}")
     }
 
-    override fun callCompiler(args: K2JVMCompilerArguments, sources: List<File>, isIncrementalRequested: Boolean, modified: List<File>, removed: List<File>, cachesBaseDir: File) {
+    override fun callCompiler(args: K2JVMGradleCompilerArguments, sources: List<File>, isIncrementalRequested: Boolean, modified: List<File>, removed: List<File>, cachesBaseDir: File) {
 
         fun projectRelativePath(f: File) = f.toRelativeString(project.projectDir)
 
@@ -453,7 +453,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
             targets: List<TargetId>,
             sourcesToCompile: Set<File>,
             outputDir: File,
-            args: K2JVMCompilerArguments,
+            args: K2JVMGradleCompilerArguments,
             getIncrementalCache: (TargetId)->GradleIncrementalCacheImpl,
             lookupTracker: LookupTracker
     ): CompileChangedResults {
@@ -487,7 +487,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
     private fun compileNotIncremental(
             sourcesToCompile: List<File>,
             outputDir: File,
-            args: K2JVMCompilerArguments
+            args: K2JVMGradleCompilerArguments
     ): ExitCode {
         val moduleFile = makeModuleFile(args.moduleName, isTest = false, outputDir = outputDir, sourcesToCompile = sourcesToCompile, javaSourceRoots = getJavaSourceRoots(), classpath = classpath, friendDirs = listOf())
         args.module = moduleFile.absolutePath
@@ -529,11 +529,11 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
 
     private fun File.isJavaFile() = extension.equals(JavaFileType.INSTANCE.defaultExtension, ignoreCase = true)
 
-    override fun beforeCompileHook(args: K2JVMCompilerArguments) {
+    override fun beforeCompileHook(args: K2JVMGradleCompilerArguments) {
         kotlinClassFiles.addAll(listClassFiles(compilerDestinationDir))
     }
 
-    override fun afterCompileHook(args: K2JVMCompilerArguments) {
+    override fun afterCompileHook(args: K2JVMGradleCompilerArguments) {
         logger.debug("Copying resulting files to classes")
 
         // Copy kotlin classes to all classes directory
