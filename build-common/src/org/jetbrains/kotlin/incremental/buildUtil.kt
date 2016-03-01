@@ -193,7 +193,7 @@ fun <Target> CompilationResult.getDirtyData(
             val fqNames = if (!change.areSubclassesAffected) listOf(change.fqName) else withSubtypes(change.fqName, caches)
 
             for (classFqName in fqNames) {
-                assert(!classFqName.isRoot) { "classFqName is root when processing $change" }
+                assert(!classFqName.isRoot) { "$classFqName is root when processing $change" }
 
                 val scope = classFqName.parent().asString()
                 val name = classFqName.shortName().identifier
