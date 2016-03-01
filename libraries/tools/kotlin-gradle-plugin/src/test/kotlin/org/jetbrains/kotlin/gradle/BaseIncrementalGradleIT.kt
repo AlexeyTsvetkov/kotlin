@@ -28,7 +28,7 @@ abstract class BaseIncrementalGradleIT : BaseGradleIT() {
         }
     }
 
-    fun JpsTestProject.performAndAssertBuildStages(options: BuildOptions = defaultBuildOptions(), weakTesting: Boolean = false) {
+    fun JpsTestProject.performAndAssertBuildStages(options: BuildOptions, weakTesting: Boolean = false) {
         // TODO: support multimodule tests
         if (resourcesRoot.walk().filter { it.name.equals("dependencies.txt", ignoreCase = true) }.any()) {
             Assume.assumeTrue("multimodule tests are not supported yet", false)

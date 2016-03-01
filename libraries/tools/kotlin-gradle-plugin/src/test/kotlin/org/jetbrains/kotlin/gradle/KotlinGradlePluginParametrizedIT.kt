@@ -16,10 +16,8 @@ class KotlinGradlePluginJpsParametrizedIT : BaseIncrementalGradleIT() {
 
     @Test
     fun testFromJps() {
-        JpsTestProject(jpsResourcesPath, relativePath).performAndAssertBuildStages(weakTesting = true)
+        JpsTestProject(jpsResourcesPath, relativePath).performAndAssertBuildStages(BuildOptions(withDaemon = true), weakTesting = true)
     }
-
-    override fun defaultBuildOptions(): BuildOptions = BuildOptions(withDaemon = true)
 
     companion object {
 

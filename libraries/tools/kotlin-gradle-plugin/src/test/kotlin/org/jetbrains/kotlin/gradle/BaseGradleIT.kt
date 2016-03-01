@@ -42,29 +42,11 @@ abstract class BaseGradleIT {
             ranDaemonVersions.clear()
         }
 
-        fun createGradleCommand(tailParameters: List<String>): List<String> {
-            return if (isWindows())
-                listOf("cmd", "/C", "gradlew.bat") + tailParameters
-            else
-                listOf("/bin/bash", "./gradlew") + tailParameters
-        }
-
-        fun isWindows(): Boolean {
-            return System.getProperty("os.name")!!.contains("Windows")
-        }
-
         fun stopDaemon(ver: String) {
             println("Stopping gradle daemon v$ver")
             val wrapperDir = File(resourcesRootFile, "GradleWrapper-$ver")
             val cmd = createGradleCommand(arrayListOf("-stop"))
             createProcess(cmd, wrapperDir)
-        }
-
-        fun createProcess(cmd: List<String>, projectDir: File): Process {
-            val builder = ProcessBuilder(cmd)
-            builder.directory(projectDir)
-            builder.redirectErrorStream(true)
-            return builder.start()
         }
 
         @Synchronized
@@ -204,20 +186,20 @@ abstract class BaseGradleIT {
             else
                 assertSameFiles(sources, compiledJavaSources.projectRelativePaths(this.project), "Compiled Java files differ:\n  ")
 
-    private fun Project.createBuildCommand(params: Array<out String>, options: BuildOptions): List<String> =
-            createGradleCommand(createGradleTailParameters(options, params))
-
-    protected fun Project.createGradleTailParameters(options: BuildOptions, params: Array<out String> = arrayOf()): List<String> =
-            params.asList() +
-                    listOf("-PpathToKotlinPlugin=" + File("local-repo").absolutePath,
-                            if (options.daemonOptionSupported)
-                                if (options.withDaemon) "--daemon"
-                                else "--no-daemon"
-                            else null,
-                            "--stacktrace",
-                            "--${minLogLevel.name.toLowerCase()}",
-                            "-Pkotlin.gradle.test=true")
-                            .filterNotNull()
+    private fun Project.createBuildCommand(tasks: Array<out String>, options: BuildOptions): List<String> {
+        arrayListOf(*tasks, )
+        tasks.asList() +
+                listOf("-PpathToKotlinPlugin=" + File("local-repo").absolutePath,
+                        if (options.daemonOptionSupported)
+                            if (options.withDaemon) "--daemon"
+                            else "--no-daemon"
+                        else null,
+                        "--stacktrace",
+                        "--${minLogLevel.name.toLowerCase()}",
+                        "-Pkotlin.gradle.test=true")
+                        .filterNotNull()
+    }
+            createGradleCommand(createGradleTailParameters(tasks, options))
 
     private fun String.normalize() = this.lineSequence().joinToString(SYSTEM_LINE_SEPARATOR)
 
@@ -268,4 +250,23 @@ abstract class BaseGradleIT {
         }
         f.delete()
     }
+}
+
+private fun createProcess(cmd: List<String>, workingDir: File, environmentVariables: Map<String, String>): Process {
+    val builder = ProcessBuilder(cmd)
+    builder.directory(workingDir)
+    builder.redirectErrorStream(true)
+    builder.environment().putAll(environmentVariables)
+    return builder.start()
+}
+
+private fun createGradleCommand(tailParameters: List<String>): List<String> {
+    return if (isWindows())
+        listOf("cmd", "/C", "gradlew.bat") + tailParameters
+    else
+        listOf("/bin/bash", "./gradlew") + tailParameters
+}
+
+private fun isWindows(): Boolean {
+    return System.getProperty("os.name")!!.contains("Windows")
 }
