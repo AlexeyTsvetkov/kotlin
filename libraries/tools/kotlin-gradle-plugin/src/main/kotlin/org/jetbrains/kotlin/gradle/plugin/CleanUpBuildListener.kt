@@ -20,10 +20,9 @@ import org.apache.commons.lang.SystemUtils
 import org.gradle.BuildAdapter
 import org.gradle.BuildResult
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.logging.Logging
-import org.gradle.api.tasks.compile.AbstractCompile
 import java.util.concurrent.ScheduledExecutorService
-import kotlin.properties.Delegates
 
 
 private fun comparableVersionStr(version: String) =
@@ -55,17 +54,17 @@ class CleanUpBuildListener(pluginClassLoader: ClassLoader, private val project: 
     }
 
     override fun buildFinished(result: BuildResult?) {
+        fun isTaskCompiledKotlin(task: Task): Boolean =
+                task.name.contains("kotlin", ignoreCase = true) &&
+                task.getProperty<Boolean>("compilerCalled") == true
+
         val gradle = result?.gradle
         if (gradle != null) {
+            val tasksCalledKotlin = project.tasks.filter(::isTaskCompiledKotlin).map { it.name }
 
-            val kotlinCompilerCalled = project.tasks.filter { it.name.contains("kotlin", ignoreCase = true) }
-                    .any { task -> task.hasProperty("compilerCalled") && task.property("compilerCalled") as? Boolean ?: false }
-
-            if (kotlinCompilerCalled) {
-                log.kotlinDebug("Cleanup after kotlin")
-
+            if (tasksCalledKotlin.any()) {
+                log.kotlinDebug("Cleanup after kotlin is triggered by tasks: $tasksCalledKotlin")
                 cleanup(gradle.gradleVersion)
-
                 // checking thread leaks only then cleaning up
                 threadTracker?.checkThreadLeak(gradle)
             }
@@ -76,7 +75,7 @@ class CleanUpBuildListener(pluginClassLoader: ClassLoader, private val project: 
             threadTracker = null
             gradle.removeListener(this)
 
-            if (kotlinCompilerCalled) {
+            if (tasksCalledKotlin.any()) {
                 startMemory?.let { startMemoryCopy ->
                     getUsedMemoryKb()?.let { endMemory ->
                         // the value reported here is not necessarily a leak, since it is calculated before collecting the plugin classes
