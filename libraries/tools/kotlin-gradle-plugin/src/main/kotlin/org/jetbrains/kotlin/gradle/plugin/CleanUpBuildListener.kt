@@ -50,6 +50,7 @@ class CleanUpBuildListener(pluginClassLoader: ClassLoader, private val project: 
     fun buildStarted() {
         if (log.isDebugEnabled) {
             startMemory = getUsedMemoryKb()!!
+            log.kotlinDebug("Build starting memory: $startMemory kb")
         }
     }
 
