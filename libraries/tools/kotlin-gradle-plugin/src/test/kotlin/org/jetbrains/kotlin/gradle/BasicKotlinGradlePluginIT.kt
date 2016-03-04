@@ -1,13 +1,13 @@
 package org.jetbrains.kotlin.gradle
 
-import org.junit.Test
 import org.gradle.api.logging.LogLevel
+import org.junit.Test
 
 class SimpleKotlinGradleIT : BaseGradleIT() {
 
     @Test
     fun testSimpleCompile() {
-        val project = Project("simpleProject", "1.12")
+        val project = Project("simpleProject")
 
         project.build("compileDeployKotlin", "build") {
             assertSuccessful()
@@ -23,7 +23,7 @@ class SimpleKotlinGradleIT : BaseGradleIT() {
 
     @Test
     fun testSuppressWarningsAndVersionInVerboseMode() {
-        val project = Project("suppressWarningsAndVersion", "1.6")
+        val project = Project("suppressWarningsAndVersion")
 
         project.build("build") {
             assertSuccessful()
@@ -40,7 +40,7 @@ class SimpleKotlinGradleIT : BaseGradleIT() {
 
     @Test
     fun testSuppressWarningsAndVersionInNonVerboseMode() {
-        val project = Project("suppressWarningsAndVersion", "1.6", minLogLevel = LogLevel.INFO)
+        val project = Project("suppressWarningsAndVersion", minLogLevel = LogLevel.INFO)
 
         project.build("build") {
             assertSuccessful()
@@ -57,14 +57,14 @@ class SimpleKotlinGradleIT : BaseGradleIT() {
 
     @Test
     fun testKotlinCustomDirectory() {
-        Project("customSrcDir", "1.6").build("build") {
+        Project("customSrcDir").build("build") {
             assertSuccessful()
         }
     }
 
     @Test
     fun testKotlinCustomModuleName() {
-        Project("moduleNameCustom", "1.6").build("build") {
+        Project("moduleNameCustom").build("build") {
             assertSuccessful()
             assertContains("args.moduleName = myTestName")
         }
@@ -72,7 +72,7 @@ class SimpleKotlinGradleIT : BaseGradleIT() {
 
     @Test
     fun testKotlinDefaultModuleName() {
-        Project("moduleNameDefault", "1.6").build("build") {
+        Project("moduleNameDefault").build("build") {
             assertSuccessful()
             assertContains("args.moduleName = moduleNameDefault-compileKotlin")
         }
@@ -80,21 +80,21 @@ class SimpleKotlinGradleIT : BaseGradleIT() {
 
     @Test
     fun testAdvancedOptions() {
-        Project("advancedOptions", "1.6").build("build") {
+        Project("advancedOptions").build("build") {
             assertSuccessful()
         }
     }
 
     @Test
     fun testKotlinExtraJavaSrc() {
-        Project("additionalJavaSrc", "1.6").build("build") {
+        Project("additionalJavaSrc").build("build") {
             assertSuccessful()
         }
     }
 
     @Test
     fun testGradleSubplugin() {
-        val project = Project("kotlinGradleSubplugin", "1.6")
+        val project = Project("kotlinGradleSubplugin")
 
         project.build("compileKotlin", "build") {
             assertSuccessful()

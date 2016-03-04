@@ -1,13 +1,12 @@
 package org.jetbrains.kotlin.gradle
 
 import org.junit.Test
-import org.jetbrains.kotlin.gradle.BaseGradleIT.Project
 
 
 class Kotlin2JsGradlePluginIT : BaseGradleIT() {
     @Test
     fun testBuildAndClean() {
-        val project = Project("kotlin2JsProject", "1.6")
+        val project = Project("kotlin2JsProject")
 
         project.build("build", "-Pkotlin.gradle.noThreadTest=true") {
             assertSuccessful()
@@ -65,7 +64,7 @@ class Kotlin2JsGradlePluginIT : BaseGradleIT() {
 
     @Test
     fun testNoOutputFileFails() {
-        val project = Project("kotlin2JsNoOutputFileProject", "1.6")
+        val project = Project("kotlin2JsNoOutputFileProject")
         project.build("build") {
             assertFailed()
             assertReportExists()

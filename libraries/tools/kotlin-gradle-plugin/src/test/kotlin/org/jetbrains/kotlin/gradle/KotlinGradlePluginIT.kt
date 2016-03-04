@@ -10,7 +10,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testCrossCompile() {
-        val project = Project("kotlinJavaProject", "1.6")
+        val project = Project("kotlinJavaProject")
 
         project.build("compileDeployKotlin", "build") {
             assertSuccessful()
@@ -26,7 +26,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testKotlinOnlyCompile() {
-        val project = Project("kotlinProject", "1.6")
+        val project = Project("kotlinProject")
 
         project.build("build") {
             assertSuccessful()
@@ -87,12 +87,12 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testLogLevelForceGC() {
-        val debugProject = Project("simpleProject", "1.12", minLogLevel = LogLevel.DEBUG)
+        val debugProject = Project("simpleProject", minLogLevel = LogLevel.DEBUG)
         debugProject.build("build") {
             assertContains(CleanUpBuildListener.FORCE_SYSTEM_GC_MESSAGE)
         }
 
-        val infoProject = Project("simpleProject", "1.12", minLogLevel = LogLevel.INFO)
+        val infoProject = Project("simpleProject", minLogLevel = LogLevel.INFO)
         infoProject.build("clean", "build") {
             assertNotContains(CleanUpBuildListener.FORCE_SYSTEM_GC_MESSAGE)
         }
@@ -100,7 +100,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testKotlinClasspath() {
-        Project("classpathTest", "1.6").build("build") {
+        Project("classpathTest").build("build") {
             assertSuccessful()
             assertReportExists()
             assertContains(":compileKotlin", ":compileTestKotlin")
@@ -109,7 +109,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testInternalTest() {
-        Project("internalTest", "1.6").build("build") {
+        Project("internalTest").build("build") {
             assertSuccessful()
             assertReportExists()
             assertContains(":compileKotlin", ":compileTestKotlin")
@@ -118,7 +118,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testMultiprojectPluginClasspath() {
-        Project("multiprojectClassPathTest", "1.6").build("build") {
+        Project("multiprojectClassPathTest").build("build") {
             assertSuccessful()
             assertReportExists("subproject")
             assertContains(":subproject:compileKotlin", ":subproject:compileTestKotlin")
@@ -133,7 +133,7 @@ class KotlinGradleIT: BaseGradleIT() {
             return this
         }
 
-        Project("multiprojectWithDependency", "1.6").build("-PincrementalOption=true", "assemble") {
+        Project("multiprojectWithDependency").build("-PincrementalOption=true", "assemble") {
             assertSuccessful()
             assertReportExists("projA")
             assertContains(":projA:compileKotlin")
@@ -142,7 +142,7 @@ class KotlinGradleIT: BaseGradleIT() {
             assertContains(":projB:compileKotlin")
             assertNotContains("projB:compileKotlin UP-TO-DATE")
         }
-        Project("multiprojectWithDependency", "1.6").modify {
+        Project("multiprojectWithDependency").modify {
             val oldSrc = File(this.projectWorkingDir, "projA/src/main/kotlin/a.kt")
             val newSrc = File(this.projectWorkingDir, "projA/src/main/kotlin/a.kt.new")
             assertTrue { oldSrc.exists() }
@@ -162,7 +162,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testKotlinInJavaRoot() {
-        Project("kotlinInJavaRoot", "1.6").build("build") {
+        Project("kotlinInJavaRoot").build("build") {
             assertSuccessful()
             assertReportExists()
             assertContains(":compileKotlin", ":compileTestKotlin")
@@ -171,7 +171,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testKaptSimple() {
-        val project = Project("kaptSimple", "1.12")
+        val project = Project("kaptSimple")
 
         project.build("build") {
             assertSuccessful()
@@ -191,7 +191,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testKaptStubs() {
-        val project = Project("kaptStubs", "1.12")
+        val project = Project("kaptStubs")
 
         project.build("build") {
             assertSuccessful()
@@ -211,7 +211,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testKaptArguments() {
-        Project("kaptArguments", "1.12").build("build") {
+        Project("kaptArguments").build("build") {
             assertSuccessful()
             assertContains("kapt: Using class file stubs")
             assertContains(":compileKotlin")
@@ -225,7 +225,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testKaptInheritedAnnotations() {
-        Project("kaptInheritedAnnotations", "1.12").build("build") {
+        Project("kaptInheritedAnnotations").build("build") {
             assertSuccessful()
             assertFileExists("build/generated/source/kapt/main/TestClassGenerated.java")
             assertFileExists("build/generated/source/kapt/main/AncestorClassGenerated.java")
@@ -236,7 +236,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testKaptOutputKotlinCode() {
-        Project("kaptOutputKotlinCode", "1.12").build("build") {
+        Project("kaptOutputKotlinCode").build("build") {
             assertSuccessful()
             assertContains("kapt: Using class file stubs")
             assertContains(":compileKotlin")

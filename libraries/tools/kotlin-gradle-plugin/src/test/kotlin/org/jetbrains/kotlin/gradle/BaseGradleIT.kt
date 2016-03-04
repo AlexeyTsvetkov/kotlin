@@ -65,7 +65,7 @@ abstract class BaseGradleIT {
     // the second parameter is for using with ToolingAPI, that do not like --daemon/--no-daemon  options at all
     data class BuildOptions(val withDaemon: Boolean = false, val daemonOptionSupported: Boolean = true)
 
-    open inner class Project(val projectName: String, val wrapperVersion: String = "1.4", val minLogLevel: LogLevel = LogLevel.DEBUG) {
+    open inner class Project(val projectName: String, val wrapperVersion: String = "2.2.1", val minLogLevel: LogLevel = LogLevel.DEBUG) {
         open val projectOriginalDir = File(resourcesRootFile, "testProject/$projectName")
         val projectWorkingDir = File(workingDir.canonicalFile, projectName)
         val wrapperDir = File(resourcesRootFile, "GradleWrapper-$wrapperVersion")
