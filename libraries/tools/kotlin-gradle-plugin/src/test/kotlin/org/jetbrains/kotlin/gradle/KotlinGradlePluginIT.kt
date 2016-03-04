@@ -2,6 +2,7 @@ package org.jetbrains.kotlin.gradle
 
 import org.gradle.api.logging.LogLevel
 import org.jetbrains.kotlin.gradle.plugin.CleanUpBuildListener
+import org.jetbrains.kotlin.gradle.util.GradleVersion
 import org.junit.Test
 import java.io.File
 import kotlin.test.assertTrue
@@ -45,7 +46,7 @@ class KotlinGradleIT: BaseGradleIT() {
     // In order to stop daemon process, special exit task is used ( System.exit(0) ).
     @Test
     fun testKotlinOnlyDaemonMemory() {
-        val project = Project("kotlinProject", "2.4")
+        val project = Project("kotlinProject", GradleVersion.`2-4`)
         val VARIANT_CONSTANT = "ForTest"
         val userVariantArg = "-Duser.variant=$VARIANT_CONSTANT"
 

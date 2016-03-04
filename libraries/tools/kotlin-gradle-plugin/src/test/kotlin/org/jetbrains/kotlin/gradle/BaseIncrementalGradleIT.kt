@@ -3,6 +3,7 @@ package org.jetbrains.kotlin.gradle
 import com.intellij.openapi.util.io.FileUtil
 import org.gradle.api.logging.LogLevel
 import org.jetbrains.kotlin.gradle.util.BuildStep
+import org.jetbrains.kotlin.gradle.util.GradleVersion
 import org.jetbrains.kotlin.gradle.util.parseTestBuildLog
 import org.jetbrains.kotlin.incremental.testingUtils.*
 import org.junit.Assume
@@ -13,7 +14,8 @@ abstract class BaseIncrementalGradleIT : BaseGradleIT() {
     inner class JpsTestProject(
             val buildLogFinder: BuildLogFinder,
             val resourcesBase: File,
-            val relPath: String, wrapperVersion: String = "2.10",
+            val relPath: String,
+            wrapperVersion: GradleVersion = GradleVersion.`2-10`,
             minLogLevel: LogLevel = LogLevel.DEBUG,
             val allowExtraCompiledFiles: Boolean = false
     ) : Project(File(relPath).name, wrapperVersion, minLogLevel) {

@@ -4,6 +4,7 @@ import com.google.common.io.Files
 import com.intellij.openapi.util.io.FileUtil
 import org.gradle.api.logging.LogLevel
 import org.jetbrains.kotlin.gradle.util.CompiledProject
+import org.jetbrains.kotlin.gradle.util.GradleVersion
 import org.jetbrains.kotlin.gradle.util.createGradleCommand
 import org.jetbrains.kotlin.gradle.util.runProcess
 import org.junit.After
@@ -29,7 +30,7 @@ abstract class BaseGradleIT {
 
     companion object {
 
-        protected val ranDaemonVersions = hashMapOf<String, Int>()
+        protected val ranDaemonVersions = hashMapOf<GradleVersion, Int>()
         val resourcesRootFile = File("src/test/resources")
         val MAX_DAEMON_RUNS = 30
 
@@ -42,7 +43,7 @@ abstract class BaseGradleIT {
             ranDaemonVersions.clear()
         }
 
-        fun stopDaemon(ver: String) {
+        fun stopDaemon(ver: GradleVersion) {
             println("Stopping gradle daemon v$ver")
             val wrapperDir = File(resourcesRootFile, "GradleWrapper-$ver")
             val cmd = createGradleCommand(arrayListOf("-stop"))
@@ -51,12 +52,14 @@ abstract class BaseGradleIT {
         }
 
         @Synchronized
-        fun prepareDaemon(version: String) {
-            val useCount = ranDaemonVersions.get(version)
+        fun prepareDaemon(version: GradleVersion) {
+            val useCount = ranDaemonVersions[version]
+
             if (useCount == null || useCount > MAX_DAEMON_RUNS) {
                 stopDaemon(version)
                 ranDaemonVersions.put(version, 1)
-            } else {
+            }
+            else {
                 ranDaemonVersions.put(version, useCount + 1)
             }
         }
@@ -65,7 +68,7 @@ abstract class BaseGradleIT {
     // the second parameter is for using with ToolingAPI, that do not like --daemon/--no-daemon  options at all
     data class BuildOptions(val withDaemon: Boolean = false, val daemonOptionSupported: Boolean = true)
 
-    open inner class Project(val projectName: String, val wrapperVersion: String = "2.2.1", val minLogLevel: LogLevel = LogLevel.DEBUG) {
+    open inner class Project(val projectName: String, val wrapperVersion: GradleVersion = GradleVersion.`2-2-1`, val minLogLevel: LogLevel = LogLevel.DEBUG) {
         open val projectOriginalDir = File(resourcesRootFile, "testProject/$projectName")
         val projectWorkingDir = File(workingDir.canonicalFile, projectName)
         val wrapperDir = File(resourcesRootFile, "GradleWrapper-$wrapperVersion")

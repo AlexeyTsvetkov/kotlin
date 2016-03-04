@@ -1,15 +1,15 @@
 package org.jetbrains.kotlin.gradle
 
-import org.junit.Test
+import org.jetbrains.kotlin.gradle.util.GradleVersion
 import org.junit.Ignore
-import org.jetbrains.kotlin.gradle.BaseGradleIT.Project
+import org.junit.Test
 
 @Ignore("Requires Android SDK")
 class KotlinAndroidGradleIT: BaseGradleIT() {
 
         @Test
         fun testSimpleCompile() {
-            val project = Project("AndroidProject", "2.3")
+            val project = Project("AndroidProject", GradleVersion.`2-3`)
 
             project.build("build") {
                 assertSuccessful()
@@ -56,7 +56,7 @@ class KotlinAndroidGradleIT: BaseGradleIT() {
 
     @Test
     fun testModuleNameAndroid() {
-        val project = Project("AndroidProject", "2.3")
+        val project = Project("AndroidProject", GradleVersion.`2-3`)
 
         project.build("build") {
             assertContains(
