@@ -31,8 +31,3 @@ test {
 compileKotlin {
     kotlinOptions.moduleName = "myTestName"
 }
-
-
-task wrapper(type: Wrapper) {
-  gradleVersion="1.4"
-}

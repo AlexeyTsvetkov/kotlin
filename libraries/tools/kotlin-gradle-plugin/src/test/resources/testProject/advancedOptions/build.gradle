@@ -45,8 +45,3 @@ compileKotlin {
     kotlinOptions.noCallAssertions = true
     kotlinOptions.noParamAssertions = true
 }
-
-
-task wrapper(type: Wrapper) {
-  gradleVersion="1.4"
-}

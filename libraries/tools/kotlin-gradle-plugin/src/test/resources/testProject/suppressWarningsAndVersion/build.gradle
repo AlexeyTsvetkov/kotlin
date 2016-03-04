@@ -33,8 +33,3 @@ compileKotlin {
     kotlinOptions.suppressWarnings = true
     kotlinOptions.version = true
 }
-
-
-task wrapper(type: Wrapper) {
-    gradleVersion="1.4"
-}
