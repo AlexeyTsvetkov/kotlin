@@ -81,16 +81,6 @@ abstract class BaseGradleIT {
         }
     }
 
-    class CompiledProject(val project: Project, val output: String, val resultCode: Int) {
-        companion object {
-            val kotlinSourcesListRegex = Regex("\\[KOTLIN\\] compile iteration: ([^\\r\\n]*)")
-            val javaSourcesListRegex = Regex("\\[DEBUG\\] \\[[^\\]]*JavaCompiler\\] Compiler arguments: ([^\\r\\n]*)")
-        }
-
-        val compiledKotlinSources: Iterable<File> by lazy { kotlinSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(", ").map { File(project.projectWorkingDir, it).canonicalFile } } }
-        val compiledJavaSources: Iterable<File> by lazy { javaSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(" ").filter { it.endsWith(".java", ignoreCase = true) }.map { File(it).canonicalFile } } }
-    }
-
     fun Project.build(vararg tasks: String, options: BuildOptions = defaultBuildOptions(), check: CompiledProject.() -> Unit) {
         val cmd = createBuildCommand(tasks, options)
 
@@ -112,85 +102,6 @@ abstract class BaseGradleIT {
         CompiledProject(this, result.stdout, result.exitCode).check()
     }
 
-    fun CompiledProject.assertSuccessful(): CompiledProject {
-        assertEquals(0, resultCode, "Gradle build failed")
-        return this
-    }
-
-    fun CompiledProject.assertFailed(): CompiledProject {
-        assertNotEquals(0, resultCode, "Expected that Gradle build failed")
-        return this
-    }
-
-    fun CompiledProject.assertContains(vararg expected: String): CompiledProject {
-        for (str in expected) {
-            assertTrue(output.contains(str.normalize()), "Should contain '$str', actual output: $output")
-        }
-        return this
-    }
-
-    fun CompiledProject.assertNotContains(vararg expected: String): CompiledProject {
-        for (str in expected) {
-            assertFalse(output.contains(str.normalize()), "Should not contain '$str', actual output: $output")
-        }
-        return this
-    }
-
-    fun CompiledProject.fileInWorkingDir(path: String) = File(File(workingDir, project.projectName), path)
-
-    fun CompiledProject.assertReportExists(pathToReport: String = ""): CompiledProject {
-        assertTrue(fileInWorkingDir(pathToReport).exists(), "The report [$pathToReport] does not exist.")
-        return this
-    }
-
-    fun CompiledProject.assertFileExists(path: String = ""): CompiledProject {
-        assertTrue(fileInWorkingDir(path).exists(), "The file [$path] does not exist.")
-        return this
-    }
-
-    fun CompiledProject.assertNoSuchFile(path: String = ""): CompiledProject {
-        assertFalse(fileInWorkingDir(path).exists(), "The file [$path] exists.")
-        return this
-    }
-
-    fun CompiledProject.assertFileContains(path: String, vararg expected: String): CompiledProject {
-        val text = fileInWorkingDir(path).readText()
-        expected.forEach {
-            assertTrue(text.contains(it), "$path should contain '$it', actual file contents:\n$text")
-        }
-        return this
-    }
-
-    private fun Iterable<File>.projectRelativePaths(project: Project): Iterable<String> {
-//        val projectDir = File(workingDir.canonicalFile, project.projectName)
-        return map { it.canonicalFile.toRelativeString(project.projectWorkingDir) }
-    }
-
-    fun CompiledProject.assertSameFiles(expected: Iterable<String>, actual: Iterable<String>, messagePrefix: String = ""): CompiledProject {
-        val expectedSet = expected.toSortedSet()
-        val actualSet = actual.toSortedSet()
-        assertTrue(actualSet == expectedSet, messagePrefix + "expected files: ${expectedSet.joinToString()}\n  != actual files: ${actualSet.joinToString()}")
-        return this
-    }
-
-    fun CompiledProject.assertContainFiles(expected: Iterable<String>, actual: Iterable<String>, messagePrefix: String = ""): CompiledProject {
-        val actualSet = actual.toSortedSet()
-        assertTrue(actualSet.containsAll(expected.toList()), messagePrefix + "expected files: ${expected.toSortedSet().joinToString()}\n  !in actual files: ${actualSet.joinToString()}")
-        return this
-    }
-
-    fun CompiledProject.assertCompiledKotlinSources(sources: Iterable<String>, weakTesting: Boolean = false): CompiledProject =
-            if (weakTesting)
-                assertContainFiles(sources, compiledKotlinSources.projectRelativePaths(this.project), "Compiled Kotlin files differ:\n  ")
-            else
-                assertSameFiles(sources, compiledKotlinSources.projectRelativePaths(this.project), "Compiled Kotlin files differ:\n  ")
-
-    fun CompiledProject.assertCompiledJavaSources(sources: Iterable<String>, weakTesting: Boolean = false): CompiledProject =
-            if (weakTesting)
-                assertContainFiles(sources, compiledJavaSources.projectRelativePaths(this.project), "Compiled Java files differ:\n  ")
-            else
-                assertSameFiles(sources, compiledJavaSources.projectRelativePaths(this.project), "Compiled Java files differ:\n  ")
-
     private fun Project.createBuildCommand(params: Array<out String>, options: BuildOptions): List<String> =
             createGradleCommand(createGradleTailParameters(options, params))
 
@@ -206,5 +117,97 @@ abstract class BaseGradleIT {
                             "-Pkotlin.gradle.test=true")
                             .filterNotNull()
 
+}
+
+class CompiledProject(val project: BaseGradleIT.Project, val output: String, val resultCode: Int) {
+    companion object {
+        val kotlinSourcesListRegex = Regex("\\[KOTLIN\\] compile iteration: ([^\\r\\n]*)")
+        val javaSourcesListRegex = Regex("\\[DEBUG\\] \\[[^\\]]*JavaCompiler\\] Compiler arguments: ([^\\r\\n]*)")
+    }
+
+    private val compiledKotlinSources: Iterable<File> by lazy { kotlinSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(", ").map { File(project.projectWorkingDir, it).canonicalFile } } }
+    private val compiledJavaSources: Iterable<File> by lazy { javaSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(" ").filter { it.endsWith(".java", ignoreCase = true) }.map { File(it).canonicalFile } } }
+
+    fun assertSuccessful(): CompiledProject {
+        assertEquals(0, resultCode, "Gradle build failed")
+        return this
+    }
+
+    fun assertFailed(): CompiledProject {
+        assertNotEquals(0, resultCode, "Expected that Gradle build failed")
+        return this
+    }
+
+    fun assertContains(vararg expected: String): CompiledProject {
+        for (str in expected) {
+            assertTrue(output.contains(str.normalize()), "Should contain '$str', actual output: $output")
+        }
+        return this
+    }
+
+    fun assertNotContains(vararg expected: String): CompiledProject {
+        for (str in expected) {
+            assertFalse(output.contains(str.normalize()), "Should not contain '$str', actual output: $output")
+        }
+        return this
+    }
+
+
+    fun assertReportExists(pathToReport: String = ""): CompiledProject {
+        assertTrue(fileInWorkingDir(pathToReport).exists(), "The report [$pathToReport] does not exist.")
+        return this
+    }
+
+    fun assertFileExists(path: String = ""): CompiledProject {
+        assertTrue(fileInWorkingDir(path).exists(), "The file [$path] does not exist.")
+        return this
+    }
+
+    fun assertNoSuchFile(path: String = ""): CompiledProject {
+        assertFalse(fileInWorkingDir(path).exists(), "The file [$path] exists.")
+        return this
+    }
+
+    fun assertFileContains(path: String, vararg expected: String): CompiledProject {
+        val text = fileInWorkingDir(path).readText()
+        expected.forEach {
+            assertTrue(text.contains(it), "$path should contain '$it', actual file contents:\n$text")
+        }
+        return this
+    }
+    
+    fun assertSameFiles(expected: Iterable<String>, actual: Iterable<String>, messagePrefix: String = ""): CompiledProject {
+        val expectedSet = expected.toSortedSet()
+        val actualSet = actual.toSortedSet()
+        assertTrue(actualSet == expectedSet, messagePrefix + "expected files: ${expectedSet.joinToString()}\n  != actual files: ${actualSet.joinToString()}")
+        return this
+    }
+
+    fun assertContainFiles(expected: Iterable<String>, actual: Iterable<String>, messagePrefix: String = ""): CompiledProject {
+        val actualSet = actual.toSortedSet()
+        assertTrue(actualSet.containsAll(expected.toList()), messagePrefix + "expected files: ${expected.toSortedSet().joinToString()}\n  !in actual files: ${actualSet.joinToString()}")
+        return this
+    }
+
+    fun assertCompiledKotlinSources(sources: Iterable<String>, weakTesting: Boolean = false): CompiledProject =
+            if (weakTesting)
+                assertContainFiles(sources, compiledKotlinSources.projectRelativePaths(this.project), "Compiled Kotlin files differ:\n  ")
+            else
+                assertSameFiles(sources, compiledKotlinSources.projectRelativePaths(this.project), "Compiled Kotlin files differ:\n  ")
+
+    fun assertCompiledJavaSources(sources: Iterable<String>, weakTesting: Boolean = false): CompiledProject =
+            if (weakTesting)
+                assertContainFiles(sources, compiledJavaSources.projectRelativePaths(this.project), "Compiled Java files differ:\n  ")
+            else
+                assertSameFiles(sources, compiledJavaSources.projectRelativePaths(this.project), "Compiled Java files differ:\n  ")
+
+    private fun fileInWorkingDir(path: String) =
+            File(project.projectWorkingDir, path)
+
+    private fun Iterable<File>.projectRelativePaths(project: BaseGradleIT.Project): Iterable<String> {
+        return map { it.canonicalFile.toRelativeString(project.projectWorkingDir) }
+    }
+
     private fun String.normalize() = this.lineSequence().joinToString(SYSTEM_LINE_SEPARATOR)
+
 }
