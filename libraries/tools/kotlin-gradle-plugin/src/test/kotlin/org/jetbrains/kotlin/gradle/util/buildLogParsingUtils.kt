@@ -1,4 +1,4 @@
-package org.jetbrains.kotlin.gradle.incremental
+package org.jetbrains.kotlin.gradle.util
 
 import java.io.File
 

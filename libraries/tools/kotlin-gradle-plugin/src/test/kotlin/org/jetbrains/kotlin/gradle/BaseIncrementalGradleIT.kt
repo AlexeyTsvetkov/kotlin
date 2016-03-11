@@ -2,8 +2,8 @@ package org.jetbrains.kotlin.gradle
 
 import com.intellij.openapi.util.io.FileUtil
 import org.gradle.api.logging.LogLevel
-import org.jetbrains.kotlin.gradle.incremental.BuildStep
-import org.jetbrains.kotlin.gradle.incremental.parseTestBuildLog
+import org.jetbrains.kotlin.gradle.util.BuildStep
+import org.jetbrains.kotlin.gradle.util.parseTestBuildLog
 import org.jetbrains.kotlin.incremental.testingUtils.TouchPolicy
 import org.jetbrains.kotlin.incremental.testingUtils.assertEqualDirectories
 import org.jetbrains.kotlin.incremental.testingUtils.copyTestSources

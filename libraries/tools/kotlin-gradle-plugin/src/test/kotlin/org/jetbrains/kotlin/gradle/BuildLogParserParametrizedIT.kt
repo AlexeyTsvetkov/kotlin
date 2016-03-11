@@ -1,6 +1,6 @@
 package org.jetbrains.kotlin.gradle
 
-import org.jetbrains.kotlin.gradle.incremental.parseTestBuildLog
+import org.jetbrains.kotlin.gradle.util.parseTestBuildLog
 import org.jetbrains.kotlin.utils.Printer
 import org.junit.Assert
 import org.junit.Test
