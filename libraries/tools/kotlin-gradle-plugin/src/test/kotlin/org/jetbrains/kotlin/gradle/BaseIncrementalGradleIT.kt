@@ -10,12 +10,16 @@ import org.jetbrains.kotlin.incremental.testingUtils.copyTestSources
 import org.jetbrains.kotlin.incremental.testingUtils.getModificationsToPerform
 import org.junit.Assume
 import java.io.File
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 abstract class BaseIncrementalGradleIT : BaseGradleIT() {
 
-    inner class JpsTestProject(val resourcesBase: File, val relPath: String, wrapperVersion: String = "2.10", minLogLevel: LogLevel = LogLevel.DEBUG) : Project(File(relPath).name, wrapperVersion, minLogLevel) {
+    inner class JpsTestProject(
+            val resourcesBase: File,
+            val relPath: String, wrapperVersion: String = "2.10",
+            minLogLevel: LogLevel = LogLevel.DEBUG,
+            val allowExtraCompiledFiles: Boolean = false
+    ) : Project(File(relPath).name, wrapperVersion, minLogLevel) {
         override val projectOriginalDir = File(resourcesBase, relPath)
         val mapWorkingToOriginalFile = hashMapOf<File, File>()
 
@@ -31,7 +35,7 @@ abstract class BaseIncrementalGradleIT : BaseGradleIT() {
         }
     }
 
-    fun JpsTestProject.performAndAssertBuildStages(options: BuildOptions = defaultBuildOptions(), weakTesting: Boolean = false) {
+    fun JpsTestProject.performAndAssertBuildStages(options: BuildOptions = defaultBuildOptions()) {
         // TODO: support multimodule tests
         if (projectOriginalDir.walk().filter { it.name.equals("dependencies.txt", ignoreCase = true) }.any()) {
             Assume.assumeTrue("multimodule tests are not supported yet", false)
@@ -62,18 +66,17 @@ abstract class BaseIncrementalGradleIT : BaseGradleIT() {
 
         for ((modificationStep, buildLogStep) in modifications.zip(buildLogSteps)) {
             modificationStep.forEach { it.perform(projectWorkingDir, mapWorkingToOriginalFile) }
-            buildAndAssertStageResults(buildLogStep, weakTesting = weakTesting)
+            buildAndAssertStageResults(buildLogStep)
         }
 
         rebuildAndCompareOutput(rebuildSucceedExpected = buildLogSteps.last().compileSucceeded)
     }
 
-    private fun JpsTestProject.buildAndAssertStageResults(expected: BuildStep, options: BuildOptions = defaultBuildOptions(), weakTesting: Boolean = false) {
+    private fun JpsTestProject.buildAndAssertStageResults(expected: BuildStep, options: BuildOptions = defaultBuildOptions()) {
         build("build", options = options) {
             if (expected.compileSucceeded) {
                 assertSuccessful()
-                assertCompiledJavaSources(expected.compiledJavaFiles, weakTesting)
-                assertCompiledKotlinSources(expected.compiledKotlinFiles, weakTesting)
+                assertCompiledSources(expected.compiledKotlinFiles + expected.compiledJavaFiles, allowExtraCompiledFiles)
             }
             else {
                 assertFailed()
@@ -87,10 +90,9 @@ abstract class BaseIncrementalGradleIT : BaseGradleIT() {
         FileUtil.copyDir(outDir, incrementalOutDir)
 
         build("clean", "build") {
-            val rebuildSucceed = resultCode == 0
-            assertEquals(rebuildSucceed, rebuildSucceedExpected, "Rebuild exit code differs from incremental exit code")
+            if (rebuildSucceedExpected) assertSuccessful() else assertFailed()
             outDir.mkdirs()
-            assertEqualDirectories(outDir, incrementalOutDir, forgiveExtraFiles = !rebuildSucceed)
+            assertEqualDirectories(outDir, incrementalOutDir, forgiveExtraFiles = !rebuildSucceedExpected)
         }
     }
 }

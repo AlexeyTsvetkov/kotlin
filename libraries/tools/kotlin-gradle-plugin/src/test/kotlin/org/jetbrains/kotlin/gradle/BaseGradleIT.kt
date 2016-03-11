@@ -9,10 +9,7 @@ import org.junit.After
 import org.junit.AfterClass
 import org.junit.Before
 import java.io.File
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 private val SYSTEM_LINE_SEPARATOR = System.getProperty("line.separator")
 
@@ -116,17 +113,27 @@ abstract class BaseGradleIT {
                             "--${minLogLevel.name.toLowerCase()}",
                             "-Pkotlin.gradle.test=true")
                             .filterNotNull()
-
 }
 
-class CompiledProject(private val project: BaseGradleIT.Project, private val buildLog: String, private val resultCode: Int) {
+class CompiledProject(private val project: BaseGradleIT.Project, private val buildLog: String, protected val resultCode: Int) {
     companion object {
         private val kotlinSourcesListRegex = Regex("\\[KOTLIN\\] compile iteration: ([^\\r\\n]*)")
         private val javaSourcesListRegex = Regex("\\[DEBUG\\] \\[[^\\]]*JavaCompiler\\] Compiler arguments: ([^\\r\\n]*)")
     }
 
-    private val compiledKotlinSources: Iterable<File> by lazy { kotlinSourcesListRegex.findAll(buildLog).asIterable().flatMap { it.groups[1]!!.value.split(", ").map { File(project.projectWorkingDir, it).canonicalFile } } }
-    private val compiledJavaSources: Iterable<File> by lazy { javaSourcesListRegex.findAll(buildLog).asIterable().flatMap { it.groups[1]!!.value.split(" ").filter { it.endsWith(".java", ignoreCase = true) }.map { File(it).canonicalFile } } }
+    private val compiledSources: Iterable<String> by lazy {
+        fun extractAll(regex: Regex) = regex.findAll(buildLog).map { it.groups[1]!!.value }
+
+        val kotlinFiles = extractAll(kotlinSourcesListRegex)
+                .flatMap { it.splitToSequence(", ") }
+                .map { File(project.projectWorkingDir, it) }
+        val javaFiles = extractAll(javaSourcesListRegex)
+                .flatMap { it.splitToSequence(" ") }
+                .filter { it.endsWith(".java", ignoreCase = true) }
+                .map { File(it) }
+        val allFiles = (kotlinFiles + javaFiles).map { it.canonicalFile }
+        allFiles.map { it.toRelativeString(project.projectWorkingDir) }.toList()
+    }
 
     fun assertSuccessful(): CompiledProject {
         assertEquals(0, resultCode, "Gradle build failed")
@@ -175,37 +182,32 @@ class CompiledProject(private val project: BaseGradleIT.Project, private val bui
         }
         return this
     }
-    
-    fun assertSameFiles(expected: Iterable<String>, actual: Iterable<String>, messagePrefix: String = ""): CompiledProject {
+
+    fun assertCompiledSources(expected: Iterable<String>, allowExtraCompiledFiles: Boolean): CompiledProject {
         val expectedSet = expected.toSortedSet()
-        val actualSet = actual.toSortedSet()
-        assertTrue(actualSet == expectedSet, messagePrefix + "expected files: ${expectedSet.joinToString()}\n  != actual files: ${actualSet.joinToString()}")
+        val actualSet = compiledSources.toSortedSet()
+
+        val extraFiles = if (!allowExtraCompiledFiles) actualSet - expectedSet else emptySet()
+        val missingFiles = expectedSet - actualSet
+
+        val missingFilesMsg = "Expected to be compiled: $missingFiles\n"
+        val extraFilesMsg = "Not expected to be compiled: $extraFiles\n"
+
+        if (missingFiles.isNotEmpty() && extraFiles.isNotEmpty()) {
+            fail(missingFilesMsg + extraFilesMsg)
+        }
+        else if (missingFiles.isNotEmpty()) {
+            fail(missingFilesMsg)
+        }
+        else if (extraFiles.isNotEmpty()) {
+            fail(extraFilesMsg)
+        }
+
         return this
     }
-
-    fun assertContainFiles(expected: Iterable<String>, actual: Iterable<String>, messagePrefix: String = ""): CompiledProject {
-        val actualSet = actual.toSortedSet()
-        assertTrue(actualSet.containsAll(expected.toList()), messagePrefix + "expected files: ${expected.toSortedSet().joinToString()}\n  !in actual files: ${actualSet.joinToString()}")
-        return this
-    }
-
-    fun assertCompiledKotlinSources(sources: Iterable<String>, weakTesting: Boolean = false): CompiledProject =
-            if (weakTesting)
-                assertContainFiles(sources, compiledKotlinSources.projectRelativePaths(this.project), "Compiled Kotlin files differ:\n  ")
-            else
-                assertSameFiles(sources, compiledKotlinSources.projectRelativePaths(this.project), "Compiled Kotlin files differ:\n  ")
-
-    fun assertCompiledJavaSources(sources: Iterable<String>, weakTesting: Boolean = false): CompiledProject =
-            if (weakTesting)
-                assertContainFiles(sources, compiledJavaSources.projectRelativePaths(this.project), "Compiled Java files differ:\n  ")
-            else
-                assertSameFiles(sources, compiledJavaSources.projectRelativePaths(this.project), "Compiled Java files differ:\n  ")
 
     private fun fileInWorkingDir(path: String) =
             File(project.projectWorkingDir, path)
-
-    private fun Iterable<File>.projectRelativePaths(project: BaseGradleIT.Project): Iterable<String> =
-            map { it.canonicalFile.toRelativeString(project.projectWorkingDir) }
 
     private fun String.normalize() =
             lineSequence().joinToString(SYSTEM_LINE_SEPARATOR)
