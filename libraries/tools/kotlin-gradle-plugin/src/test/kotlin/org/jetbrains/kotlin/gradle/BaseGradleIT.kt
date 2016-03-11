@@ -2,11 +2,12 @@ package org.jetbrains.kotlin.gradle
 
 import com.google.common.io.Files
 import org.gradle.api.logging.LogLevel
+import org.jetbrains.kotlin.gradle.util.createGradleCommand
+import org.jetbrains.kotlin.gradle.util.runProcess
 import org.junit.After
 import org.junit.AfterClass
 import org.junit.Before
 import java.io.File
-import java.io.InputStream
 import kotlin.test.*
 
 private val SYSTEM_LINE_SEPARATOR = System.getProperty("line.separator")
@@ -42,36 +43,12 @@ abstract class BaseGradleIT {
             ranDaemonVersions.clear()
         }
 
-        fun createGradleCommand(tailParameters: List<String>): List<String> {
-            return if (isWindows())
-                listOf("cmd", "/C", "gradlew.bat") + tailParameters
-            else
-                listOf("/bin/bash", "./gradlew") + tailParameters
-        }
-
-        fun isWindows(): Boolean {
-            return System.getProperty("os.name")!!.contains("Windows")
-        }
-
         fun stopDaemon(ver: String) {
             println("Stopping gradle daemon v$ver")
             val wrapperDir = File(resourcesRootFile, "GradleWrapper-$ver")
             val cmd = createGradleCommand(arrayListOf("-stop"))
-            val process = createProcess(cmd, wrapperDir)
-            val (output, resultCode) = readOutput(process)
-
-            if (resultCode != 0) {
-                throw IllegalStateException("""Stopping gradle daemon was unsuccessful:
-                'gradlew --stop' returned exit code:$resultCode
-                output: $output""".trimIndent())
-            }
-        }
-
-        fun createProcess(cmd: List<String>, projectDir: File): Process {
-            val builder = ProcessBuilder(cmd)
-            builder.directory(projectDir)
-            builder.redirectErrorStream(true)
-            return builder.start()
+            val result = runProcess(cmd, wrapperDir)
+            assert(result.isSuccessful) { "Could not stop daemon: $result" }
         }
 
         @Synchronized
@@ -80,8 +57,7 @@ abstract class BaseGradleIT {
             if (useCount == null || useCount > MAX_DAEMON_RUNS) {
                 stopDaemon(version)
                 ranDaemonVersions.put(version, 1)
-            }
-            else {
+            } else {
                 ranDaemonVersions.put(version, useCount + 1)
             }
         }
@@ -105,8 +81,9 @@ abstract class BaseGradleIT {
             val kotlinSourcesListRegex = Regex("\\[KOTLIN\\] compile iteration: ([^\\r\\n]*)")
             val javaSourcesListRegex = Regex("\\[DEBUG\\] \\[[^\\]]*JavaCompiler\\] Compiler arguments: ([^\\r\\n]*)")
         }
-        val compiledKotlinSources : Iterable<File> by lazy { kotlinSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(", ").map { File(project.projectDir, it).canonicalFile } } }
-        val compiledJavaSources : Iterable<File> by lazy { javaSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(" ").filter { it.endsWith(".java", ignoreCase = true) }.map { File(it).canonicalFile } } }
+
+        val compiledKotlinSources: Iterable<File> by lazy { kotlinSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(", ").map { File(project.projectDir, it).canonicalFile } } }
+        val compiledJavaSources: Iterable<File> by lazy { javaSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(" ").filter { it.endsWith(".java", ignoreCase = true) }.map { File(it).canonicalFile } } }
     }
 
     fun Project.build(vararg tasks: String, options: BuildOptions = defaultBuildOptions(), check: CompiledProject.() -> Unit) {
@@ -126,10 +103,8 @@ abstract class BaseGradleIT {
         if (!projectDir.exists())
             setupWorkingDir()
 
-        val process = createProcess(cmd, projectDir)
-
-        val (output, resultCode) = readOutput(process)
-        CompiledProject(this, output, resultCode).check()
+        val result = runProcess(cmd, projectDir)
+        CompiledProject(this, result.stdout, result.exitCode).check()
     }
 
     fun CompiledProject.assertSuccessful(): CompiledProject {
@@ -259,20 +234,4 @@ abstract class BaseGradleIT {
         }
         f.delete()
     }
-}
-
-private fun readOutput(process: Process): Pair<String, Int> {
-    fun InputStream.readFully(): String {
-        val text = reader().readText()
-        close()
-        return text
-    }
-
-    val stdout = process.inputStream!!.readFully()
-    System.out.println(stdout)
-    val stderr = process.errorStream!!.readFully()
-    System.err.println(stderr)
-
-    val result = process.waitFor()
-    return stdout to result
 }
