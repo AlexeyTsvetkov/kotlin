@@ -1,6 +1,5 @@
 package org.jetbrains.kotlin.gradle
 
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -43,6 +42,9 @@ class KotlinGradlePluginJpsParametrizedCLIOnly : BaseIncrementalGradleIT() {
                         .filter { it.isDirectory && isJpsTestProject(it) }
                         .map { arrayOf(it.toRelativeString(jpsResourcesPath)) }
                         .toList()
+
+        private fun isJpsTestProject(projectRoot: File): Boolean =
+                projectRoot.listFiles { f: File -> f.name.endsWith("build.log") }?.any() ?: false
     }
 }
 

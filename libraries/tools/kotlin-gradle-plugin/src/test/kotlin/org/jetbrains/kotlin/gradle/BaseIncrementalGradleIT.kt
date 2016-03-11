@@ -97,6 +97,3 @@ abstract class BaseIncrementalGradleIT : BaseGradleIT() {
     }
 }
 
-fun isJpsTestProject(projectRoot: File): Boolean = projectRoot.listFiles { f: File -> f.name.endsWith("build.log") }?.any() ?: false
-
-
