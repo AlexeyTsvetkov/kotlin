@@ -119,14 +119,14 @@ abstract class BaseGradleIT {
 
 }
 
-class CompiledProject(val project: BaseGradleIT.Project, val output: String, val resultCode: Int) {
+class CompiledProject(private val project: BaseGradleIT.Project, private val buildLog: String, private val resultCode: Int) {
     companion object {
-        val kotlinSourcesListRegex = Regex("\\[KOTLIN\\] compile iteration: ([^\\r\\n]*)")
-        val javaSourcesListRegex = Regex("\\[DEBUG\\] \\[[^\\]]*JavaCompiler\\] Compiler arguments: ([^\\r\\n]*)")
+        private val kotlinSourcesListRegex = Regex("\\[KOTLIN\\] compile iteration: ([^\\r\\n]*)")
+        private val javaSourcesListRegex = Regex("\\[DEBUG\\] \\[[^\\]]*JavaCompiler\\] Compiler arguments: ([^\\r\\n]*)")
     }
 
-    private val compiledKotlinSources: Iterable<File> by lazy { kotlinSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(", ").map { File(project.projectWorkingDir, it).canonicalFile } } }
-    private val compiledJavaSources: Iterable<File> by lazy { javaSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(" ").filter { it.endsWith(".java", ignoreCase = true) }.map { File(it).canonicalFile } } }
+    private val compiledKotlinSources: Iterable<File> by lazy { kotlinSourcesListRegex.findAll(buildLog).asIterable().flatMap { it.groups[1]!!.value.split(", ").map { File(project.projectWorkingDir, it).canonicalFile } } }
+    private val compiledJavaSources: Iterable<File> by lazy { javaSourcesListRegex.findAll(buildLog).asIterable().flatMap { it.groups[1]!!.value.split(" ").filter { it.endsWith(".java", ignoreCase = true) }.map { File(it).canonicalFile } } }
 
     fun assertSuccessful(): CompiledProject {
         assertEquals(0, resultCode, "Gradle build failed")
@@ -140,14 +140,14 @@ class CompiledProject(val project: BaseGradleIT.Project, val output: String, val
 
     fun assertContains(vararg expected: String): CompiledProject {
         for (str in expected) {
-            assertTrue(output.contains(str.normalize()), "Should contain '$str', actual output: $output")
+            assertTrue(buildLog.contains(str.normalize()), "Should contain '$str', actual output: $buildLog")
         }
         return this
     }
 
     fun assertNotContains(vararg expected: String): CompiledProject {
         for (str in expected) {
-            assertFalse(output.contains(str.normalize()), "Should not contain '$str', actual output: $output")
+            assertFalse(buildLog.contains(str.normalize()), "Should not contain '$str', actual output: $buildLog")
         }
         return this
     }
@@ -204,10 +204,10 @@ class CompiledProject(val project: BaseGradleIT.Project, val output: String, val
     private fun fileInWorkingDir(path: String) =
             File(project.projectWorkingDir, path)
 
-    private fun Iterable<File>.projectRelativePaths(project: BaseGradleIT.Project): Iterable<String> {
-        return map { it.canonicalFile.toRelativeString(project.projectWorkingDir) }
-    }
+    private fun Iterable<File>.projectRelativePaths(project: BaseGradleIT.Project): Iterable<String> =
+            map { it.canonicalFile.toRelativeString(project.projectWorkingDir) }
 
-    private fun String.normalize() = this.lineSequence().joinToString(SYSTEM_LINE_SEPARATOR)
+    private fun String.normalize() =
+            lineSequence().joinToString(SYSTEM_LINE_SEPARATOR)
 
 }
