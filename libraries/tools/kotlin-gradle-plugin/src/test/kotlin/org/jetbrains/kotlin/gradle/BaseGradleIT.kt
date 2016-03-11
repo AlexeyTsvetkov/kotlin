@@ -1,6 +1,7 @@
 package org.jetbrains.kotlin.gradle
 
 import com.google.common.io.Files
+import com.intellij.openapi.util.io.FileUtil
 import org.gradle.api.logging.LogLevel
 import org.jetbrains.kotlin.gradle.util.createGradleCommand
 import org.jetbrains.kotlin.gradle.util.runProcess
@@ -8,7 +9,10 @@ import org.junit.After
 import org.junit.AfterClass
 import org.junit.Before
 import java.io.File
-import kotlin.test.*
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 private val SYSTEM_LINE_SEPARATOR = System.getProperty("line.separator")
 
@@ -25,7 +29,7 @@ abstract class BaseGradleIT {
 
     @After
     fun tearDown() {
-        deleteRecursively(workingDir)
+        FileUtil.delete(workingDir)
     }
 
     companion object {
@@ -69,10 +73,11 @@ abstract class BaseGradleIT {
     open inner class Project(val projectName: String, val wrapperVersion: String = "1.4", val minLogLevel: LogLevel = LogLevel.DEBUG) {
         open val projectOriginalDir = File(resourcesRootFile, "testProject/$projectName")
         val projectWorkingDir = File(workingDir.canonicalFile, projectName)
+        val wrapperDir = File(resourcesRootFile, "GradleWrapper-$wrapperVersion")
 
         open fun setupWorkingDir() {
-            copyRecursively(projectOriginalDir, projectWorkingDir)
-            copyDirRecursively(File(resourcesRootFile, "GradleWrapper-$wrapperVersion"), projectWorkingDir)
+            FileUtil.copyDir(projectOriginalDir, projectWorkingDir)
+            FileUtil.copyDir(wrapperDir, projectWorkingDir)
         }
     }
 
@@ -202,36 +207,4 @@ abstract class BaseGradleIT {
                             .filterNotNull()
 
     private fun String.normalize() = this.lineSequence().joinToString(SYSTEM_LINE_SEPARATOR)
-
-    fun copyRecursively(source: File, target: File) {
-        assertTrue(target.isDirectory)
-        val targetFile = File(target, source.name)
-        if (source.isDirectory) {
-            targetFile.mkdir()
-            source.listFiles()?.forEach { copyRecursively(it, targetFile) }
-        } else {
-            Files.copy(source, targetFile)
-        }
-    }
-
-    fun copyDirRecursively(source: File, target: File) {
-        assertTrue(source.isDirectory)
-        assertTrue(target.isDirectory)
-        source.listFiles()?.forEach { copyRecursively(it, target) }
-    }
-
-    fun deleteRecursively(f: File): Unit {
-        if (f.isDirectory) {
-            f.listFiles()?.forEach { deleteRecursively(it) }
-            val fileList = f.listFiles()
-            if (fileList != null) {
-                if (!fileList.isEmpty()) {
-                    fail("Expected $f to be empty but it has files: ${fileList.joinToString { it.name }}")
-                }
-            } else {
-                fail("Error listing directory content")
-            }
-        }
-        f.delete()
-    }
 }

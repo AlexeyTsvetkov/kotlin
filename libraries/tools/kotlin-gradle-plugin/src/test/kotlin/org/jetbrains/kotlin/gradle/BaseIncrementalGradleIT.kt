@@ -1,5 +1,6 @@
 package org.jetbrains.kotlin.gradle
 
+import com.intellij.openapi.util.io.FileUtil
 import org.gradle.api.logging.LogLevel
 import org.jetbrains.kotlin.gradle.incremental.BuildStep
 import org.jetbrains.kotlin.gradle.incremental.parseTestBuildLog
@@ -19,12 +20,14 @@ abstract class BaseIncrementalGradleIT : BaseGradleIT() {
         val mapWorkingToOriginalFile = hashMapOf<File, File>()
 
         override fun setupWorkingDir() {
+            super.setupWorkingDir()
+
             val srcDir = File(projectWorkingDir, "src")
             srcDir.mkdirs()
             val sourceMapping = copyTestSources(projectOriginalDir, srcDir, filePrefix = "")
             mapWorkingToOriginalFile.putAll(sourceMapping)
-            copyDirRecursively(File(resourcesRootFile, "GradleWrapper-$wrapperVersion"), projectWorkingDir)
-            copyDirRecursively(File(resourcesRootFile, "incrementalGradleProject"), projectWorkingDir)
+
+            FileUtil.copyDir(File(resourcesRootFile, "incrementalGradleProject"), projectWorkingDir)
         }
     }
 
@@ -81,8 +84,7 @@ abstract class BaseIncrementalGradleIT : BaseGradleIT() {
     private fun JpsTestProject.rebuildAndCompareOutput(rebuildSucceedExpected: Boolean) {
         val outDir = File(File(projectWorkingDir, "build"), "classes")
         val incrementalOutDir = File(workingDir, "kotlin-classes-incremental")
-        incrementalOutDir.mkdirs()
-        copyDirRecursively(outDir, incrementalOutDir)
+        FileUtil.copyDir(outDir, incrementalOutDir)
 
         build("clean", "build") {
             val rebuildSucceed = resultCode == 0
