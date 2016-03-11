@@ -143,8 +143,8 @@ class KotlinGradleIT: BaseGradleIT() {
             assertNotContains("projB:compileKotlin UP-TO-DATE")
         }
         Project("multiprojectWithDependency", "1.6").modify {
-            val oldSrc = File(this.projectDir, "projA/src/main/kotlin/a.kt")
-            val newSrc = File(this.projectDir, "projA/src/main/kotlin/a.kt.new")
+            val oldSrc = File(this.projectWorkingDir, "projA/src/main/kotlin/a.kt")
+            val newSrc = File(this.projectWorkingDir, "projA/src/main/kotlin/a.kt.new")
             assertTrue { oldSrc.exists() }
             assertTrue { newSrc.exists() }
             newSrc.copyTo(oldSrc, overwrite = true)

@@ -15,22 +15,22 @@ import kotlin.test.assertNotNull
 abstract class BaseIncrementalGradleIT : BaseGradleIT() {
 
     inner class JpsTestProject(val resourcesBase: File, val relPath: String, wrapperVersion: String = "2.10", minLogLevel: LogLevel = LogLevel.DEBUG) : Project(File(relPath).name, wrapperVersion, minLogLevel) {
-        override val resourcesRoot = File(resourcesBase, relPath)
+        override val projectOriginalDir = File(resourcesBase, relPath)
         val mapWorkingToOriginalFile = hashMapOf<File, File>()
 
         override fun setupWorkingDir() {
-            val srcDir = File(projectDir, "src")
+            val srcDir = File(projectWorkingDir, "src")
             srcDir.mkdirs()
-            val sourceMapping = copyTestSources(resourcesRoot, srcDir, filePrefix = "")
+            val sourceMapping = copyTestSources(projectOriginalDir, srcDir, filePrefix = "")
             mapWorkingToOriginalFile.putAll(sourceMapping)
-            copyDirRecursively(File(resourcesRootFile, "GradleWrapper-$wrapperVersion"), projectDir)
-            copyDirRecursively(File(resourcesRootFile, "incrementalGradleProject"), projectDir)
+            copyDirRecursively(File(resourcesRootFile, "GradleWrapper-$wrapperVersion"), projectWorkingDir)
+            copyDirRecursively(File(resourcesRootFile, "incrementalGradleProject"), projectWorkingDir)
         }
     }
 
     fun JpsTestProject.performAndAssertBuildStages(options: BuildOptions = defaultBuildOptions(), weakTesting: Boolean = false) {
         // TODO: support multimodule tests
-        if (resourcesRoot.walk().filter { it.name.equals("dependencies.txt", ignoreCase = true) }.any()) {
+        if (projectOriginalDir.walk().filter { it.name.equals("dependencies.txt", ignoreCase = true) }.any()) {
             Assume.assumeTrue("multimodule tests are not supported yet", false)
         }
 
@@ -39,11 +39,11 @@ abstract class BaseIncrementalGradleIT : BaseGradleIT() {
             assertReportExists()
         }
 
-        val buildLogFile = resourcesRoot.listFiles { f: File -> f.name.endsWith("build.log") }?.sortedBy { it.length() }?.firstOrNull()
+        val buildLogFile = projectOriginalDir.listFiles { f: File -> f.name.endsWith("build.log") }?.sortedBy { it.length() }?.firstOrNull()
         assertNotNull(buildLogFile, "*build.log file not found" )
 
         val buildLogSteps = parseTestBuildLog(buildLogFile!!)
-        val modifications = getModificationsToPerform(resourcesRoot,
+        val modifications = getModificationsToPerform(projectOriginalDir,
                                                       moduleNames = null,
                                                       allowNoFilesWithSuffixInTestData = false,
                                                       touchPolicy = TouchPolicy.CHECKSUM)
@@ -58,7 +58,7 @@ abstract class BaseIncrementalGradleIT : BaseGradleIT() {
         }
 
         for ((modificationStep, buildLogStep) in modifications.zip(buildLogSteps)) {
-            modificationStep.forEach { it.perform(projectDir, mapWorkingToOriginalFile) }
+            modificationStep.forEach { it.perform(projectWorkingDir, mapWorkingToOriginalFile) }
             buildAndAssertStageResults(buildLogStep, weakTesting = weakTesting)
         }
 
@@ -79,7 +79,7 @@ abstract class BaseIncrementalGradleIT : BaseGradleIT() {
     }
 
     private fun JpsTestProject.rebuildAndCompareOutput(rebuildSucceedExpected: Boolean) {
-        val outDir = File(File(projectDir, "build"), "classes")
+        val outDir = File(File(projectWorkingDir, "build"), "classes")
         val incrementalOutDir = File(workingDir, "kotlin-classes-incremental")
         incrementalOutDir.mkdirs()
         copyDirRecursively(outDir, incrementalOutDir)

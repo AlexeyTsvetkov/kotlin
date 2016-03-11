@@ -67,12 +67,12 @@ abstract class BaseGradleIT {
     data class BuildOptions(val withDaemon: Boolean = false, val daemonOptionSupported: Boolean = true)
 
     open inner class Project(val projectName: String, val wrapperVersion: String = "1.4", val minLogLevel: LogLevel = LogLevel.DEBUG) {
-        open val resourcesRoot = File(resourcesRootFile, "testProject/$projectName")
-        val projectDir = File(workingDir.canonicalFile, projectName)
+        open val projectOriginalDir = File(resourcesRootFile, "testProject/$projectName")
+        val projectWorkingDir = File(workingDir.canonicalFile, projectName)
 
         open fun setupWorkingDir() {
-            copyRecursively(this.resourcesRoot, workingDir)
-            copyDirRecursively(File(resourcesRootFile, "GradleWrapper-$wrapperVersion"), projectDir)
+            copyRecursively(projectOriginalDir, projectWorkingDir)
+            copyDirRecursively(File(resourcesRootFile, "GradleWrapper-$wrapperVersion"), projectWorkingDir)
         }
     }
 
@@ -82,7 +82,7 @@ abstract class BaseGradleIT {
             val javaSourcesListRegex = Regex("\\[DEBUG\\] \\[[^\\]]*JavaCompiler\\] Compiler arguments: ([^\\r\\n]*)")
         }
 
-        val compiledKotlinSources: Iterable<File> by lazy { kotlinSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(", ").map { File(project.projectDir, it).canonicalFile } } }
+        val compiledKotlinSources: Iterable<File> by lazy { kotlinSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(", ").map { File(project.projectWorkingDir, it).canonicalFile } } }
         val compiledJavaSources: Iterable<File> by lazy { javaSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(" ").filter { it.endsWith(".java", ignoreCase = true) }.map { File(it).canonicalFile } } }
     }
 
@@ -158,7 +158,7 @@ abstract class BaseGradleIT {
 
     private fun Iterable<File>.projectRelativePaths(project: Project): Iterable<String> {
 //        val projectDir = File(workingDir.canonicalFile, project.projectName)
-        return map { it.canonicalFile.toRelativeString(project.projectDir) }
+        return map { it.canonicalFile.toRelativeString(project.projectWorkingDir) }
     }
 
     fun CompiledProject.assertSameFiles(expected: Iterable<String>, actual: Iterable<String>, messagePrefix: String = ""): CompiledProject {
