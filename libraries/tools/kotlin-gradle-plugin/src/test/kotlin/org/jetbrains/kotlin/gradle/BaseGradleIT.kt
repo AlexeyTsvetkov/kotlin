@@ -135,55 +135,46 @@ class CompiledProject(private val project: BaseGradleIT.Project, private val bui
         allFiles.map { it.toRelativeString(project.projectWorkingDir) }.toList()
     }
 
-    fun assertSuccessful(): CompiledProject {
+    fun assertSuccessful() {
         assertEquals(0, resultCode, "Gradle build failed")
-        return this
     }
 
-    fun assertFailed(): CompiledProject {
+    fun assertFailed() {
         assertNotEquals(0, resultCode, "Expected that Gradle build failed")
-        return this
     }
 
-    fun assertContains(vararg expected: String): CompiledProject {
+    fun assertContains(vararg expected: String) {
         for (str in expected) {
             assertTrue(buildLog.contains(str.normalize()), "Should contain '$str', actual output: $buildLog")
         }
-        return this
     }
 
-    fun assertNotContains(vararg expected: String): CompiledProject {
+    fun assertNotContains(vararg expected: String) {
         for (str in expected) {
             assertFalse(buildLog.contains(str.normalize()), "Should not contain '$str', actual output: $buildLog")
         }
-        return this
     }
 
-
-    fun assertReportExists(pathToReport: String = ""): CompiledProject {
+    fun assertReportExists(pathToReport: String = "") {
         assertTrue(fileInWorkingDir(pathToReport).exists(), "The report [$pathToReport] does not exist.")
-        return this
     }
 
-    fun assertFileExists(path: String = ""): CompiledProject {
+    fun assertFileExists(path: String = "") {
         assertTrue(fileInWorkingDir(path).exists(), "The file [$path] does not exist.")
-        return this
     }
 
-    fun assertNoSuchFile(path: String = ""): CompiledProject {
+    fun assertNoSuchFile(path: String = "") {
         assertFalse(fileInWorkingDir(path).exists(), "The file [$path] exists.")
-        return this
     }
 
-    fun assertFileContains(path: String, vararg expected: String): CompiledProject {
+    fun assertFileContains(path: String, vararg expected: String) {
         val text = fileInWorkingDir(path).readText()
         expected.forEach {
             assertTrue(text.contains(it), "$path should contain '$it', actual file contents:\n$text")
         }
-        return this
     }
 
-    fun assertCompiledSources(expected: Iterable<String>, allowExtraCompiledFiles: Boolean): CompiledProject {
+    fun assertCompiledSources(expected: Iterable<String>, allowExtraCompiledFiles: Boolean) {
         val expectedSet = expected.toSortedSet()
         val actualSet = compiledSources.toSortedSet()
 
@@ -202,8 +193,6 @@ class CompiledProject(private val project: BaseGradleIT.Project, private val bui
         else if (extraFiles.isNotEmpty()) {
             fail(extraFilesMsg)
         }
-
-        return this
     }
 
     private fun fileInWorkingDir(path: String) =
