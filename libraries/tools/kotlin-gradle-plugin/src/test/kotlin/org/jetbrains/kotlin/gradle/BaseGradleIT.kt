@@ -115,7 +115,7 @@ abstract class BaseGradleIT {
                             .filterNotNull()
 }
 
-class CompiledProject(private val project: BaseGradleIT.Project, private val buildLog: String, protected val resultCode: Int) {
+class CompiledProject(val project: BaseGradleIT.Project, val buildLog: String, val resultCode: Int) {
     companion object {
         private val kotlinSourcesListRegex = Regex("\\[KOTLIN\\] compile iteration: ([^\\r\\n]*)")
         private val javaSourcesListRegex = Regex("\\[DEBUG\\] \\[[^\\]]*JavaCompiler\\] Compiler arguments: ([^\\r\\n]*)")
