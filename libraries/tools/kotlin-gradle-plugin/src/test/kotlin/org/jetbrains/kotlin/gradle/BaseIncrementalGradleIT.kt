@@ -55,14 +55,14 @@ abstract class BaseIncrementalGradleIT : BaseGradleIT() {
             "Modifications count (${modifications.size}) != expected build log steps count (${buildLogSteps.size})"
         }
 
-        println("<--- Expected build log size: ${buildLogSteps.size}")
-        buildLogSteps.forEach {
-            println("<--- Expected build log stage: ${if (it.compileSucceeded) "succeeded" else "failed"}: kotlin: ${it.compiledKotlinFiles} java: ${it.compiledJavaFiles}")
-        }
+        var i = 1
+        for ((modificationStep, expected) in modifications.zip(buildLogSteps)) {
+            println("<--- Test modification step #${i++}: " +
+                    "Expecting build to ${if (expected.compileSucceeded) "succeed" else "fail"}; " +
+                    "Expecting source files to be compiled: ${(expected.compiledKotlinFiles + expected.compiledJavaFiles).toSortedSet()} --->")
 
-        for ((modificationStep, buildLogStep) in modifications.zip(buildLogSteps)) {
             modificationStep.forEach { it.perform(projectWorkingDir, mapWorkingToOriginalFile) }
-            buildAndAssertStageResults(buildLogStep)
+            buildAndAssertStageResults(expected)
         }
 
         rebuildAndCompareOutput(rebuildSucceedExpected = buildLogSteps.last().compileSucceeded)
