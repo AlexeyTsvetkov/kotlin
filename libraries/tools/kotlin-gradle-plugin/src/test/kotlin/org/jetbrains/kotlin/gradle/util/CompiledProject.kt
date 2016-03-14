@@ -35,13 +35,13 @@ class CompiledProject(val project: BaseGradleIT.Project, val buildLog: String, v
 
     fun assertContains(vararg expected: String) {
         for (str in expected) {
-            assertTrue(buildLog.contains(str.normalize()), "Should contain '$str', actual output: $buildLog")
+            assertTrue(buildLog.contains(str.normalize()), "Build log must contain '$str'")
         }
     }
 
     fun assertNotContains(vararg expected: String) {
         for (str in expected) {
-            assertFalse(buildLog.contains(str.normalize()), "Should not contain '$str', actual output: $buildLog")
+            assertFalse(buildLog.contains(str.normalize()), "Build log must NOT contain '$str'")
         }
     }
 
