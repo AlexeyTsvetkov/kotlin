@@ -156,6 +156,9 @@ class Kotlin2JvmSourceSetProcessor(
                 logger.kotlinDebug("Adding kotlin output directory $kotlinDestinationDir to task ${javaTask.name}")
                 javaTask.classpath += project.files(kotlinDestinationDir)
             }
+            javaTask.doLast {
+                javaTask.classpath -= project.files(kotlinDestinationDir)
+            }
         }
 
         val kotlinAnnotationProcessingDep = cachedKotlinAnnotationProcessingDep ?: run {
