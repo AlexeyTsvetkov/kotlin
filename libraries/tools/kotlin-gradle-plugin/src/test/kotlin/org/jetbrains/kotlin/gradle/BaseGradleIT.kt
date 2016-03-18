@@ -93,6 +93,28 @@ abstract class BaseGradleIT {
 
         val compiledKotlinSources: Iterable<File> by lazy { kotlinSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(", ").map { File(project.projectDir, it).canonicalFile } } }
         val compiledJavaSources: Iterable<File> by lazy { javaSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(" ").filter { it.endsWith(".java", ignoreCase = true) }.map { File(it).canonicalFile } } }
+
+        val allTasks by lazy {
+            val regex = Regex("Tasks to be executed: \\[(.+?)\\]")
+            val tasksGroup = regex.find(output)?.groupValues?.get(1)
+            val tasks = tasksGroup?.split(", ")!!.map { it.replace("task '(.+)'".toRegex(), "$1") }
+            tasks.toSortedSet()
+        }
+
+        val skippedTasks by lazy {
+            val regex = Regex("Skipping task '(.+?)'")
+            regex.findAll(output).map { it.groupValues[1] }.toSortedSet()
+        }
+
+        val upToDateTasks by lazy {
+            val regex = Regex("Skipping task '(.+?)' is up-to-date")
+            regex.findAll(output).map { it.groupValues[1] }.toSortedSet()
+        }
+
+        val finishedTasks by lazy {
+            val regex = Regex("Finished executing task '(.+?)'")
+            regex.findAll(output).map { it.groupValues[1] }.toSortedSet()
+        }
     }
 
     fun Project.build(vararg tasks: String, options: BuildOptions = defaultBuildOptions(), check: CompiledProject.() -> Unit) {
@@ -115,6 +137,26 @@ abstract class BaseGradleIT {
 
         val result = runProcess(cmd, projectDir)
         CompiledProject(this, result.output, result.exitCode).check()
+    }
+
+    fun CompiledProject.assertTasksExecuted(vararg expectedTasks: String): CompiledProject {
+        val unknownTasks = expectedTasks.filter { it !in allTasks }
+        assertTrue(unknownTasks.isEmpty(), "Unknown tasks: $unknownTasks")
+
+        val notFinishedTasks = expectedTasks.filter { it !in finishedTasks || it in skippedTasks }
+        assertTrue(notFinishedTasks.isEmpty(), "Not executed tasks: $notFinishedTasks")
+
+        return this
+    }
+
+    fun CompiledProject.assertTasksUpToDate(vararg expectedTasks: String): CompiledProject {
+        val unknownTasks = expectedTasks.filter { it !in allTasks }
+        assertTrue(unknownTasks.isEmpty(), "Unknown tasks: $unknownTasks")
+
+        val notUpToDate = expectedTasks.filter { it !in upToDateTasks }
+        assertTrue(notUpToDate.isEmpty(), "Not up-to-date: $notUpToDate")
+
+        return this
     }
 
     fun CompiledProject.assertSuccessful(): CompiledProject {
