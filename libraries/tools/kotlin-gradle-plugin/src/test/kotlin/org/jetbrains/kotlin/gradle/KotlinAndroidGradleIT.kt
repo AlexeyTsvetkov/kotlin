@@ -8,7 +8,7 @@ import java.io.File
 class KotlinAndroidGradleIT : BaseGradleIT() {
 
     override fun defaultBuildOptions() =
-            BuildOptions(withDaemon = true, assertThreadLeaks = false, androidHome = File("../../../dependencies/androidSDK"))
+            BuildOptions(withDaemon = true, assertThreadLeaks = false, androidHome = File("../../../dependencies/android-sdk"))
 
     @Test
     fun testSimpleCompile() {
@@ -54,6 +54,21 @@ class KotlinAndroidGradleIT : BaseGradleIT() {
                     ":compileFlavor2Jnidebug",
                     ":compileFlavor1Release",
                     ":compileFlavor2Release")
+        }
+    }
+
+    @Test
+    fun testSimpleCompileIncremental() {
+        val project = Project("AndroidProject", "2.3")
+
+        project.build("build", "-Pandroid.kotlinOptions.experimentalIncremental=true") {
+            assertSuccessful()
+            assertCompiledKotlinSources(listOf())
+        }
+
+        // Run the build second time, assert everything is up-to-date
+        project.build("build", "-Pandroid.kotlinOptions.experimentalIncremental=true") {
+            assertSuccessful()
         }
     }
 
