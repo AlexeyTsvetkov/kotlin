@@ -20,10 +20,9 @@ import org.apache.commons.lang.SystemUtils
 import org.gradle.BuildAdapter
 import org.gradle.BuildResult
 import org.gradle.api.Project
+import org.gradle.api.invocation.Gradle
 import org.gradle.api.logging.Logging
-import org.gradle.api.tasks.compile.AbstractCompile
 import java.util.concurrent.ScheduledExecutorService
-import kotlin.properties.Delegates
 
 
 private fun comparableVersionStr(version: String) =
@@ -63,11 +62,7 @@ class CleanUpBuildListener(pluginClassLoader: ClassLoader, private val project: 
 
             if (kotlinCompilerCalled) {
                 log.kotlinDebug("Cleanup after kotlin")
-
-                cleanup(gradle.gradleVersion)
-
-                // checking thread leaks only then cleaning up
-                threadTracker?.checkThreadLeak(gradle)
+                cleanup(gradle, threadTracker)
             }
             else {
                 log.kotlinDebug("Skipping kotlin cleanup since compiler wasn't called")
@@ -102,7 +97,7 @@ class CleanUpBuildListener(pluginClassLoader: ClassLoader, private val project: 
 class CompilerServicesCleanup(private var pluginClassLoader: ClassLoader?) {
     val log = Logging.getLogger(this.javaClass)
 
-    operator fun invoke(gradleVersion: String) {
+    operator fun invoke(gradle: Gradle, threadTracker: ThreadTracker?) {
         assert(pluginClassLoader != null)
 
         log.kotlinDebug("compiler services cleanup")
@@ -124,12 +119,14 @@ class CompilerServicesCleanup(private var pluginClassLoader: ClassLoader?) {
         // It should be noted that because of this behavior there are no benefits of using daemon in these versions.
         // Starting from 2.4 gradle using cached classloaders, that leads to effective class reusing in the daemon, but
         // in that case premature stopping of the static daemons may lead to crashes.
-        comparableVersionStr(gradleVersion)?.let {
+        comparableVersionStr(gradle.gradleVersion)?.let {
             log.kotlinDebug("detected gradle version $it")
             if (it < comparableVersionStr("2.4")!!) {
                 // TODO: remove ZipFileCache cleanup after switching to recent idea libs
                 stopZipFileCache()
                 stopJobScheduler()
+                // checking thread leaks only then cleaning up
+                threadTracker?.checkThreadLeak(gradle)
             }
         }
 
