@@ -118,8 +118,8 @@ abstract class BaseGradleIT {
         }
     }
 
-    fun Project.build(vararg tasks: String, options: BuildOptions = defaultBuildOptions(), check: CompiledProject.() -> Unit) {
-        val cmd = createBuildCommand(tasks, options)
+    fun Project.build(vararg params: String, options: BuildOptions = defaultBuildOptions(), check: CompiledProject.() -> Unit) {
+        val cmd = createBuildCommand(params, options)
         val env = createEnvironmentVariablesMap(options)
 
         if (options.withDaemon) {
@@ -239,8 +239,8 @@ abstract class BaseGradleIT {
     private fun Project.createBuildCommand(params: Array<out String>, options: BuildOptions): List<String> =
             createGradleCommand(createGradleTailParameters(options, params))
 
-    private fun Project.createGradleTailParameters(options: BuildOptions, tasks: Array<out String> = arrayOf()): List<String> =
-            tasks.toMutableList().apply {
+    private fun Project.createGradleTailParameters(options: BuildOptions, params: Array<out String> = arrayOf()): List<String> =
+            params.toMutableList().apply {
                 add("--stacktrace")
                 add("--${minLogLevel.name.toLowerCase()}")
                 if (options.daemonOptionSupported) {
