@@ -72,7 +72,8 @@ abstract class BaseGradleIT {
             /**
              * @see [ThreadTracker]
              */
-            val assertThreadLeaks: Boolean = true
+            val assertThreadLeaks: Boolean = true,
+            val androidHome: File? = null
     )
 
     open inner class Project(val projectName: String, val wrapperVersion: String = "1.4", val minLogLevel: LogLevel = LogLevel.DEBUG) {
@@ -119,6 +120,7 @@ abstract class BaseGradleIT {
 
     fun Project.build(vararg tasks: String, options: BuildOptions = defaultBuildOptions(), check: CompiledProject.() -> Unit) {
         val cmd = createBuildCommand(tasks, options)
+        val env = createEnvironmentVariablesMap(options)
 
         if (options.withDaemon) {
             prepareDaemon(wrapperVersion)
@@ -126,16 +128,12 @@ abstract class BaseGradleIT {
 
         println("<=== Test build: ${this.projectName} $cmd ===>")
 
-        runAndCheck(cmd, check)
-    }
-
-    private fun Project.runAndCheck(cmd: List<String>, check: CompiledProject.() -> Unit) {
         val projectDir = File(workingDir, projectName)
         if (!projectDir.exists()) {
             setupWorkingDir()
         }
 
-        val result = runProcess(cmd, projectDir)
+        val result = runProcess(cmd, projectDir, env)
         CompiledProject(this, result.output, result.exitCode).check()
     }
 
@@ -241,7 +239,7 @@ abstract class BaseGradleIT {
     private fun Project.createBuildCommand(params: Array<out String>, options: BuildOptions): List<String> =
             createGradleCommand(createGradleTailParameters(options, params))
 
-    protected fun Project.createGradleTailParameters(options: BuildOptions, tasks: Array<out String> = arrayOf()): List<String> =
+    private fun Project.createGradleTailParameters(options: BuildOptions, tasks: Array<out String> = arrayOf()): List<String> =
             tasks.toMutableList().apply {
                 add("--stacktrace")
                 add("--${minLogLevel.name.toLowerCase()}")
@@ -253,7 +251,11 @@ abstract class BaseGradleIT {
                 if (options.assertThreadLeaks) {
                     add("-P${ThreadTracker.ASSERT_THREAD_LEAKS_PROPERTY}=true")
                 }
+            }
 
+    private fun Project.createEnvironmentVariablesMap(options: BuildOptions): Map<String, String> =
+            hashMapOf<String, String>().apply {
+                options.androidHome?.let { put("ANDROID_HOME", it.canonicalPath) }
             }
 
     private fun String.normalize() = this.lineSequence().joinToString(SYSTEM_LINE_SEPARATOR)

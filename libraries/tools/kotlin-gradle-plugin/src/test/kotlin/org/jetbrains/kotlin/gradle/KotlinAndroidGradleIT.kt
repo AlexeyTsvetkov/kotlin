@@ -2,12 +2,13 @@ package org.jetbrains.kotlin.gradle
 
 import org.junit.Ignore
 import org.junit.Test
+import java.io.File
 
 @Ignore("Requires Android SDK")
 class KotlinAndroidGradleIT : BaseGradleIT() {
 
     override fun defaultBuildOptions() =
-            BuildOptions(withDaemon = true, assertThreadLeaks = false)
+            BuildOptions(withDaemon = true, assertThreadLeaks = false, androidHome = File("../../../dependencies/androidSDK"))
 
     @Test
     fun testSimpleCompile() {
