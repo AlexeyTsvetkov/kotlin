@@ -13,6 +13,7 @@ import org.apache.commons.io.FilenameUtils
 import org.apache.commons.lang.StringUtils
 import org.codehaus.groovy.runtime.MethodClosure
 import org.gradle.api.GradleException
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
@@ -78,6 +79,11 @@ abstract class AbstractKotlinCompile<T : CommonCompilerArguments>() : AbstractCo
 
     override fun compile() {
         assert(false, { "unexpected call to compile()" })
+    }
+
+    override fun setClasspath(configuration: FileCollection) {
+        logger.kotlinDebug { "Set $name classpath: ${configuration.joinToString()}" }
+        super.setClasspath(configuration)
     }
 
     @TaskAction
