@@ -1,5 +1,7 @@
 package org.jetbrains.kotlin.gradle
 
+import org.jetbrains.kotlin.gradle.util.getFileByName
+import org.jetbrains.kotlin.gradle.util.modify
 import org.junit.Test
 import java.io.File
 
@@ -128,8 +130,25 @@ fun getSomething() = 10
     @Test
     fun testAndroidDagger() {
         val project = Project("android-dagger", gradleVersion)
+        val options = defaultBuildOptions().copy(incremental = true)
 
-        project.build("build") {
+        project.build("assembleDebug", options = options) {
+            assertSuccessful()
+        }
+
+        val file = project.projectDir.getFileByName("AndroidModule.kt")
+        file.modify { it.replace("fun provideApplicationContext(): Context {",
+                                 "fun provideApplicationContext(): Context? {") }
+
+        project.build("assembleDebug", options = options) {
+            assertSuccessful()
+        }
+
+
+        file.modify { it.replace("fun provideApplicationContext(): Context? {",
+                "fun provideApplicationContext(): Context {") }
+
+        project.build("assembleDebug", options = options) {
             assertSuccessful()
         }
     }

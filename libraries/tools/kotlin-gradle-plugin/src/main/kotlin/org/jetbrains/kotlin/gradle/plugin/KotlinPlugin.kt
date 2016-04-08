@@ -433,9 +433,13 @@ open class KotlinAndroidPlugin @Inject constructor(val scriptHandler: ScriptHand
 
                 kotlinTask.storeKaptAnnotationsFile(kaptManager)
 
-                project.initKapt(kotlinTask, javaTask, kaptManager, variantDataName,
+                val kotlinAfterJavaTask = project.initKapt(kotlinTask, javaTask, kaptManager, variantDataName,
                         kotlinOutputDir, kotlinOptions, subpluginEnvironment) {
                     tasksProvider.createKotlinJVMTask(project, kotlinTaskName + KOTLIN_AFTER_JAVA_TASK_SUFFIX)
+                }
+
+                if (kotlinAfterJavaTask != null) {
+                    mapKotlinTaskProperties(project, kotlinAfterJavaTask)
                 }
             }
 
