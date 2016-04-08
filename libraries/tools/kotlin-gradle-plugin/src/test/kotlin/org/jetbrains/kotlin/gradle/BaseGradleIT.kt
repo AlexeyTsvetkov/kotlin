@@ -226,6 +226,7 @@ abstract class BaseGradleIT {
                     sdkDir.parentFile.mkdirs()
                     put("ANDROID_HOME", sdkDir.canonicalPath)
                 }
+                put("JAVA_HOME", "/usr/lib/jvm/jdk1.7.0_60")
             }
 
     private fun String.normalize() = this.lineSequence().joinToString(SYSTEM_LINE_SEPARATOR)

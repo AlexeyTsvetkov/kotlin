@@ -124,4 +124,13 @@ fun getSomething() = 10
                     "args.moduleName = Android-compileFlavor2ReleaseKotlin")
         }
     }
+
+    @Test
+    fun testAndroidDagger() {
+        val project = Project("android-dagger", gradleVersion)
+
+        project.build("build") {
+            assertSuccessful()
+        }
+    }
 }
