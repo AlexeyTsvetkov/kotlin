@@ -136,7 +136,7 @@ class Kotlin2JvmSourceSetProcessor(
 
         val javaTask = project.tasks.findByName(sourceSet.compileJavaTaskName) as AbstractCompile?
         if (javaTask != null) {
-            setUpKotlinToJavaDependency(project, kotlinTask, javaTask, logger)
+            setUpKotlinToJavaDependency(kotlinTask, javaTask, logger)
         }
 
         val kotlinAnnotationProcessingDep = cachedKotlinAnnotationProcessingDep ?: run {
@@ -439,7 +439,7 @@ open class KotlinAndroidPlugin @Inject constructor(val scriptHandler: ScriptHand
                 }
             }
 
-            setUpKotlinToJavaDependency(project, kotlinTask, javaTask, logger)
+            setUpKotlinToJavaDependency(kotlinTask, javaTask, logger)
         }
     }
 
@@ -455,7 +455,7 @@ open class KotlinAndroidPlugin @Inject constructor(val scriptHandler: ScriptHand
     }
 }
 
-private fun setUpKotlinToJavaDependency(project: Project, kotlinTask: AbstractCompile, javaTask: AbstractCompile, logger: Logger) {
+private fun setUpKotlinToJavaDependency(kotlinTask: AbstractCompile, javaTask: AbstractCompile, logger: Logger) {
     javaTask.dependsOn(kotlinTask.name)
     /*
      * It's important to modify javaTask.classpath only in doFirst,
@@ -465,8 +465,7 @@ private fun setUpKotlinToJavaDependency(project: Project, kotlinTask: AbstractCo
      * ex. it adds some support libraries jars after execution of prepareComAndroidSupportSupportV42311Library task,
      * so it's only safe to modify javaTask.classpath right before its usage
      */
-    javaTask.doFirst { javaTask.classpath += project.files(kotlinTask.kotlinDestinationDir) }
-    javaTask.doLast { javaTask.classpath -= project.files(kotlinTask.kotlinDestinationDir) }
+    javaTask.appendClasspathDynamically(kotlinTask.kotlinDestinationDir!!)
 
     // Since we cannot update classpath statically, java not able to detect changes in the classpath after kotlin compiler.
     // Therefore this (probably inefficient since java cannot decide "uptodateness" by the list of changed class files, but told

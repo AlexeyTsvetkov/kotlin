@@ -48,10 +48,8 @@ fun Project.initKapt(
 
         val stubsDir = File(buildDir, "tmp/kapt/$variantName/classFileStubs")
         kotlinTask.extensions.extraProperties.set("kaptStubsDir", stubsDir)
-
-        javaTask.doFirst {
-            javaTask.classpath += files(stubsDir)
-        }
+        javaTask.appendClasspathDynamically(stubsDir)
+        javaTask.appendClasspathDynamically(kaptManager.wrappersDirectory)
 
         kotlinTask.doFirst {
             kotlinAfterJavaTask.source(kotlinTask.source)
@@ -127,10 +125,10 @@ public class AnnotationProcessingManager(
 
     private val project = task.project
     private val random = Random()
+    val wrappersDirectory = File(aptWorkingDir, "wrappers")
 
     private companion object {
         val JAVA_FQNAME_PATTERN = "^([\\p{L}_$][\\p{L}\\p{N}_$]*\\.)*[\\p{L}_$][\\p{L}\\p{N}_$]*$".toRegex()
-        val WRAPPERS_DIRECTORY = "wrappers"
         val GEN_ANNOTATION = "__gen/annotation"
 
         private val ANDROID_APT_PLUGIN_ID = "com.neenbedankt.android-apt"
@@ -138,7 +136,7 @@ public class AnnotationProcessingManager(
 
     fun getAnnotationFile(): File {
         if (!aptWorkingDir.exists()) aptWorkingDir.mkdirs()
-        return File(aptWorkingDir, "$WRAPPERS_DIRECTORY/annotations.$taskQualifier.txt")
+        return File(wrappersDirectory, "annotations.$taskQualifier.txt")
     }
 
     fun getGeneratedKotlinSourceDir(): File {
@@ -156,15 +154,12 @@ public class AnnotationProcessingManager(
 
         val annotationProcessorFqNames = lookupAnnotationProcessors(aptFiles)
 
-        val stubOutputDir = File(aptWorkingDir, WRAPPERS_DIRECTORY)
-        generateAnnotationProcessorStubs(javaTask, annotationProcessorFqNames, stubOutputDir)
+        generateAnnotationProcessorStubs(javaTask, annotationProcessorFqNames, wrappersDirectory)
 
-        val processorPath = setOf(stubOutputDir) + aptFiles
+        val processorPath = setOf(wrappersDirectory) + aptFiles
         setProcessorPath(javaTask, (processorPath + javaTask.classpath).joinToString(File.pathSeparator))
-        javaTask.appendClasspath(stubOutputDir)
 
         addGeneratedSourcesOutputToCompilerArgs(javaTask, aptOutputDir)
-
 
         appendAnnotationsArguments()
         appendAdditionalComplerArgs()
@@ -242,10 +237,6 @@ public class AnnotationProcessingManager(
                 .joinToString(",")
 
         addWrappersToCompilerArgs(javaTask, annotationProcessorWrapperFqNames)
-    }
-
-    private fun JavaCompile.appendClasspath(file: File) {
-        classpath += project.files(file)
     }
 
     private fun addWrappersToCompilerArgs(javaTask: JavaCompile, wrapperFqNames: String) {

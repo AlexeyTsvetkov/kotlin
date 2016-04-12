@@ -1,7 +1,7 @@
 package org.jetbrains.kotlin.gradle.plugin
 
-import org.gradle.api.internal.AbstractTask
 import org.gradle.api.file.FileCollection
+import org.gradle.api.internal.AbstractTask
 import org.gradle.api.tasks.compile.AbstractCompile
 import java.io.File
 import kotlin.reflect.KProperty
@@ -28,6 +28,15 @@ internal fun AbstractCompile.updateClasspathBeforeTask(newClassPath: ()->FileCol
         if (!classpathIsUpdated) {
             classpath = newClassPath()
         }
+    }
+}
+
+internal fun AbstractCompile.appendClasspathDynamically(file: File) {
+    doFirst {
+        classpath += project.files(file)
+    }
+    doLast {
+        classpath -= project.files(file)
     }
 }
 
