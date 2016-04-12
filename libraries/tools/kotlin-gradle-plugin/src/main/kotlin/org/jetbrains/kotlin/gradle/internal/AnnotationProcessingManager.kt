@@ -61,6 +61,7 @@ fun Project.initKapt(
     }
 
     javaTask.appendClasspathDynamically(kaptManager.wrappersDirectory)
+    javaTask.source(kaptManager.javaAptSourceDir)
 
     if (kaptExtension.inheritedAnnotations) {
         kotlinTask.extensions.extraProperties.set("kaptInheritedAnnotations", true)
@@ -130,6 +131,7 @@ public class AnnotationProcessingManager(
     private val project = task.project
     private val random = Random()
     val wrappersDirectory = File(aptWorkingDir, "wrappers")
+    val javaAptSourceDir = File(aptWorkingDir, "java_src")
 
     private companion object {
         val JAVA_FQNAME_PATTERN = "^([\\p{L}_$][\\p{L}\\p{N}_$]*\\.)*[\\p{L}_$][\\p{L}\\p{N}_$]*$".toRegex()
@@ -179,7 +181,6 @@ public class AnnotationProcessingManager(
     }
 
     fun generateJavaHackFile() {
-        val javaAptSourceDir = File(aptWorkingDir, "java_src")
         val javaHackPackageDir = File(javaAptSourceDir, GEN_ANNOTATION)
 
         if (!javaHackPackageDir.exists()) javaHackPackageDir.mkdirs()
@@ -195,10 +196,6 @@ public class AnnotationProcessingManager(
 
         project.logger.kotlinDebug("kapt: Java file stub generated: $javaHackClFile " +
                 "(previously existed: $previouslyExisted)")
-
-        if (!javaTask.source.contains(javaHackClFile)) {
-            javaTask.source(javaAptSourceDir)
-        }
     }
 
     private fun appendAnnotationsArguments() {
