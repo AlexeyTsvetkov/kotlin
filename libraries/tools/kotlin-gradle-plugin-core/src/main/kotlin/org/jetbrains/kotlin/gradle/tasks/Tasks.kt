@@ -81,11 +81,6 @@ abstract class AbstractKotlinCompile<T : CommonCompilerArguments>() : AbstractCo
         assert(false, { "unexpected call to compile()" })
     }
 
-    override fun setClasspath(configuration: FileCollection) {
-        logger.kotlinDebug { "Set $name classpath: ${configuration.joinToString()}" }
-        super.setClasspath(configuration)
-    }
-
     @TaskAction
     fun execute(inputs: IncrementalTaskInputs): Unit {
         logger.kotlinDebug("all sources ${getSource().joinToString { it.path }}")
