@@ -465,7 +465,8 @@ private fun setUpKotlinToJavaDependency(project: Project, kotlinTask: AbstractCo
      * ex. it adds some support libraries jars after execution of prepareComAndroidSupportSupportV42311Library task,
      * so it's only safe to modify javaTask.classpath right before its usage
      */
-    javaTask.updateClasspathBeforeTask { javaTask.classpath + project.files(kotlinTask.kotlinDestinationDir) }
+    javaTask.doFirst { javaTask.classpath += project.files(kotlinTask.kotlinDestinationDir) }
+    javaTask.doLast { javaTask.classpath -= project.files(kotlinTask.kotlinDestinationDir) }
 
     // Since we cannot update classpath statically, java not able to detect changes in the classpath after kotlin compiler.
     // Therefore this (probably inefficient since java cannot decide "uptodateness" by the list of changed class files, but told
