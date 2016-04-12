@@ -420,7 +420,7 @@ open class KotlinAndroidPlugin @Inject constructor(val scriptHandler: ScriptHand
             kotlinTask.updateClasspathBeforeTask { fullClasspath.value }
             kotlinTask.doFirst {
                 for (task in project.getTasksByName(kotlinTaskName + KOTLIN_AFTER_JAVA_TASK_SUFFIX, false)) {
-                    (task as AbstractCompile).classpath = project.files(fullClasspath, javaTask.destinationDir)
+                    (task as AbstractCompile).classpath = project.files(fullClasspath.value, javaTask.destinationDir)
                 }
             }
 
