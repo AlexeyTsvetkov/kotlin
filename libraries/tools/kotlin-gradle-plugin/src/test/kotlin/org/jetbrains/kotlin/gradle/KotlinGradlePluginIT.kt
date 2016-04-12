@@ -250,6 +250,19 @@ class KotlinGradleIT: BaseGradleIT() {
                 assertContains(*compileTasksUpToDate)
             }
         }
+
+        project.build("clean", "build") {
+            assertSuccessful()
+            assertContains(*compileTasks)
+            assertNotContains(*compileTasksUpToDate)
+        }
+
+        repeat(2) {
+            project.build("build") {
+                assertSuccessful()
+                assertContains(*compileTasksUpToDate)
+            }
+        }
     }
 
     @Test
