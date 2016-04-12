@@ -71,13 +71,16 @@ fun Project.initKapt(
         kotlinAfterJavaTask?.source(kaptManager.getGeneratedKotlinSourceDir())
     }
 
+    var originalJavaCompilerArgs: List<String>? = null
     javaTask.doFirst {
+        originalJavaCompilerArgs = (javaTask as JavaCompile).options.compilerArgs
         kaptManager.setupKapt()
         kaptManager.generateJavaHackFile()
         kotlinAfterJavaTask?.source(kaptManager.getGeneratedKotlinSourceDir())
     }
 
     javaTask.doLast {
+        (javaTask as JavaCompile).options.compilerArgs = originalJavaCompilerArgs
         kaptManager.afterJavaCompile()
     }
 
