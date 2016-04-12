@@ -4,7 +4,7 @@ import org.junit.Test
 import java.io.File
 
 
-class KotlinAndroidGradleCLIOnly : AbstractKotlinAndroidGradleTests(gradleVersion = "2.3", androidGradlePluginVersion = "1.5.+")
+class KotlinAndroidGradleCLIOnly : AbstractKotlinAndroidGradleTests(gradleVersion = "2.3", androidGradlePluginVersion = "1.5.0")
 
 abstract class AbstractKotlinAndroidGradleTests(
         private val gradleVersion: String,
@@ -84,6 +84,27 @@ fun getSomething() = 10
             assertSuccessful()
             assertCompiledKotlinSources(listOf("src/main/kotlin/foo/KotlinActivity1.kt", "src/main/kotlin/foo/getSomething.kt"))
             assertCompiledJavaSources(listOf("app/src/main/java/foo/JavaActivity.java"), weakTesting = true)
+        }
+    }
+
+    @Test
+    fun testIncrementalBuildWithNoChanges() {
+        val project = Project("AndroidIncrementalSingleModuleProject", gradleVersion)
+        val tasksToExecute = arrayOf(
+                ":app:prepareComAndroidSupportAppcompatV72311Library",
+                ":app:prepareComAndroidSupportSupportV42311Library",
+                ":app:compileDebugKotlin",
+                ":app:compileDebugJavaWithJavac"
+        )
+
+        project.build("assembleDebug") {
+            assertSuccessful()
+            assertContains(*tasksToExecute)
+        }
+
+        project.build("assembleDebug") {
+            assertSuccessful()
+            assertContains(*tasksToExecute.map { it + " UP-TO-DATE" }.toTypedArray())
         }
     }
 
