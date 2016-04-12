@@ -49,7 +49,6 @@ fun Project.initKapt(
         val stubsDir = File(buildDir, "tmp/kapt/$variantName/classFileStubs")
         kotlinTask.extensions.extraProperties.set("kaptStubsDir", stubsDir)
         javaTask.appendClasspathDynamically(stubsDir)
-        javaTask.appendClasspathDynamically(kaptManager.wrappersDirectory)
 
         kotlinTask.doFirst {
             kotlinAfterJavaTask.source(kotlinTask.source)
@@ -60,6 +59,8 @@ fun Project.initKapt(
         kotlinAfterJavaTask = null
         kotlinTask.logger.kotlinDebug("kapt: Class file stubs are not used")
     }
+
+    javaTask.appendClasspathDynamically(kaptManager.wrappersDirectory)
 
     if (kaptExtension.inheritedAnnotations) {
         kotlinTask.extensions.extraProperties.set("kaptInheritedAnnotations", true)
