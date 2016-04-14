@@ -140,16 +140,16 @@ fun getSomething() = 10
         file.modify { it.replace("fun provideApplicationContext(): Context {",
                                  "fun provideApplicationContext(): Context? {") }
 
-        project.build("assembleDebug", options = options) {
+        project.build(":app:compileDebugJavaWithJavac", options = options) {
             assertSuccessful()
         }
 
 
-        file.modify { it.replace("fun provideApplicationContext(): Context? {",
+       /* file.modify { it.replace("fun provideApplicationContext(): Context? {",
                 "fun provideApplicationContext(): Context {") }
 
         project.build("assembleDebug", options = options) {
             assertSuccessful()
-        }
+        }*/
     }
 }
