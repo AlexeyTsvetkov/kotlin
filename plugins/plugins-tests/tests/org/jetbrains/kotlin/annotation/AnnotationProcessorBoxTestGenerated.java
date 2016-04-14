@@ -77,6 +77,12 @@ public class AnnotationProcessorBoxTestGenerated extends AbstractAnnotationProce
         doTest(fileName);
     }
 
+    @TestMetadata("inheritedComplex")
+    public void testInheritedComplex() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("plugins/annotation-collector/testData/collectToFile/inheritedComplex/");
+        doTest(fileName);
+    }
+
     @TestMetadata("inheritedSimple")
     public void testInheritedSimple() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("plugins/annotation-collector/testData/collectToFile/inheritedSimple/");
@@ -92,6 +98,12 @@ public class AnnotationProcessorBoxTestGenerated extends AbstractAnnotationProce
     @TestMetadata("localClasses")
     public void testLocalClasses() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("plugins/annotation-collector/testData/collectToFile/localClasses/");
+        doTest(fileName);
+    }
+
+    @TestMetadata("localFunctions")
+    public void testLocalFunctions() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("plugins/annotation-collector/testData/collectToFile/localFunctions/");
         doTest(fileName);
     }
 
