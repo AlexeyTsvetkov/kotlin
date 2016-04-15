@@ -26,8 +26,8 @@ class KotlinAnnotationProvider(annotationsReader: Reader) {
     constructor(annotationsFile: File) : this(annotationsFile.reader().buffered())
     constructor() : this(StringReader(""))
 
-    private val kotlinClassesInternal = LinkedHashSet<String>()
-    private val annotatedKotlinElementsInternal = LinkedHashMap<String, MutableSet<AnnotatedElementDescriptor>>()
+    private val kotlinClassesInternal = hashSetOf<String>()
+    private val annotatedKotlinElementsInternal = hashMapOf<String, MutableSet<AnnotatedElementDescriptor>>()
 
     init {
         readAnnotations(annotationsReader)
@@ -82,7 +82,7 @@ class KotlinAnnotationProvider(annotationsReader: Reader) {
                         val classFqName = expandClassName(lineParts[2]).replace('$', '.')
                         val elementName = if (lineParts.size == 4) lineParts[3] else null
 
-                        val set = annotatedKotlinElementsInternal.getOrPut(annotationName) { LinkedHashSet() }
+                        val set = annotatedKotlinElementsInternal.getOrPut(annotationName) { HashSet() }
                         set.add(when (type) {
                             Notation.ANNOTATED_CLASS -> AnnotatedElementDescriptor.Class(classFqName)
                             Notation.ANNOTATED_FIELD -> {
