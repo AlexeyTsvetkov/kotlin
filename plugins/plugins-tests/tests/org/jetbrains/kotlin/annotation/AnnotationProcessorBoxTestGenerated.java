@@ -83,12 +83,6 @@ public class AnnotationProcessorBoxTestGenerated extends AbstractAnnotationProce
         doTest(fileName);
     }
 
-    @TestMetadata("inheritedSimple")
-    public void testInheritedSimple() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("plugins/annotation-collector/testData/collectToFile/inheritedSimple/");
-        doTest(fileName);
-    }
-
     @TestMetadata("inheritedTopLevel")
     public void testInheritedTopLevel() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("plugins/annotation-collector/testData/collectToFile/inheritedTopLevel/");
@@ -113,6 +107,12 @@ public class AnnotationProcessorBoxTestGenerated extends AbstractAnnotationProce
         doTest(fileName);
     }
 
+    @TestMetadata("multiFileTopLevelAnnotated")
+    public void testMultiFileTopLevelAnnotated() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("plugins/annotation-collector/testData/collectToFile/multiFileTopLevelAnnotated/");
+        doTest(fileName);
+    }
+
     @TestMetadata("nestedClasses")
     public void testNestedClasses() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("plugins/annotation-collector/testData/collectToFile/nestedClasses/");
@@ -122,6 +122,12 @@ public class AnnotationProcessorBoxTestGenerated extends AbstractAnnotationProce
     @TestMetadata("platformStatic")
     public void testPlatformStatic() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("plugins/annotation-collector/testData/collectToFile/platformStatic/");
+        doTest(fileName);
+    }
+
+    @TestMetadata("topLevelAnnotated")
+    public void testTopLevelAnnotated() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("plugins/annotation-collector/testData/collectToFile/topLevelAnnotated/");
         doTest(fileName);
     }
 }
