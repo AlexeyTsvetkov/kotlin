@@ -20,12 +20,6 @@ import java.io.File
 import java.io.StringReader
 import org.jetbrains.kotlin.annotation.CompactNotationType as Notation
 
-// When compiling incrementally, we generate annotation file only for just compiled classes.
-// But annotation processor needs all annotations.
-// So the workaround is to:
-// 1. save old annotations somewhere,
-// 2. remove records about deleted and recompiled classes,
-// 3. add records about new and recompiled classes (from new annotations file).
 class MutableKotlinAnnotationProvider : KotlinAnnotationProvider(StringReader("")) {
     fun addAnnotationsFrom(file: File) {
         val reader = file.bufferedReader()
