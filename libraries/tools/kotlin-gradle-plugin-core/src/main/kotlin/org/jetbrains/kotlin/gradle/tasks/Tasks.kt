@@ -459,7 +459,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
 
             logger.kotlinDebug("compiling with args ${ArgumentUtils.convertArgumentsToStringList(args)}")
             val exitCode = compiler.exec(messageCollector, makeCompileServices(incrementalCaches, lookupTracker, compilationCanceledStatus), args)
-            logger.kotlinDebug { "Exit code: $exitCode" }
+            logger.kotlinDebug { "compiler exit code: $exitCode" }
             return CompileChangedResults(
                     exitCode,
                     outputItemCollector.generatedFiles(
@@ -490,7 +490,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
         try {
             logger.kotlinDebug("compiling with args ${ArgumentUtils.convertArgumentsToStringList(args)}")
             val exitCode = compiler.exec(messageCollector, Services.EMPTY, args)
-            logger.kotlinDebug { "Exit code: $exitCode" }
+            logger.kotlinDebug { "compiler exit code: $exitCode" }
             return exitCode
         }
         finally {
