@@ -1,5 +1,7 @@
 package org.jetbrains.kotlin.annotation
 
+import org.gradle.api.logging.Logging
+import org.jetbrains.kotlin.gradle.tasks.kotlinDebug
 import org.jetbrains.kotlin.resolve.jvm.JvmClassName
 import java.io.File
 import java.util.*
@@ -17,6 +19,7 @@ import java.util.*
  *  2.2 add annotations from newly generated annotations file
  */
 class AnnotationFileUpdater(private val generatedAnnotationFile: File) {
+    private val logger = Logging.getLogger(this.javaClass)
     private val lastSuccessfullyUpdatedFile = File.createTempFile("kapt-annotations-copy", "tmp")
 
     init {
@@ -32,10 +35,16 @@ class AnnotationFileUpdater(private val generatedAnnotationFile: File) {
 
     fun updateAnnotations(outdatedClasses: Iterable<JvmClassName>) {
         val outdatedClassesFqNames = outdatedClasses.mapTo(HashSet<String>()) { it.fqNameForClassNameWithoutDollars.asString() }
+
         val annotationsProvider = MutableKotlinAnnotationProvider().apply {
             addAnnotationsFrom(lastSuccessfullyUpdatedFile)
             removeClasses(outdatedClassesFqNames)
-            addAnnotationsFrom(generatedAnnotationFile)
+            logger.kotlinDebug { "Removed annotation entries for fq-names [${outdatedClassesFqNames.joinToString()}]" }
+
+            if (generatedAnnotationFile.exists()) {
+                addAnnotationsFrom(generatedAnnotationFile)
+                logger.kotlinDebug { "Added annotation entries from $generatedAnnotationFile" }
+            }
         }
 
         generatedAnnotationFile.delete()
@@ -43,6 +52,7 @@ class AnnotationFileUpdater(private val generatedAnnotationFile: File) {
 
         try {
             annotationsProvider.writeAnnotations(CompactAnnotationWriter(writer))
+            logger.kotlinDebug { "Written updated annotations to $generatedAnnotationFile" }
         }
         finally {
             writer.close()
