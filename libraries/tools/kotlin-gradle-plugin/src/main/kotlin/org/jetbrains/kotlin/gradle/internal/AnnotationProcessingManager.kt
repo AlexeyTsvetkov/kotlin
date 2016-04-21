@@ -51,8 +51,16 @@ fun Project.initKapt(
         kotlinTask.extensions.extraProperties.set("kaptStubsDir", stubsDir)
         javaTask.appendClasspathDynamically(stubsDir)
 
-        kotlinTask.doFirst {
+        // we don't want kotlinAfterJavaTask to track modifications in generated class
+        javaTask.doLast {
             kotlinAfterJavaTask.source(kotlinTask.source)
+            kotlinAfterJavaTask.classpath -= project.files(javaTask.destinationDir)
+        }
+        kotlinAfterJavaTask.doFirst {
+            kotlinAfterJavaTask.classpath += project.files(javaTask.destinationDir)
+        }
+        kotlinAfterJavaTask.doLast {
+            kotlinAfterJavaTask.classpath -= project.files(javaTask.destinationDir)
         }
 
         kotlinAfterJavaTask.doLast {
@@ -111,8 +119,8 @@ private fun Project.createKotlinAfterJavaTask(
 ): AbstractCompile {
     val kotlinAfterJavaTask = with (taskFactory(KOTLIN_AFTER_JAVA_TASK_SUFFIX)) {
         setProperty("kotlinDestinationDir", kotlinOutputDir)
-        destinationDir = javaTask.destinationDir
-        classpath = javaTask.classpath
+        destinationDir = kotlinTask.destinationDir
+        classpath = kotlinTask.classpath - project.files(javaTask.destinationDir)
         this
     }
 
