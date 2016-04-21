@@ -9,7 +9,7 @@ class KaptIncrementalIT: BaseGradleIT() {
 
     companion object {
         private const val GRADLE_VERSION = "2.10"
-        private val EXAMPLE_ANNOTATION_REGEX = "@field:example.ExampleAnnotation".toRegex()
+        private val EXAMPLE_ANNOTATION_REGEX = "@(field:)?example.ExampleAnnotation".toRegex()
     }
 
     override fun defaultBuildOptions(): BuildOptions =
@@ -35,7 +35,7 @@ class KaptIncrementalIT: BaseGradleIT() {
 
         project.build("build") {
             assertSuccessful()
-            //assertCompiledKotlinSources(emptySet(), weakTesting = false)
+            assertCompiledKotlinSources(project.relativePaths(listOf(bKt)), weakTesting = false)
             checkGenerated("A", "funA", "valA", "funUtil", "valUtil")
             checkNotGenerated("B", "funB", "valB")
         }
