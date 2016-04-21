@@ -165,7 +165,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
 
     // lazy because name is probably not available when constructor is called
     private val taskBuildDirectory: File by lazy { File(File(project.buildDir, KOTLIN_BUILD_DIR_NAME), name) }
-    private val cacheDirectory: File by lazy { File(taskBuildDirectory, CACHES_DIR_NAME) }
+    val cacheDirectory: File by lazy { File(taskBuildDirectory, CACHES_DIR_NAME) }
     private val dirtySourcesSinceLastTimeFile: File by lazy { File(taskBuildDirectory, DIRTY_SOURCES_FILE_NAME) }
     private val cacheVersions by lazy {
         listOf(normalCacheVersion(taskBuildDirectory),
@@ -175,6 +175,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
     }
 
     private var kaptAnnotationsFileUpdater: AnnotationFileUpdater? = null
+    private var kaptStubGeneratingMode = false
 
     override fun populateTargetSpecificArgs(args: K2JVMCompilerArguments) {
         // show kotlin compiler where to look for java source files
@@ -380,12 +381,14 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
 
         while (sourcesToCompile.any() || currentRemoved.any()) {
             val removedAndModified = (sourcesToCompile + currentRemoved).toList()
-            val outdatedClasses = caches.values.flatMap { it.classesBySources(removedAndModified) }
+            val outdatedClasses = targets.flatMap { getIncrementalCache(it).classesBySources(removedAndModified) }
 
-            targets.forEach { getIncrementalCache(it).let {
-                it.markOutputClassesDirty(removedAndModified)
-                it.removeClassfilesBySources(removedAndModified)
-            }}
+            if (!kaptStubGeneratingMode) {
+                targets.forEach { getIncrementalCache(it).let {
+                    it.markOutputClassesDirty(removedAndModified)
+                    it.removeClassfilesBySources(removedAndModified)
+                }}
+            }
 
             // can be empty if only removed sources are present
             if (sourcesToCompile.isNotEmpty()) {
@@ -402,10 +405,19 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
 
             if (exitCode == ExitCode.OK) {
                 dirtySourcesSinceLastTimeFile.delete()
-                kaptAnnotationsFileUpdater?.updateAnnotations(outdatedClasses)
             }
-            else {
-                kaptAnnotationsFileUpdater?.revert()
+
+            if (kaptStubGeneratingMode) {
+                if (exitCode == ExitCode.OK) {
+                    kaptAnnotationsFileUpdater?.updateAnnotations(outdatedClasses)
+                }
+                else {
+                    kaptAnnotationsFileUpdater?.revert()
+                }
+
+                cacheVersions.forEach { it.saveIfNeeded() }
+                processCompilerExitCode(exitCode)
+                return
             }
 
             allGeneratedFiles.addAll(generatedFiles)
@@ -509,6 +521,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
         val kaptClassFileStubsDir = extraProperties.getOrNull<File>("kaptStubsDir")
         if (kaptClassFileStubsDir != null) {
             pluginOptions.add("plugin:$ANNOTATIONS_PLUGIN_NAME:stubs=" + kaptClassFileStubsDir)
+            kaptStubGeneratingMode = true
         }
 
         val supportInheritedAnnotations = extraProperties.getOrNull<Boolean>("kaptInheritedAnnotations")
@@ -531,6 +544,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
     }
 
     override fun afterCompileHook(args: K2JVMCompilerArguments) {
+        if (kaptStubGeneratingMode) return
         logger.debug("Copying resulting files to classes")
 
         // Copy kotlin classes to all classes directory

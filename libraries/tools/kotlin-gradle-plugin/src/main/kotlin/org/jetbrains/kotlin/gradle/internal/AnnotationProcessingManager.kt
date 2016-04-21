@@ -55,6 +55,18 @@ fun Project.initKapt(
             kotlinAfterJavaTask.source(kotlinTask.source)
         }
 
+        kotlinAfterJavaTask.doLast {
+            val kotlinCacheDir = kotlinTask.kotlinCacheDirectory
+            val kotlinAfterJavaCacheDir = kotlinAfterJavaTask.kotlinCacheDirectory
+
+            kotlinCacheDir.deleteRecursively()
+            kotlinCacheDir.mkdirs()
+
+            if (kotlinAfterJavaCacheDir.exists()) {
+                kotlinAfterJavaCacheDir.copyRecursively(kotlinTask.kotlinCacheDirectory)
+            }
+        }
+
         subpluginEnvironment.addSubpluginArguments(this, kotlinAfterJavaTask)
     } else {
         kotlinAfterJavaTask = null

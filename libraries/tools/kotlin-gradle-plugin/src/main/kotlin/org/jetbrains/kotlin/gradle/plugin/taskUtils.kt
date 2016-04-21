@@ -40,6 +40,13 @@ internal fun AbstractCompile.appendClasspathDynamically(file: File) {
     }
 }
 
+// todo: remove when caches could be shared between compileKotlin and compileKotlinAfterJava
+internal val AbstractTask.kotlinCacheDirectory: File
+        get() {
+            val method = this.javaClass.getMethod("getCacheDirectory")
+            return method.invoke(this) as File
+        }
+
 internal var AbstractTask.anyClassesCompiled by TaskPropertyDelegate<Boolean?>("anyClassesCompiled")
 internal var AbstractTask.kotlinDestinationDir by TaskPropertyDelegate<File?>("kotlinDestinationDir")
 
