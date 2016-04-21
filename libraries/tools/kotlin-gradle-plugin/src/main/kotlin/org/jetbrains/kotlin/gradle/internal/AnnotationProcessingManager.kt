@@ -178,6 +178,9 @@ public class AnnotationProcessingManager(
         val processorPath = setOf(wrappersDirectory) + aptFiles
         setProcessorPath(javaTask, (processorPath + javaTask.classpath).joinToString(File.pathSeparator))
 
+        if (aptOutputDir.exists()) {
+            aptOutputDir.deleteRecursively()
+        }
         addGeneratedSourcesOutputToCompilerArgs(javaTask, aptOutputDir)
 
         appendAnnotationsArguments()
