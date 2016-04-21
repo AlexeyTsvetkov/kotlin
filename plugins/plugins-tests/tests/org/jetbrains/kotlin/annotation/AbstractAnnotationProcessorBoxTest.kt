@@ -16,17 +16,74 @@
 
 package org.jetbrains.kotlin.annotation
 
+import com.google.protobuf.ExtensionRegistry
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.codegen.CodegenTestCase
 import org.jetbrains.kotlin.codegen.CodegenTestUtil
 import org.jetbrains.kotlin.codegen.extensions.ClassBuilderInterceptorExtension
+import org.jetbrains.kotlin.codegen.getClassFiles
 import org.jetbrains.kotlin.diagnostics.DiagnosticSink
+import org.jetbrains.kotlin.load.kotlin.FileBasedKotlinClass
+import org.jetbrains.kotlin.load.kotlin.header.KotlinClassHeader
+import org.jetbrains.kotlin.serialization.DebugProtoBuf
+import org.jetbrains.kotlin.serialization.jvm.BitEncoding
+import org.jetbrains.kotlin.serialization.jvm.DebugJvmProtoBuf
 import org.jetbrains.kotlin.test.ConfigurationKind
 import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.jetbrains.kotlin.test.TestJdkKind
+import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.StringWriter
+
+private fun readKotlinHeader(bytes: ByteArray): KotlinClassHeader {
+    var header: KotlinClassHeader? = null
+
+    FileBasedKotlinClass.create(bytes) { className, classHeader, innerClasses ->
+        header = classHeader
+        null
+    }
+
+    if (header == null) throw AssertionError("Could not read kotlin header from byte array")
+
+    return header!!
+}
+
+private fun classFileToString(classHeader: KotlinClassHeader): String {
+    val out = StringWriter()
+    val annotationDataEncoded = classHeader.data
+
+    if (annotationDataEncoded != null) {
+        ByteArrayInputStream(BitEncoding.decodeBytes(annotationDataEncoded)).use { input ->
+
+            out.write("\n------ string table types proto -----\n${DebugJvmProtoBuf.StringTableTypes.parseDelimitedFrom(input)}")
+
+            when (classHeader.kind) {
+                KotlinClassHeader.Kind.FILE_FACADE -> {
+                    val parseFrom = DebugProtoBuf.Package.parseFrom(input, getExtensionRegistry())
+                    out.write("\n------ file facade proto -----\n$parseFrom")
+                }
+                KotlinClassHeader.Kind.CLASS -> {
+                    val parseFrom = DebugProtoBuf.Class.parseFrom(input, getExtensionRegistry())
+                    out.write("\n------ class proto -----\n$parseFrom")
+                }
+                KotlinClassHeader.Kind.MULTIFILE_CLASS_PART -> {
+                    val parseFrom = DebugProtoBuf.Package.parseFrom(input, getExtensionRegistry())
+                    out.write("\n------ multi-file part proto -----\n$parseFrom")
+                }
+                else -> throw IllegalStateException()
+            }
+        }
+    }
+
+    return out.toString()
+}
+
+private fun getExtensionRegistry(): ExtensionRegistry {
+    val registry = ExtensionRegistry.newInstance()!!
+    DebugJvmProtoBuf.registerAllExtensions(registry)
+    return registry
+}
 
 abstract class AbstractAnnotationProcessorBoxTest : CodegenTestCase() {
     override fun doTest(path: String) {
@@ -37,7 +94,15 @@ abstract class AbstractAnnotationProcessorBoxTest : CodegenTestCase() {
 
         val collectorExtension = createTestEnvironment(supportInheritedAnnotations)
         loadMultiFiles(testFiles)
-        CodegenTestUtil.generateFiles(myEnvironment, myFiles)
+        val generatedFiles = CodegenTestUtil.generateFiles(myEnvironment, myFiles)
+        val classFiles = generatedFiles.getClassFiles()
+        for (file in classFiles) {
+            val bytes = file.asByteArray()
+            val header = readKotlinHeader(bytes)
+
+            val string = classFileToString(header)
+            val x = 0
+        }
 
         val actualAnnotations = KotlinTestUtils.replaceHashWithStar(collectorExtension.stringWriter.toString())
         val expectedAnnotationsFile = File(path + "annotations.txt")

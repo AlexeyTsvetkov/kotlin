@@ -118,7 +118,7 @@ public abstract class MemberCodegen<T extends KtElement/* TODO: & JetDeclaration
 
         generateSyntheticParts();
 
-        if (state.getClassBuilderMode() == ClassBuilderMode.FULL) {
+        if (state.getClassBuilderMode().shouldGenerateMetadata()) {
             generateKotlinMetadataAnnotation();
         }
 
@@ -232,7 +232,7 @@ public abstract class MemberCodegen<T extends KtElement/* TODO: & JetDeclaration
     }
 
     private static void badDescriptor(ClassDescriptor descriptor, ClassBuilderMode mode) {
-        if (mode != ClassBuilderMode.LIGHT_CLASSES) {
+        if (mode == ClassBuilderMode.FULL) {
             throw new IllegalStateException("Generating bad descriptor in ClassBuilderMode = " + mode + ": " + descriptor);
         }
     }
@@ -410,7 +410,7 @@ public abstract class MemberCodegen<T extends KtElement/* TODO: & JetDeclaration
         ConstantValue<?> initializerValue = computeInitializerValue(property, propertyDescriptor, initializer);
         // we must write constant values for fields in light classes,
         // because Java's completion for annotation arguments uses this information
-        if (initializerValue == null) return state.getClassBuilderMode() != ClassBuilderMode.LIGHT_CLASSES;
+        if (initializerValue == null) return state.getClassBuilderMode() == ClassBuilderMode.FULL;
 
         //TODO: OPTIMIZATION: don't initialize static final fields
         KotlinType jetType = getPropertyOrDelegateType(property, propertyDescriptor);
@@ -494,7 +494,7 @@ public abstract class MemberCodegen<T extends KtElement/* TODO: & JetDeclaration
         v.newField(NO_ORIGIN, ACC_PRIVATE | ACC_STATIC | ACC_FINAL | ACC_SYNTHETIC, JvmAbi.DELEGATED_PROPERTIES_ARRAY_NAME,
                    "[" + K_PROPERTY_TYPE, null, null);
 
-        if (state.getClassBuilderMode() == ClassBuilderMode.LIGHT_CLASSES) return;
+        if (state.getClassBuilderMode() != ClassBuilderMode.FULL) return;
 
         InstructionAdapter iv = createOrGetClInitCodegen().v;
         iv.iconst(delegatedProperties.size());

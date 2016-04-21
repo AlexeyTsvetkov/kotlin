@@ -20,9 +20,24 @@ public enum ClassBuilderMode {
     /**
      * Full function bodies
      */
-    FULL,
+    FULL(true),
     /**
      * Generating light classes: Only function signatures
      */
-    LIGHT_CLASSES,
+    LIGHT_CLASSES(false),
+    /**
+     * Function signatures + metadata (to support incremental compilation with kapt)
+     */
+    LIGHT_CLASSES_WITH_METADATA(true);
+
+
+    private final boolean shouldGenerateMetadata;
+
+    ClassBuilderMode(boolean shouldGenerateMetadata) {
+        this.shouldGenerateMetadata = shouldGenerateMetadata;
+    }
+
+    public boolean shouldGenerateMetadata() {
+        return shouldGenerateMetadata;
+    }
 }

@@ -30,5 +30,6 @@
         <jarDirectory url="file://$MODULE_DIR$/../../../ideaSDK/plugins/gradle/lib" recursive="false" type="SOURCES" />
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="build-common" scope="TEST" />
   </component>
 </module>
