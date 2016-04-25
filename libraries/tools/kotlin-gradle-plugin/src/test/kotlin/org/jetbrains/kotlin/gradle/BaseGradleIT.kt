@@ -89,6 +89,9 @@ abstract class BaseGradleIT {
 
         fun relativePaths(files: Iterable<File>): List<String> =
                 files.map { it.relativeTo(projectDir).path }
+
+        fun relativize(vararg files: File): List<String> =
+                files.map { it.relativeTo(projectDir).path }
     }
 
     class CompiledProject(val project: Project, val output: String, val resultCode: Int) {
