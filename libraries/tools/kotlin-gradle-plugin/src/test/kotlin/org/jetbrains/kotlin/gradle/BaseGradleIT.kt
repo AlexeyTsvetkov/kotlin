@@ -87,7 +87,7 @@ abstract class BaseGradleIT {
             copyDirRecursively(File(resourcesRootFile, "GradleWrapper-$wrapperVersion"), projectDir)
         }
 
-        fun relativePaths(files: Iterable<File>): List<String> =
+        fun relativize(files: Iterable<File>): List<String> =
                 files.map { it.relativeTo(projectDir).path }
 
         fun relativize(vararg files: File): List<String> =
