@@ -175,6 +175,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
     }
 
     private var kaptAnnotationsFileUpdater: AnnotationFileUpdater? = null
+    private var kaptStubGeneratingMode = false
 
     override fun populateTargetSpecificArgs(args: K2JVMCompilerArguments) {
         // show kotlin compiler where to look for java source files
@@ -384,7 +385,9 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
 
             targets.forEach { getIncrementalCache(it).let {
                 it.markOutputClassesDirty(removedAndModified)
-                it.removeClassfilesBySources(removedAndModified)
+                if (!kaptStubGeneratingMode) {
+                    it.removeClassfilesBySources(removedAndModified)
+                }
             }}
 
             // can be empty if only removed sources are present
@@ -500,6 +503,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
         if (kaptAnnotationsFile != null) {
             if (incremental) {
                 kaptAnnotationsFileUpdater = AnnotationFileUpdater(kaptAnnotationsFile)
+                kaptStubGeneratingMode = true
             }
 
             if (kaptAnnotationsFile.exists()) kaptAnnotationsFile.delete()
@@ -531,6 +535,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
     }
 
     override fun afterCompileHook(args: K2JVMCompilerArguments) {
+        if (kaptStubGeneratingMode) return
         logger.debug("Copying resulting files to classes")
 
         // Copy kotlin classes to all classes directory

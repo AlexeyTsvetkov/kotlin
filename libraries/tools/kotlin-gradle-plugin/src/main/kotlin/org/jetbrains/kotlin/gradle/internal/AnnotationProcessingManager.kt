@@ -43,6 +43,7 @@ fun Project.initKapt(
     if (kaptExtension.generateStubs) {
         kotlinAfterJavaTask = createKotlinAfterJavaTask(javaTask, kotlinTask,
                 kotlinOutputDir, kotlinOptions, taskFactory)
+        mapKotlinTaskProperties(this, kotlinAfterJavaTask)
 
         kotlinTask.logger.kotlinDebug("kapt: Using class file stubs")
 
@@ -169,6 +170,9 @@ public class AnnotationProcessingManager(
         val processorPath = setOf(wrappersDirectory) + aptFiles
         setProcessorPath(javaTask, (processorPath + javaTask.classpath).joinToString(File.pathSeparator))
 
+        if (aptOutputDir.exists()) {
+            aptOutputDir.deleteRecursively()
+        }
         addGeneratedSourcesOutputToCompilerArgs(javaTask, aptOutputDir)
 
         appendAnnotationsArguments()
