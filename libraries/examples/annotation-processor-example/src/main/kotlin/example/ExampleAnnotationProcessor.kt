@@ -6,7 +6,6 @@ import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.TypeElement
-import javax.tools.Diagnostic
 
 public class ExampleAnnotationProcessor : AbstractProcessor() {
 
@@ -32,9 +31,12 @@ public class ExampleAnnotationProcessor : AbstractProcessor() {
             val packageName = elementUtils.getPackageOf(element).qualifiedName.toString()
             val simpleName = element.simpleName
             val className = simpleName.toString().capitalize() + generatedFileSuffix
+            val fqName = if (packageName.isNotEmpty()) "$packageName.$className" else className
 
-            filer.createSourceFile(className).openWriter().use { with(it) {
-                appendln("package $packageName;")
+            filer.createSourceFile(fqName).openWriter().use { with(it) {
+                if (packageName.isNotEmpty()) {
+                    appendln("package $packageName;")
+                }
                 appendln("public final class $className {}")
             }}
 
