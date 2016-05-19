@@ -1,7 +1,6 @@
 package org.jetbrains.kotlin.gradle.tasks
 
 import org.apache.commons.io.FilenameUtils
-import org.apache.commons.lang.StringUtils
 import org.codehaus.groovy.runtime.MethodClosure
 import org.gradle.api.GradleException
 import org.gradle.api.file.SourceDirectorySet
@@ -137,6 +136,11 @@ abstract class AbstractKotlinCompile<T : CommonCompilerArguments>() : AbstractCo
 
 }
 
+sealed class BuildMode {
+    class Incremental : BuildMode()
+    class NonIncremental(val reason: String? = null) : BuildMode()
+}
+
 open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
     override val compiler = K2JVMCompiler()
     override fun createBlankArgs(): K2JVMCompilerArguments = K2JVMCompilerArguments()
@@ -162,11 +166,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
         // show kotlin compiler where to look for java source files
 //        args.freeArgs = (args.freeArgs + getJavaSourceRoots().map { it.getAbsolutePath() }).toSet().toList()
         logger.kotlinDebug("args.freeArgs = ${args.freeArgs}")
-
-        if (StringUtils.isEmpty(kotlinOptions.classpath)) {
-            args.classpath = classpath.filter({ it != null && it.exists() }).joinToString(File.pathSeparator)
-            logger.kotlinDebug("args.classpath = ${args.classpath}")
-        }
+        logger.kotlinDebug { "classpath = ${classpath.files.joinToString()}" }
 
         if (args.destination?.isNotBlank() ?: false) {
             // TODO: fix if needed
@@ -279,24 +279,52 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
             return modifiedKotlinFiles
         }
 
-        fun isClassPathChanged(): Boolean {
-            // TODO: that doesn't look to wise - join it first and then split here, consider storing it somewhere in between
-            val classpath = args.classpath.split(File.pathSeparator).map { File(it) }.toHashSet()
-            val changedClasspath = modified.filter { classpath.contains(it) }
-            return changedClasspath.any()
+        fun getBuildMode(): BuildMode {
+            if (!incremental) return BuildMode.NonIncremental()
+
+            fun Sequence<File>.joinFiles(): String  {
+                val maxFilesToShow = 3
+                val sorted = this.map { projectRelativePath(it) }.sorted()
+
+                if (!logger.isDebugEnabled && sorted.count() > maxFilesToShow) {
+                    return sorted.take(maxFilesToShow).joinToString(", ", postfix = "...")
+                }
+
+                return sorted.joinToString()
+            }
+
+
+            fun isCacheFormatChanged(): Boolean =
+                    cacheVersions.any { it.checkVersion() != CacheVersion.Action.DO_NOTHING }
+
+            val classpathSet = classpath.files
+            val classpathDiff = targets.map { getIncrementalCache(it)
+                    .compareClasspath(classpathSet) }
+                    .firstOrNull { it.isNotEmpty() }
+            val illegalRemovedFiles = removed.asSequence().filter { it.isJavaFile() || it.hasClassFileExtension() }
+            val illegalModifiedFiles = modified.asSequence().filter { it.hasClassFileExtension() || it in classpathSet }
+
+            return when {
+                !isIncrementalRequested -> BuildMode.NonIncremental("clean build")
+                classpathDiff != null -> {
+                    if (classpathDiff.added.any()) {
+                        BuildMode.NonIncremental("classpath entries added: ${classpathDiff.added.joinFiles()}")
+                    }
+                    else {
+                        BuildMode.NonIncremental("classpath entries removed: ${classpathDiff.removed.joinFiles()}")
+                    }
+                }
+                illegalRemovedFiles.any() -> BuildMode.NonIncremental("input files were removed: ${illegalRemovedFiles.joinFiles()}")
+                illegalModifiedFiles.any() -> BuildMode.NonIncremental("input files were modified:  ${illegalModifiedFiles.joinFiles()}")
+                isCacheFormatChanged() -> BuildMode.NonIncremental("incremental caches are not up-to-date")
+                else -> BuildMode.Incremental()
+            }
         }
 
         fun calculateSourcesToCompile(): Pair<Set<File>, Boolean> {
-            if (!incremental
-                || !isIncrementalRequested
-                // TODO: more precise will be not to rebuild unconditionally on classpath changes, but retrieve lookup info and try to find out which sources are affected by cp changes
-                || isClassPathChanged()
-                // so far considering it not incremental TODO: store java files in the cache and extract removed symbols from it here
-                || removed.any { it.isJavaFile() || it.hasClassFileExtension() }
-                || modified.any { it.hasClassFileExtension() }
-                || cacheVersions.any { it.checkVersion() != CacheVersion.Action.DO_NOTHING }
-            ) {
-                logger.kotlinInfo(if (!isIncrementalRequested) "clean caches on rebuild" else "classpath changed, rebuilding all kotlin files")
+            val buildStrategy = getBuildMode()
+            if (buildStrategy is BuildMode.NonIncremental) {
+                buildStrategy.reason?.let { logger.warn("Kotlin will be compiled non-incrementally because $it") }
                 targets.forEach { getIncrementalCache(it).clean() }
                 lookupStorage.clean()
                 dirtySourcesSinceLastTimeFile.delete()
@@ -415,6 +443,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
             }
         }
 
+        targets.forEach { getIncrementalCache(it).updateClasspath(classpath.files) }
         anyClassesCompiled = allGeneratedFiles.isNotEmpty()
         processCompilerExitCode(exitCode)
     }
