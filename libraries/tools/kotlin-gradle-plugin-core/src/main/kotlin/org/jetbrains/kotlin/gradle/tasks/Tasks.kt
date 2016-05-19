@@ -122,8 +122,8 @@ abstract class AbstractKotlinCompile<T : CommonCompilerArguments>() : AbstractCo
         args.noInline = kotlinOptions.noInline
     }
 
-    protected open fun callCompiler(args: T, sources: List<File>, isIncremental: Boolean, modified: List<File>, removed: List<File>) {
-        populateSources(args, sources)
+    protected open fun callCompiler(args: T, allKotlinSources: List<File>, isIncremental: Boolean, modified: List<File>, removed: List<File>) {
+        populateSources(args, allKotlinSources)
 
         val messageCollector = GradleMessageCollector(logger)
         logger.debug("Calling compiler")
@@ -209,7 +209,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
         logger.kotlinDebug("args.moduleName = ${args.moduleName}")
     }
 
-    override fun callCompiler(args: K2JVMCompilerArguments, sources: List<File>, isIncrementalRequested: Boolean, modified: List<File>, removed: List<File>) {
+    override fun callCompiler(args: K2JVMCompilerArguments, allKotlinSources: List<File>, isIncrementalRequested: Boolean, modified: List<File>, removed: List<File>) {
 
         fun projectRelativePath(f: File) = f.toRelativeString(project.projectDir)
 
@@ -300,7 +300,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
                 targets.forEach { getIncrementalCache(it).clean() }
                 lookupStorage.clean()
                 dirtySourcesSinceLastTimeFile.delete()
-                return Pair(sources.toSet(), false)
+                return Pair(allKotlinSources.toSet(), false)
             }
 
             val dirtyFiles = dirtyKotlinSourcesFromGradle()
@@ -340,9 +340,16 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
             }
         }
 
+        fun logCompileIteration(sources: Iterable<File>) {
+            if (sources.any()) {
+                logger.kotlinDebug { "compile iteration: ${sources.joinToString { projectRelativePath(it) }}" }
+            }
+        }
+
         if (!incremental) {
             anyClassesCompiled = true
-            processCompilerExitCode(compileNotIncremental(sources, outputDir, args))
+            logCompileIteration(allKotlinSources)
+            processCompilerExitCode(compileNotIncremental(allKotlinSources, outputDir, args))
             return
         }
 
@@ -370,11 +377,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
                 it.removeClassfilesBySources(removedAndModified)
             }}
 
-            // can be empty if only removed sources are present
-            if (sourcesToCompile.isNotEmpty()) {
-                logger.kotlinInfo("compile iteration: ${sourcesToCompile.joinToString { projectRelativePath(it) }}")
-            }
-
+            logCompileIteration(sourcesToCompile)
             val (existingSource, nonExistingSource) = sourcesToCompile.partition { it.isFile }
             assert(nonExistingSource.isEmpty()) { "Trying to compile removed files: ${nonExistingSource.map(::projectRelativePath)}" }
 
