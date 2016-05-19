@@ -303,13 +303,6 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
             return modifiedKotlinFiles
         }
 
-        fun isClassPathChanged(): Boolean {
-            // TODO: that doesn't look to wise - join it first and then split here, consider storing it somewhere in between
-            val classpath = args.classpath.split(File.pathSeparator).map { File(it) }.toHashSet()
-            val changedClasspath = modified.filter { classpath.contains(it) }
-            return changedClasspath.any()
-        }
-
         fun getBuildMode(): BuildMode {
             if (!incremental) return BuildMode.NonIncremental()
 
@@ -328,12 +321,13 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
             fun isCacheFormatChanged(): Boolean =
                     cacheVersions.any { it.checkVersion() != CacheVersion.Action.DO_NOTHING }
 
-            val illegalRemovedFiles = removed.asSequence().filter { it.isJavaFile() || it.hasClassFileExtension() }
-            val illegalModifiedFiles = modified.asSequence().filter { it.hasClassFileExtension() }
+            // TODO: that doesn't look to wise - join it first and then split here, consider storing it somewhere in between
+            val classpathSet = args.classpath.split(File.pathSeparator).map { File(it) }.toHashSet()
+            val illegalRemovedFiles = removed.asSequence().filter { it.isJavaFile() || it.hasClassFileExtension() || it in classpathSet }
+            val illegalModifiedFiles = modified.asSequence().filter { it.hasClassFileExtension() || it in classpathSet }
 
             return when {
                 !isIncrementalRequested -> BuildMode.NonIncremental("clean build")
-                isClassPathChanged() -> BuildMode.NonIncremental("classpath entry was modified")
                 illegalRemovedFiles.any() -> BuildMode.NonIncremental("input files were removed: ${illegalRemovedFiles.joinFiles()}")
                 illegalModifiedFiles.any() -> BuildMode.NonIncremental("input files were modified:  ${illegalModifiedFiles.joinFiles()}")
                 isCacheFormatChanged() -> BuildMode.NonIncremental("incremental caches are not up-to-date")
