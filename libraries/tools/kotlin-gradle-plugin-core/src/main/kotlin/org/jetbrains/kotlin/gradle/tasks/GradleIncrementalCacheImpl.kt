@@ -17,22 +17,29 @@
 package org.jetbrains.kotlin.gradle.tasks
 
 import com.intellij.util.io.BooleanDataDescriptor
+import com.intellij.util.io.DataExternalizer
 import org.gradle.api.logging.Logging
 import org.jetbrains.kotlin.build.GeneratedJvmClass
 import org.jetbrains.kotlin.incremental.CompilationResult
 import org.jetbrains.kotlin.incremental.IncrementalCacheImpl
+import org.jetbrains.kotlin.incremental.LookupSymbol
 import org.jetbrains.kotlin.incremental.dumpCollection
 import org.jetbrains.kotlin.incremental.storage.BasicStringMap
+import org.jetbrains.kotlin.incremental.storage.CollectionExternalizer
 import org.jetbrains.kotlin.incremental.storage.PathStringDescriptor
 import org.jetbrains.kotlin.incremental.storage.StringCollectionExternalizer
 import org.jetbrains.kotlin.modules.TargetId
+import java.io.DataInput
+import java.io.DataOutput
 import java.io.File
+import java.util.*
 
 class GradleIncrementalCacheImpl(targetDataRoot: File, targetOutputDir: File?, target: TargetId) : IncrementalCacheImpl<TargetId>(targetDataRoot, targetOutputDir, target) {
 
     companion object {
         private val SOURCES_TO_CLASSFILES = "sources-to-classfiles"
         private val CLASSPATH = "classpath"
+        private val JAVA_SYMBOLS = "java-symbols"
     }
 
     private val loggerInstance = Logging.getLogger(this.javaClass)
@@ -40,6 +47,7 @@ class GradleIncrementalCacheImpl(targetDataRoot: File, targetOutputDir: File?, t
 
     private val sourceToClassfilesMap = registerMap(SourceToClassfilesMap(SOURCES_TO_CLASSFILES.storageFile))
     private val classpathMap = registerMap(ClasspathSet(CLASSPATH.storageFile))
+    private val javaSymbolsMap = registerMap(JavaFileSymbolsMap(JAVA_SYMBOLS.storageFile))
 
     fun compareClasspath(currentClasspath: Set<File>): FileDifference {
         val added = currentClasspath.asSequence().filter { it !in classpathMap }
@@ -51,6 +59,7 @@ class GradleIncrementalCacheImpl(targetDataRoot: File, targetOutputDir: File?, t
         classpathMap.clean()
         currentClasspath.forEach { classpathMap.add(it) }
     }
+
 
     fun removeClassfilesBySources(sources: Iterable<File>): Unit =
             sources.forEach { sourceToClassfilesMap.remove(it) }
@@ -106,3 +115,47 @@ private abstract class PersistentFileSet(storageFile: File) : BasicStringMap<Boo
 }
 
 private class ClasspathSet(storageFile: File) : PersistentFileSet(storageFile)
+
+private class JavaFileSymbolsMap(storageFile: File) : BasicStringMap<Collection<LookupSymbol>>(storageFile, LookupSymbolCollectionExternalizer) {
+    operator fun get(file: File): Collection<LookupSymbol> =
+            storage[file.canonicalPath] ?: emptySet()
+
+    operator fun set(file: File, symbols: Collection<LookupSymbol>) {
+        storage[file.canonicalPath] = symbols
+    }
+
+    operator fun contains(file: File): Boolean =
+            storage.contains(file.canonicalPath)
+
+    fun remove(file: File) {
+        storage.remove(file.canonicalPath)
+    }
+
+    override fun dumpValue(value: Collection<LookupSymbol>): String =
+            value.sortedWith(LookupSymbolComparator).joinToString()
+}
+
+private object LookupSymbolComparator : Comparator<LookupSymbol> {
+    override fun compare(o1: LookupSymbol, o2: LookupSymbol): Int {
+        val compareName = o1.name.compareTo(o2.name)
+        if (compareName != 0) return compareName
+
+        return o1.scope.compareTo(o2.scope)
+    }
+
+}
+
+private object LookupSymbolExternalizer : DataExternalizer<LookupSymbol> {
+    override fun save(output: DataOutput, value: LookupSymbol) {
+        output.writeUTF(value.name)
+        output.writeUTF(value.scope)
+    }
+
+    override fun read(input: DataInput): LookupSymbol {
+        val name = input.readUTF()
+        val scope = input.readUTF()
+        return LookupSymbol(name, scope)
+    }
+}
+
+private object LookupSymbolCollectionExternalizer : CollectionExternalizer<LookupSymbol>(LookupSymbolExternalizer, { HashSet() })
