@@ -15,6 +15,36 @@ class DependencyChangedIT : BaseGradleIT() {
             BuildOptions(withDaemon = true)
 
     @Test
+    fun testAddDependencyNonIC() {
+        doTestAddDependency(defaultBuildOptions().copy())
+    }
+
+    @Test
+    fun testAddDependencyIC() {
+        doTestAddDependency(defaultBuildOptions().copy(incremental = true))
+    }
+
+    private fun doTestAddDependency(options: BuildOptions) {
+        val project = Project("kotlinProject", GRADLE_VERSION)
+        project.setupWorkingDir()
+
+        val buildGradle = project.projectDir.getFileByName("build.gradle")
+        val commentedOutDependency = "// compile 'joda-time:joda-time:2.9.3'"
+        val dependency = commentedOutDependency.replace("// ", "")
+        assert(commentedOutDependency in buildGradle.readText()) { "${buildGradle.name} should contain \"$commentedOutDependency\"" }
+
+        project.build("build", options = options) {
+            assertSuccessful()
+        }
+
+        buildGradle.modify { it.replace(commentedOutDependency, dependency) }
+        project.build("build", options = options) {
+            assertSuccessful()
+            assertCompiledKotlinSources(project.relativize(project.projectDir.allKotlinFiles()))
+        }
+    }
+
+    @Test
     fun testRemoveDependencyNonIC() {
         doTestRemoveDependency(defaultBuildOptions().copy())
     }

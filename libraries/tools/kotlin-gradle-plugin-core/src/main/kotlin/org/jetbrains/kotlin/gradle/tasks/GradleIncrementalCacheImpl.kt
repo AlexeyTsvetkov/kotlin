@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.gradle.tasks
 
+import com.intellij.util.io.BooleanDataDescriptor
 import org.gradle.api.logging.Logging
 import org.jetbrains.kotlin.build.GeneratedJvmClass
 import org.jetbrains.kotlin.incremental.CompilationResult
@@ -31,12 +32,25 @@ class GradleIncrementalCacheImpl(targetDataRoot: File, targetOutputDir: File?, t
 
     companion object {
         private val SOURCES_TO_CLASSFILES = "sources-to-classfiles"
+        private val CLASSPATH = "classpath"
     }
 
     private val loggerInstance = Logging.getLogger(this.javaClass)
     fun getLogger() = loggerInstance
 
     private val sourceToClassfilesMap = registerMap(SourceToClassfilesMap(SOURCES_TO_CLASSFILES.storageFile))
+    private val classpathMap = registerMap(ClasspathSet(CLASSPATH.storageFile))
+
+    fun compareClasspath(currentClasspath: Set<File>): FileDifference {
+        val added = currentClasspath.asSequence().filter { it !in classpathMap }
+        val removed = classpathMap.values.asSequence().filter { it !in currentClasspath }
+        return FileDifference(added, removed)
+    }
+
+    fun updateClasspath(currentClasspath: Set<File>) {
+        classpathMap.clean()
+        currentClasspath.forEach { classpathMap.add(it) }
+    }
 
     fun removeClassfilesBySources(sources: Iterable<File>): Unit =
             sources.forEach { sourceToClassfilesMap.remove(it) }
@@ -68,3 +82,27 @@ class GradleIncrementalCacheImpl(targetDataRoot: File, targetOutputDir: File?, t
     }
 }
 
+class FileDifference(val added: Sequence<File>, val removed: Sequence<File>) {
+    fun isNotEmpty(): Boolean =
+            added.any() || removed.any()
+}
+
+private abstract class PersistentFileSet(storageFile: File) : BasicStringMap<Boolean>(storageFile, BooleanDataDescriptor.INSTANCE) {
+    val values: Iterable<File>
+        get() = storage.keys.map { File(it) }
+
+    fun add(file: File) {
+        storage[file.canonicalPath] = true
+    }
+
+    fun remove(file: File) {
+        storage.remove(file.canonicalPath)
+    }
+
+    operator fun contains(file: File): Boolean =
+            storage.contains(file.canonicalPath)
+
+    override fun dumpValue(value: Boolean) = ""
+}
+
+private class ClasspathSet(storageFile: File) : PersistentFileSet(storageFile)

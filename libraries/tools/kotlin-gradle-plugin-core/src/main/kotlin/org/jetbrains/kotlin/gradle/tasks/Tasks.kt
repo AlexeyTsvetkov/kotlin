@@ -185,12 +185,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
         // show kotlin compiler where to look for java source files
 //        args.freeArgs = (args.freeArgs + getJavaSourceRoots().map { it.getAbsolutePath() }).toSet().toList()
         logger.kotlinDebug("args.freeArgs = ${args.freeArgs}")
-
-        if (StringUtils.isEmpty(kotlinOptions.classpath)) {
-            args.classpath = classpath.filter({ it != null && it.exists() }).joinToString(File.pathSeparator)
-            logger.kotlinDebug("args.classpath = ${args.classpath}")
-        }
-
+        logger.kotlinDebug { "classpath = ${classpath.files.joinToString()}" }
         logger.kotlinDebug("destinationDir = $compilerDestinationDir")
 
         val extraProperties = extensions.extraProperties
@@ -321,13 +316,23 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
             fun isCacheFormatChanged(): Boolean =
                     cacheVersions.any { it.checkVersion() != CacheVersion.Action.DO_NOTHING }
 
-            // TODO: that doesn't look to wise - join it first and then split here, consider storing it somewhere in between
-            val classpathSet = args.classpath.split(File.pathSeparator).map { File(it) }.toHashSet()
-            val illegalRemovedFiles = removed.asSequence().filter { it.isJavaFile() || it.hasClassFileExtension() || it in classpathSet }
+            val classpathSet = classpath.files
+            val classpathDiff = targets.map { getIncrementalCache(it)
+                    .compareClasspath(classpathSet) }
+                    .firstOrNull { it.isNotEmpty() }
+            val illegalRemovedFiles = removed.asSequence().filter { it.isJavaFile() || it.hasClassFileExtension() }
             val illegalModifiedFiles = modified.asSequence().filter { it.hasClassFileExtension() || it in classpathSet }
 
             return when {
                 !isIncrementalRequested -> BuildMode.NonIncremental("clean build")
+                classpathDiff != null -> {
+                    if (classpathDiff.added.any()) {
+                        BuildMode.NonIncremental("classpath entries added: ${classpathDiff.added.joinFiles()}")
+                    }
+                    else {
+                        BuildMode.NonIncremental("classpath entries removed: ${classpathDiff.removed.joinFiles()}")
+                    }
+                }
                 illegalRemovedFiles.any() -> BuildMode.NonIncremental("input files were removed: ${illegalRemovedFiles.joinFiles()}")
                 illegalModifiedFiles.any() -> BuildMode.NonIncremental("input files were modified:  ${illegalModifiedFiles.joinFiles()}")
                 isCacheFormatChanged() -> BuildMode.NonIncremental("incremental caches are not up-to-date")
@@ -462,6 +467,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
             }
         }
 
+        targets.forEach { getIncrementalCache(it).updateClasspath(classpath.files) }
         anyClassesCompiled = allGeneratedFiles.isNotEmpty()
         processCompilerExitCode(exitCode)
     }

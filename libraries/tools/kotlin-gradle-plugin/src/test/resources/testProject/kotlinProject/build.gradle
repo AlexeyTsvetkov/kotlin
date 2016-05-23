@@ -21,6 +21,8 @@ repositories {
 }
 
 dependencies {
+    // Do not remove commented dependency (used in DependencyChangedIT)!
+    // compile 'joda-time:joda-time:2.9.3'
     compile 'com.google.guava:guava:12.0'
     testCompile  'org.testng:testng:6.8'
     compile  'org.jetbrains.kotlin:kotlin-stdlib:1.1-SNAPSHOT'
