@@ -1,8 +1,8 @@
 package org.jetbrains.kotlin.gradle
 
 import com.google.common.io.Files
-import org.jetbrains.kotlin.com.intellij.openapi.util.io.FileUtil
 import org.gradle.api.logging.LogLevel
+import org.jetbrains.kotlin.com.intellij.openapi.util.io.FileUtil
 import org.jetbrains.kotlin.gradle.util.createGradleCommand
 import org.jetbrains.kotlin.gradle.util.runProcess
 import org.junit.After
@@ -214,6 +214,7 @@ abstract class BaseGradleIT {
                     add(if (options.withDaemon) "--daemon" else "--no-daemon")
                 }
 
+                add("-Pkotlin_version=" + KOTLIN_VERSION)
                 add("-PpathToKotlinPlugin=" + File("local-repo").absolutePath)
                 options.incremental?.let { add("-Pkotlin.incremental=$it") }
                 options.androidGradlePluginVersion?.let { add("-PandroidToolsVersion=$it")}
