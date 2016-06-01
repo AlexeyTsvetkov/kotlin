@@ -1,27 +1,22 @@
 buildscript {
-  repositories {
-    mavenCentral()
-    maven {
-        url 'file://' + pathToKotlinPlugin
+    repositories {
+        mavenLocal()
     }
-  }
-  dependencies {
-    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-  }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
 }
 
 apply plugin: "kotlin"
 
 repositories {
-  maven {
-     url 'file://' + pathToKotlinPlugin
-  }
-  mavenCentral()
+    mavenLocal()
+    mavenCentral()
 }
 
 dependencies {
-    testCompile  'org.testng:testng:6.8'
-    compile  "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    testCompile 'org.testng:testng:6.8'
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
 
 test {
@@ -30,9 +25,4 @@ test {
 
 compileKotlin {
     kotlinOptions.moduleName = "myTestName"
-}
-
-
-task wrapper(type: Wrapper) {
-  gradleVersion="1.4"
 }

@@ -1,38 +1,31 @@
 buildscript {
-  repositories {
-    mavenCentral()
-    maven {
-        url 'file://' + pathToKotlinPlugin
+    repositories {
+        mavenLocal()
     }
-  }
-  dependencies {
-    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-  }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
 }
-
-
 
 apply plugin: "kotlin"
 
 sourceSets {
-  main {
-     kotlin {
-        srcDir 'src'
-     }
-  }
+    main {
+        kotlin {
+            srcDir 'src'
+        }
+    }
 }
 
 repositories {
-  maven {
-     url 'file://' + pathToKotlinPlugin
-  }
-  mavenCentral()
+    mavenLocal()
+    mavenCentral()
 }
 
 dependencies {
     compile 'com.google.guava:guava:12.0'
-    testCompile  'org.testng:testng:6.8'
-    compile  "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    testCompile 'org.testng:testng:6.8'
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
 
 test {
@@ -44,9 +37,4 @@ compileKotlin {
     kotlinOptions.noOptimize = true
     kotlinOptions.noCallAssertions = true
     kotlinOptions.noParamAssertions = true
-}
-
-
-task wrapper(type: Wrapper) {
-  gradleVersion="1.4"
 }
