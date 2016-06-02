@@ -5,14 +5,9 @@ import org.jetbrains.kotlin.gradle.util.getFileByName
 import org.junit.Test
 
 class KaptIT: BaseGradleIT() {
-
-    companion object {
-        private const val GRADLE_VERSION = "2.10"
-    }
-
     @Test
     fun testSimple() {
-        val project = Project("kaptSimple", GRADLE_VERSION)
+        val project = Project("kaptSimple")
 
         project.build("build") {
             assertSuccessful()
@@ -35,7 +30,7 @@ class KaptIT: BaseGradleIT() {
 
     @Test
     fun testStubs() {
-        val project = Project("kaptStubs", GRADLE_VERSION)
+        val project = Project("kaptStubs")
 
         project.build("build") {
             assertSuccessful()
@@ -58,7 +53,7 @@ class KaptIT: BaseGradleIT() {
 
     @Test
     fun testStubsWithoutJava() {
-        val project = Project("kaptStubs", GRADLE_VERSION)
+        val project = Project("kaptStubs")
         project.setupWorkingDir()
         project.projectDir.allJavaFiles().forEach { it.delete() }
 
@@ -84,7 +79,7 @@ class KaptIT: BaseGradleIT() {
 
     private fun doTestIncrementalBuild(projectName: String, compileTasks: Array<String>) {
         val compileTasksUpToDate = compileTasks.map { it + " UP-TO-DATE" }.toTypedArray()
-        val project = Project(projectName, GRADLE_VERSION)
+        val project = Project(projectName)
 
         project.build("build") {
             assertSuccessful()
@@ -120,7 +115,7 @@ class KaptIT: BaseGradleIT() {
 
     @Test
     fun testArguments() {
-        Project("kaptArguments", GRADLE_VERSION).build("build") {
+        Project("kaptArguments").build("build") {
             assertSuccessful()
             assertContains("kapt: Using class file stubs")
             assertContains(":compileKotlin")
@@ -134,7 +129,7 @@ class KaptIT: BaseGradleIT() {
 
     @Test
     fun testInheritedAnnotations() {
-        Project("kaptInheritedAnnotations", GRADLE_VERSION).build("build") {
+        Project("kaptInheritedAnnotations").build("build") {
             assertSuccessful()
             assertFileExists("build/generated/source/kapt/main/TestClassGenerated.java")
             assertFileExists("build/generated/source/kapt/main/AncestorClassGenerated.java")
@@ -145,7 +140,7 @@ class KaptIT: BaseGradleIT() {
 
     @Test
     fun testOutputKotlinCode() {
-        Project("kaptOutputKotlinCode", GRADLE_VERSION).build("build") {
+        Project("kaptOutputKotlinCode").build("build") {
             assertSuccessful()
             assertContains("kapt: Using class file stubs")
             assertContains(":compileKotlin")

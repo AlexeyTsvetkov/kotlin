@@ -8,14 +8,9 @@ import java.io.File
 import kotlin.test.assertTrue
 
 class KotlinGradleIT: BaseGradleIT() {
-
-    companion object {
-        private const val GRADLE_VERSION = "2.10"
-    }
-
     @Test
     fun testCrossCompile() {
-        val project = Project("kotlinJavaProject", GRADLE_VERSION)
+        val project = Project("kotlinJavaProject")
 
         project.build("compileDeployKotlin", "build") {
             assertSuccessful()
@@ -31,7 +26,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testKotlinOnlyCompile() {
-        val project = Project("kotlinProject", GRADLE_VERSION)
+        val project = Project("kotlinProject")
 
         project.build("build") {
             assertSuccessful()
@@ -50,7 +45,7 @@ class KotlinGradleIT: BaseGradleIT() {
     // In order to stop daemon process, special exit task is used ( System.exit(0) ).
     @Test
     fun testKotlinOnlyDaemonMemory() {
-        val project = Project("kotlinProject", GRADLE_VERSION)
+        val project = Project("kotlinProject")
         val VARIANT_CONSTANT = "ForTest"
         val userVariantArg = "-Duser.variant=$VARIANT_CONSTANT"
         val MEMORY_MAX_GROWTH_LIMIT_KB = 500
@@ -101,12 +96,12 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testLogLevelForceGC() {
-        val debugProject = Project("simpleProject", GRADLE_VERSION, minLogLevel = LogLevel.DEBUG)
+        val debugProject = Project("simpleProject", minLogLevel = LogLevel.DEBUG)
         debugProject.build("build") {
             assertContains(CleanUpBuildListener.FORCE_SYSTEM_GC_MESSAGE)
         }
 
-        val infoProject = Project("simpleProject", GRADLE_VERSION, minLogLevel = LogLevel.INFO)
+        val infoProject = Project("simpleProject", minLogLevel = LogLevel.INFO)
         infoProject.build("clean", "build") {
             assertNotContains(CleanUpBuildListener.FORCE_SYSTEM_GC_MESSAGE)
         }
@@ -114,7 +109,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testKotlinClasspath() {
-        Project("classpathTest", GRADLE_VERSION).build("build") {
+        Project("classpathTest").build("build") {
             assertSuccessful()
             assertReportExists()
             assertContains(":compileKotlin", ":compileTestKotlin")
@@ -123,7 +118,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testInternalTest() {
-        Project("internalTest", GRADLE_VERSION).build("build") {
+        Project("internalTest").build("build") {
             assertSuccessful()
             assertReportExists()
             assertContains(":compileKotlin", ":compileTestKotlin")
@@ -132,7 +127,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testMultiprojectPluginClasspath() {
-        Project("multiprojectClassPathTest", GRADLE_VERSION).build("build") {
+        Project("multiprojectClassPathTest").build("build") {
             assertSuccessful()
             assertReportExists("subproject")
             assertContains(":subproject:compileKotlin", ":subproject:compileTestKotlin")
@@ -148,7 +143,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
         val incremental = defaultBuildOptions().copy(incremental = true)
 
-        Project("multiprojectWithDependency", GRADLE_VERSION).build("assemble", options = incremental) {
+        Project("multiprojectWithDependency").build("assemble", options = incremental) {
             assertSuccessful()
             assertReportExists("projA")
             assertContains(":projA:compileKotlin")
@@ -157,7 +152,7 @@ class KotlinGradleIT: BaseGradleIT() {
             assertContains(":projB:compileKotlin")
             assertNotContains("projB:compileKotlin UP-TO-DATE")
         }
-        Project("multiprojectWithDependency", GRADLE_VERSION).modify {
+        Project("multiprojectWithDependency").modify {
             val oldSrc = File(this.projectDir, "projA/src/main/kotlin/a.kt")
             val newSrc = File(this.projectDir, "projA/src/main/kotlin/a.kt.new")
             assertTrue { oldSrc.exists() }
@@ -177,7 +172,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testKotlinInJavaRoot() {
-        Project("kotlinInJavaRoot", GRADLE_VERSION).build("build") {
+        Project("kotlinInJavaRoot").build("build") {
             assertSuccessful()
             assertReportExists()
             assertContains(":compileKotlin", ":compileTestKotlin")
@@ -186,7 +181,7 @@ class KotlinGradleIT: BaseGradleIT() {
 
     @Test
     fun testIncrementalPropertyFromLocalPropertiesFile() {
-        val project = Project("kotlinProject", GRADLE_VERSION)
+        val project = Project("kotlinProject")
         project.setupWorkingDir()
 
         val localPropertyFile = File(project.projectDir, "local.properties")

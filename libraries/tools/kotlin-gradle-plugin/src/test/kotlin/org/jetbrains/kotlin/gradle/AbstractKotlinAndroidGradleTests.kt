@@ -6,10 +6,9 @@ import org.junit.Test
 import java.io.File
 
 
-class KotlinAndroidGradleCLIOnly : AbstractKotlinAndroidGradleTests(gradleVersion = "2.3", androidGradlePluginVersion = "1.5.+")
+class KotlinAndroidGradleCLIOnly : AbstractKotlinAndroidGradleTests(androidGradlePluginVersion = "1.5.+")
 
 abstract class AbstractKotlinAndroidGradleTests(
-        private val gradleVersion: String,
         private val androidGradlePluginVersion: String
 ) : BaseGradleIT() {
 
@@ -19,7 +18,7 @@ abstract class AbstractKotlinAndroidGradleTests(
 
     @Test
     fun testSimpleCompile() {
-        val project = Project("AndroidProject", gradleVersion)
+        val project = Project("AndroidProject")
 
         project.build("build") {
             assertSuccessful()
@@ -66,7 +65,7 @@ abstract class AbstractKotlinAndroidGradleTests(
 
     @Test
     fun testIncrementalCompile() {
-        val project = Project("AndroidIncrementalSingleModuleProject", gradleVersion)
+        val project = Project("AndroidIncrementalSingleModuleProject")
         val options = defaultBuildOptions().copy(incremental = true)
 
         project.build("build", options = options) {
@@ -89,7 +88,7 @@ fun getSomething() = 10
 
     @Test
     fun testIncrementalBuildWithNoChanges() {
-        val project = Project("AndroidIncrementalSingleModuleProject", gradleVersion)
+        val project = Project("AndroidIncrementalSingleModuleProject")
         val tasksToExecute = arrayOf(
                 ":app:prepareComAndroidSupportAppcompatV72311Library",
                 ":app:prepareComAndroidSupportSupportV42311Library",
@@ -110,7 +109,7 @@ fun getSomething() = 10
 
     @Test
     fun testModuleNameAndroid() {
-        val project = Project("AndroidProject", gradleVersion)
+        val project = Project("AndroidProject")
 
         project.build("build") {
             assertContains(
@@ -127,7 +126,7 @@ fun getSomething() = 10
 
     @Test
     fun testAndroidDaggerIC() {
-        val project = Project("AndroidDaggerProject", gradleVersion)
+        val project = Project("AndroidDaggerProject")
         val options = defaultBuildOptions().copy(incremental = true)
 
         project.build("assembleDebug", options = options) {

@@ -18,7 +18,7 @@ abstract class KaptIncrementalBaseIT(val shouldUseStubs: Boolean): BaseGradleIT(
     }
 
     private fun getProject() =
-            Project("kaptIncrementalCompilationProject", GRADLE_VERSION).apply {
+            Project("kaptIncrementalCompilationProject").apply {
                 setupWorkingDir()
                 val buildGradle = projectDir.parentFile.getFileByName("build.gradle")
                 buildGradle.modify { it.replace(GENERATE_STUBS_PLACEHOLDER, shouldUseStubs.toString()) }

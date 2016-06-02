@@ -29,7 +29,7 @@ class CacheVersionChangedIT : BaseGradleIT() {
     }
 
     private fun compileIncrementallyWithChangedVersion(versionFileName: String) {
-        val project = Project("kotlinProject", "2.10")
+        val project = Project("kotlinProject")
         val options = defaultBuildOptions().copy(incremental = true)
 
         fun File.projectPath() = relativeTo(project.projectDir).path

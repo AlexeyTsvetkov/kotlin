@@ -9,7 +9,7 @@ import java.io.File
 class TestRootAffectedIT : BaseGradleIT() {
     @Test
     fun testSourceRootClassIsModifiedIC() {
-        val project = Project("kotlinProject", "2.10")
+        val project = Project("kotlinProject")
         val buildOptions = defaultBuildOptions().copy(incremental = true)
 
         project.build("build", options = buildOptions) {
@@ -38,7 +38,7 @@ class TestRootAffectedIT : BaseGradleIT() {
 
     @Test
     fun testSourceRootClassIsRemovedIC() {
-        val project = Project("kotlinProject", "2.10")
+        val project = Project("kotlinProject")
         val buildOptions = defaultBuildOptions().copy(incremental = true)
 
         project.build("build", options = buildOptions) {
@@ -62,7 +62,7 @@ class TestRootAffectedIT : BaseGradleIT() {
 
     @Test
     fun testTestRootClassIsRemovedIC() {
-        val project = Project("kotlinProject", "2.10")
+        val project = Project("kotlinProject")
         val buildOptions = defaultBuildOptions().copy(incremental = true)
 
         project.build("build", options = buildOptions) {

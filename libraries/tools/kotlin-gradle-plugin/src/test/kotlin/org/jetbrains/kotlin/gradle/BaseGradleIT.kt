@@ -73,13 +73,14 @@ abstract class BaseGradleIT {
             val androidHome: File? = null,
             val androidGradlePluginVersion: String? = null)
 
-    open inner class Project(val projectName: String, val wrapperVersion: String = "1.4", val minLogLevel: LogLevel = LogLevel.DEBUG) {
+    open inner class Project(val projectName: String, val minLogLevel: LogLevel = LogLevel.DEBUG) {
         open val resourcesRoot = File(resourcesRootFile, "testProject/$projectName")
         val projectDir = File(workingDir.canonicalFile, projectName)
+        val gradleVersion: String = System.getProperty("kotlin.integration.test.gradle.version")!!
 
         open fun setupWorkingDir() {
             copyRecursively(this.resourcesRoot, workingDir)
-            copyDirRecursively(File(resourcesRootFile, "GradleWrapper-$wrapperVersion"), projectDir)
+            copyDirRecursively(File(resourcesRootFile, "GradleWrapper-$gradleVersion"), projectDir)
         }
 
         fun relativize(files: Iterable<File>): List<String> =
@@ -109,7 +110,7 @@ abstract class BaseGradleIT {
         val env = createEnvironmentVariablesMap(options)
 
         if (options.withDaemon) {
-            prepareDaemon(wrapperVersion)
+            prepareDaemon(gradleVersion)
         }
 
         println("<=== Test build: ${this.projectName} $cmd ===>")
