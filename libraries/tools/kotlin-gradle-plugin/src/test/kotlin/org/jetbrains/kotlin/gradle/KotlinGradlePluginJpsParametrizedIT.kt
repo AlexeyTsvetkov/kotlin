@@ -6,14 +6,8 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import java.io.File
 
-// Test does not follow maven failsafe naming convention
-// so it is ignored by maven integration-test phase,
-// but it is possible run it from CLI (under separate CI configuration for example)
-//
-// To run this test from CLI:
-// mvn integration-test -pl :kotlin-gradle-plugin -Dit.test=KotlinGradlePluginJpsParametrizedCLIOnly
 @RunWith(Parameterized::class)
-class KotlinGradlePluginJpsParametrizedCLIOnly : BaseIncrementalGradleIT() {
+class KotlinGradlePluginJpsParametrizedIT : BaseIncrementalGradleIT() {
 
     @Parameterized.Parameter
     @JvmField

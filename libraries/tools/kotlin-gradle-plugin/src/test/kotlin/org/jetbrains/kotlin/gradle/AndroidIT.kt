@@ -5,16 +5,11 @@ import org.jetbrains.kotlin.gradle.util.modify
 import org.junit.Test
 import java.io.File
 
-
-class KotlinAndroidGradleCLIOnly : AbstractKotlinAndroidGradleTests(androidGradlePluginVersion = "1.5.+")
-
-abstract class AbstractKotlinAndroidGradleTests(
-        private val androidGradlePluginVersion: String
-) : BaseGradleIT() {
+class AndroidIT : BaseGradleIT() {
 
     override fun defaultBuildOptions() =
             super.defaultBuildOptions().copy(androidHome = File("../../../dependencies/android-sdk-for-tests"),
-                                             androidGradlePluginVersion = androidGradlePluginVersion)
+                                             androidGradlePluginVersion = "1.5.+")
 
     @Test
     fun testSimpleCompile() {
