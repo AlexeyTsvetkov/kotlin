@@ -12,7 +12,6 @@ class KaptIncrementalWithStubsIT : KaptIncrementalBaseIT(shouldUseStubs = true)
 abstract class KaptIncrementalBaseIT(val shouldUseStubs: Boolean): BaseGradleIT() {
 
     companion object {
-        private const val GRADLE_VERSION = "2.10"
         private val EXAMPLE_ANNOTATION_REGEX = "@(field:)?example.ExampleAnnotation".toRegex()
         private const val GENERATE_STUBS_PLACEHOLDER = "GENERATE_STUBS_PLACEHOLDER"
     }
