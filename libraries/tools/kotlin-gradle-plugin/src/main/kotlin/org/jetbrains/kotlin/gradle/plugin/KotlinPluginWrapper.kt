@@ -70,3 +70,10 @@ open class Kotlin2JsPluginWrapper : KotlinBasePluginWrapper() {
 fun Logger.kotlinDebug(message: String) {
     this.debug("[KOTLIN] $message")
 }
+
+inline
+fun Logger.kotlinDebug(message: ()->String) {
+    if (isDebugEnabled) {
+        kotlinDebug(message())
+    }
+}
