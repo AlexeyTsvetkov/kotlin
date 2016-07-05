@@ -2,6 +2,7 @@ package org.jetbrains.kotlin.gradle
 
 import org.jetbrains.kotlin.gradle.util.allJavaFiles
 import org.jetbrains.kotlin.gradle.util.getFileByName
+import org.jetbrains.kotlin.gradle.util.modify
 import org.junit.Test
 
 class KaptIT: BaseGradleIT() {
@@ -178,6 +179,23 @@ class KaptIT: BaseGradleIT() {
             assertFileExists("build/tmp/kapt/main/kotlinGenerated/TestClass.kt")
             assertFileExists("build/classes/main/example/TestClass.class")
             assertFileExists("build/classes/main/example/TestClassCustomized.class")
+        }
+    }
+
+    @Test
+    fun testStubsIncrementalCompilationInternal() {
+        val project = Project("kaptStubs", GRADLE_VERSION)
+        val opts = defaultBuildOptions().copy(incremental = true)
+
+        project.build("build", options = opts) {
+            assertSuccessful()
+        }
+
+        val useInternalInAKt = project.projectDir.getFileByName("useInternalInA.kt")
+        useInternalInAKt.modify { it.replace("//a.internalFun()", "a.internalFun()") }
+
+        project.build("build", options = opts) {
+            assertSuccessful()
         }
     }
 }
