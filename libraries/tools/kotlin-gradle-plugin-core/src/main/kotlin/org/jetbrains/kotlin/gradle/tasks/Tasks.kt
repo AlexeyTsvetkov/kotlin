@@ -166,6 +166,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
         // show kotlin compiler where to look for java source files
 //        args.freeArgs = (args.freeArgs + getJavaSourceRoots().map { it.getAbsolutePath() }).toSet().toList()
         logger.kotlinDebug("args.freeArgs = ${args.freeArgs}")
+        classpath = classpath.filter { !it.exists() }
         logger.kotlinDebug { "classpath = ${classpath.files.joinToString()}" }
 
         if (args.destination?.isNotBlank() ?: false) {
@@ -386,11 +387,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
         // TODO: decide what to do if no files are considered dirty - rebuild or skip the module
         var (sourcesToCompile, isIncrementalDecided) = calculateSourcesToCompile()
 
-        if (isIncrementalDecided) {
-            // TODO: process as list here, merge into string later
-            args.classpath = args.classpath + File.pathSeparator + outputDir.absolutePath
-        }
-        else {
+        if (!isIncrementalDecided) {
             // there is no point in updating annotation file since all files will be compiled anyway
             kaptAnnotationsFileUpdater = null
         }
