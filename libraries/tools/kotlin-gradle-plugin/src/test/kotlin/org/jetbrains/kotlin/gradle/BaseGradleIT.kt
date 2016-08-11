@@ -3,6 +3,7 @@ package org.jetbrains.kotlin.gradle
 import org.gradle.api.logging.LogLevel
 import org.jetbrains.kotlin.com.intellij.openapi.util.io.FileUtil
 import org.jetbrains.kotlin.gradle.util.createGradleCommand
+import org.jetbrains.kotlin.gradle.util.getFileByName
 import org.jetbrains.kotlin.gradle.util.runProcess
 import org.junit.After
 import org.junit.AfterClass
@@ -92,6 +93,9 @@ abstract class BaseGradleIT {
             val subprojectSir = File(projectDir, subproject)
             return files.map { it.relativeTo(subprojectSir).path }
         }
+
+        fun relativePathsByNames(vararg names: String): List<String> =
+                relativize(names.map { projectDir.getFileByName(it) })
 
         fun performModifications() {
             for (file in projectDir.walk()) {
