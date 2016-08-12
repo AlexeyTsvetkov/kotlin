@@ -24,7 +24,7 @@ abstract class AbstractKotlinAndroidGradleTests(
     fun testSimpleCompile() {
         val project = Project("AndroidProject", gradleVersion)
 
-        project.build("build", "assembleAndroidTest") {
+        project.build("build", "-Dorg.gradle.debug=true") {
             assertSuccessful()
             assertContains(":Lib:compileReleaseKotlin",
                     ":Test:compileDebugKotlin",

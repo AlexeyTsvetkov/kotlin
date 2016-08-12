@@ -52,6 +52,7 @@ const val ANNOTATIONS_PLUGIN_NAME = "org.jetbrains.kotlin.kapt"
 const val KOTLIN_BUILD_DIR_NAME = "kotlin"
 const val CACHES_DIR_NAME = "caches"
 const val DIRTY_SOURCES_FILE_NAME = "dirty-sources.txt"
+const val LAST_BUILD_INFO_FILE_NAME = "last-build.bin"
 const val USING_EXPERIMENTAL_INCREMENTAL_MESSAGE = "Using experimental kotlin incremental compilation"
 
 abstract class AbstractKotlinCompile<T : CommonCompilerArguments>() : AbstractCompile() {
@@ -154,6 +155,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
     private val taskBuildDirectory: File by lazy { File(File(project.buildDir, KOTLIN_BUILD_DIR_NAME), name) }
     private val cacheDirectory: File by lazy { File(taskBuildDirectory, CACHES_DIR_NAME) }
     private val dirtySourcesSinceLastTimeFile: File by lazy { File(taskBuildDirectory, DIRTY_SOURCES_FILE_NAME) }
+    private val lastBuildInfoFile: File by lazy { File(taskBuildDirectory, LAST_BUILD_INFO_FILE_NAME) }
     private val cacheVersions by lazy {
         listOf(normalCacheVersion(taskBuildDirectory),
                experimentalCacheVersion(taskBuildDirectory),
@@ -172,6 +174,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
 
     val kaptOptions = KaptOptions()
     val pluginOptions = CompilerPluginOptions()
+    var artifactHistoryProvider: ArtifactHistoryProvider? = null
 
     override fun populateTargetSpecificArgs(args: K2JVMCompilerArguments) {
         logger.kotlinDebug("args.freeArgs = ${args.freeArgs}")
@@ -224,13 +227,8 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
     override fun callCompiler(args: K2JVMCompilerArguments, sources: List<File>, isIncrementalRequested: Boolean, modified: List<File>, removed: List<File>) {
 
         fun projectRelativePath(f: File) = f.toRelativeString(project.projectDir)
-
-        if (incremental) {
-            // TODO: consider other ways to pass incremental flag to compiler/builder
-            System.setProperty("kotlin.incremental.compilation", "true")
-            // TODO: experimental should be removed as soon as it becomes standard
-            System.setProperty("kotlin.incremental.compilation.experimental", "true")
-        }
+        fun filesToString(files: Iterable<File>) =
+                "[" + files.map(::projectRelativePath).sorted().joinToString(separator = ", \n") + "]"
 
         val targetType = "java-production"
         val moduleName = args.moduleName
@@ -242,6 +240,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
         var currentRemoved = removed.filter { it.isKotlinFile() }
         val allGeneratedFiles = hashSetOf<GeneratedFile<TargetId>>()
         val logAction = { logStr: String -> logger.kotlinInfo(logStr) }
+        val lastBuildInfo = BuildInfo.read(lastBuildInfoFile)
 
         fun getOrCreateIncrementalCache(target: TargetId): GradleIncrementalCacheImpl {
             val cacheDir = File(cacheDirectory, "increCache.${target.name}")
@@ -291,24 +290,64 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
             return modifiedKotlinFiles
         }
 
-        fun isClassPathChanged(): Boolean =
-                modified.any { classpath.contains(it) }
+        fun getClasspathChanges(changedEntries: List<File>): ChangesEither {
+            if (changedEntries.isEmpty()) {
+                logger.kotlinDebug { "No classpath changes" }
+                return ChangesEither.Known(emptyList())
+            }
+            if (lastBuildInfo == null) {
+                logger.kotlinDebug { "Could not determine last build time" }
+                return ChangesEither.Unknown()
+            }
+            if (artifactHistoryProvider == null) {
+                logger.kotlinDebug { "No artifact history provider" }
+                return ChangesEither.Unknown()
+            }
+
+            val changedFqNames = HashSet<String>()
+            for (entry in changedEntries) {
+                val history = artifactHistoryProvider!![entry]
+                if (history == null) {
+                    logger.kotlinDebug { "Could not get changes history for classpath entry: $entry" }
+                    return ChangesEither.Unknown()
+                }
+
+                val (beforeLastBuild, afterLastBuild) = history.partition { it.timestamp < lastBuildInfo.timestamp }
+                if (beforeLastBuild.isEmpty()) {
+                    logger.kotlinDebug { "No known build preceding last build for this module " +
+                            "(ts=${lastBuildInfo.timestamp}) for classpath entry $entry" }
+                    return ChangesEither.Unknown()
+                }
+
+                afterLastBuild.forEach { changedFqNames.addAll(it.changedFqNames) }
+            }
+
+            return ChangesEither.Known(changedFqNames)
+        }
 
         fun calculateSourcesToCompile(): Pair<Set<File>, Boolean> {
-            if (!incremental
-                || !isIncrementalRequested
-                // TODO: more precise will be not to rebuild unconditionally on classpath changes, but retrieve lookup info and try to find out which sources are affected by cp changes
-                || isClassPathChanged()
-                // so far considering it not incremental TODO: store java files in the cache and extract removed symbols from it here
-                || removed.any { it.isJavaFile() || it.hasClassFileExtension() }
-                || modified.any { it.hasClassFileExtension() }
-            ) {
-                logger.kotlinInfo(if (!isIncrementalRequested) "clean caches on rebuild" else "classpath changed, rebuilding all kotlin files")
+            fun rebuild(reason: String): Pair<Set<File>, Boolean> {
+                logger.kotlinInfo("Non-incremental compilation will be performed: $reason")
                 targets.forEach { getIncrementalCache(it).clean() }
                 lookupStorage.clean()
                 dirtySourcesSinceLastTimeFile.delete()
                 return Pair(sources.toSet(), false)
             }
+
+            if (!incremental) return rebuild("incremental compilation is not enabled")
+            if (!isIncrementalRequested) return rebuild("inputs' changes are unknown (first or clean build)")
+
+            // TODO: store java files in the cache and extract removed symbols from it here
+            val illegalRemovedFiles = removed.filter { it.isJavaFile() || it.hasClassFileExtension() }
+            if (illegalRemovedFiles.any()) return rebuild("unsupported removed files: ${filesToString(illegalRemovedFiles)}")
+
+            val illegalModifiedFiles = modified.filter(File::hasClassFileExtension)
+            if (illegalModifiedFiles.any()) return rebuild("unsupported modified files: ${filesToString(illegalModifiedFiles)}")
+
+            val modifiedClasspathEntries = modified.filter { it in classpath }
+            val classpathChanges = getClasspathChanges(modifiedClasspathEntries)
+            if (classpathChanges is ChangesEither.Unknown) return rebuild("could not get changes " +
+                    "from modified classpath entries: ${filesToString(modifiedClasspathEntries)}")
 
             val dirtyFiles = dirtyKotlinSourcesFromGradle()
             if (dirtySourcesSinceLastTimeFile.exists()) {
@@ -368,6 +407,8 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
             // there is no point in updating annotation file since all files will be compiled anyway
             kaptAnnotationsFileUpdater = null
         }
+
+        lastBuildInfoFile.writeText(System.currentTimeMillis().toString())
 
         var exitCode = ExitCode.OK
         while (sourcesToCompile.any() || currentRemoved.any()) {

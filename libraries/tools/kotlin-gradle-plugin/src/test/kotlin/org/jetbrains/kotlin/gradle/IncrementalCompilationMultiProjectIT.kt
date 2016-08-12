@@ -30,7 +30,7 @@ open class A {
 }
 """)
 
-        project.build("build") {
+        project.build("build", "-Dorg.gradle.debug=true") {
             assertSuccessful()
             val affectedSources = project.projectDir.getFilesByNames("A.kt", "B.kt", "barUseA.kt", "AA.kt", "BB.kt", "fooUseA.kt")
             assertCompiledKotlinSources(project.relativize(affectedSources), weakTesting = false)
