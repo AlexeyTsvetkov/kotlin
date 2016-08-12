@@ -1,5 +1,6 @@
 package org.jetbrains.kotlin.gradle.tasks
 
+import org.jetbrains.kotlin.incremental.LookupSymbol
 import java.io.File
 
 interface ArtifactHistoryProvider {
@@ -8,5 +9,5 @@ interface ArtifactHistoryProvider {
 
 interface ArtifactHistoryEntry {
     val timestamp: Long
-    val changedFqNames: Iterable<String>
+    val changedFqNames: Iterable<LookupSymbol>
 }

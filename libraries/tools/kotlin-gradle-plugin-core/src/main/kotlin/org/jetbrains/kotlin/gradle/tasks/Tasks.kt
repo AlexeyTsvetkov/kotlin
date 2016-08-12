@@ -250,50 +250,36 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
 
         fun getIncrementalCache(it: TargetId) = caches.getOrPut(it, { getOrCreateIncrementalCache(it) })
 
-        fun PsiClass.findLookupSymbols(): Iterable<LookupSymbol> {
+        fun PsiClass.addLookupSymbols(symbols: MutableSet<LookupSymbol>) {
             val fqn = qualifiedName.orEmpty()
-            return listOf(LookupSymbol(name.orEmpty(), if (fqn == name) "" else fqn.removeSuffix("." + name!!))) +
-                    methods.map { LookupSymbol(it.name, fqn) } +
-                    fields.map { LookupSymbol(it.name.orEmpty(), fqn) } +
-                    innerClasses.flatMap { it.findLookupSymbols() }
+
+            symbols.add(LookupSymbol(name.orEmpty(), if (fqn == name) "" else fqn.removeSuffix("." + name!!)))
+            methods.forEach { symbols.add(LookupSymbol(it.name, fqn)) }
+            fields.forEach { symbols.add(LookupSymbol(it.name.orEmpty(), fqn)) }
+            innerClasses.forEach { it.addLookupSymbols(symbols) }
         }
 
-        fun dirtyLookupSymbolsFromModifiedJavaFiles(): List<LookupSymbol> {
+        fun addDirtyLookupSymbolsFromModifiedJavaFiles(symbols: MutableSet<LookupSymbol>) {
             val modifiedJavaFiles = modified.filter { it.isJavaFile() }
-            return (if (modifiedJavaFiles.any()) {
+            if (modifiedJavaFiles.any()) {
                 val rootDisposable = Disposer.newDisposable()
                 val configuration = CompilerConfiguration()
                 val environment = KotlinCoreEnvironment.createForProduction(rootDisposable, configuration, EnvironmentConfigFiles.JVM_CONFIG_FILES)
                 val project = environment.project
                 val psiFileFactory = PsiFileFactory.getInstance(project) as PsiFileFactoryImpl
-                modifiedJavaFiles.flatMap {
+                modifiedJavaFiles.forEach {
                     val javaFile = psiFileFactory.createFileFromText(it.nameWithoutExtension, Language.findLanguageByID("JAVA")!!, it.readText())
-                    if (javaFile is PsiJavaFile)
-                        javaFile.classes.flatMap { it.findLookupSymbols() }
-                    else listOf()
+                    if (javaFile is PsiJavaFile) {
+                        javaFile.classes.forEach { it.addLookupSymbols(symbols) }
+                    }
                 }
-            } else listOf())
-        }
-
-        fun dirtyKotlinSourcesFromGradle(): MutableSet<File> {
-            // TODO: handle classpath changes similarly - compare with cashed version (likely a big change, may be costly, some heuristics could be considered)
-            val modifiedKotlinFiles = modified.filter { it.isKotlinFile() }.toMutableSet()
-            val lookupSymbols = dirtyLookupSymbolsFromModifiedJavaFiles()
-                    // TODO: add dirty lookups from modified kotlin files to reduce number of steps needed
-
-            if (lookupSymbols.any()) {
-                val kotlinModifiedFilesSet = modifiedKotlinFiles.toHashSet()
-                val dirtyFilesFromLookups = mapLookupSymbolsToFiles(lookupStorage, lookupSymbols, logAction, ::projectRelativePath, excludes = kotlinModifiedFilesSet)
-                modifiedKotlinFiles.addAll(dirtyFilesFromLookups)
             }
-
-            return modifiedKotlinFiles
         }
 
         fun getClasspathChanges(changedEntries: List<File>): ChangesEither {
             if (changedEntries.isEmpty()) {
                 logger.kotlinDebug { "No classpath changes" }
-                return ChangesEither.Known(emptyList())
+                return ChangesEither.Known(emptySet())
             }
             if (lastBuildInfo == null) {
                 logger.kotlinDebug { "Could not determine last build time" }
@@ -304,7 +290,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
                 return ChangesEither.Unknown()
             }
 
-            val changedFqNames = HashSet<String>()
+            val changedFqNames = HashSet<LookupSymbol>()
             for (entry in changedEntries) {
                 val history = artifactHistoryProvider!![entry]
                 if (history == null) {
@@ -349,9 +335,21 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
             if (classpathChanges is ChangesEither.Unknown) return rebuild("could not get changes " +
                     "from modified classpath entries: ${filesToString(modifiedClasspathEntries)}")
 
-            val dirtyFiles = dirtyKotlinSourcesFromGradle()
+            if (classpathChanges !is ChangesEither.Known) {
+                throw AssertionError("classpathChanges type is expected to be ChangesEither.Known, got ${classpathChanges.javaClass}")
+            }
+
+            val dirtyFiles = modified.filter { it.isKotlinFile() }.toMutableSet()
+            val lookupSymbols = classpathChanges.lookupSymbols.toMutableSet()
+            addDirtyLookupSymbolsFromModifiedJavaFiles(lookupSymbols)
+
+            if (lookupSymbols.any()) {
+                val dirtyFilesFromLookups = mapLookupSymbolsToFiles(lookupStorage, lookupSymbols, logAction, ::projectRelativePath)
+                dirtyFiles.addAll(dirtyFilesFromLookups)
+            }
+
             if (dirtySourcesSinceLastTimeFile.exists()) {
-                val files = dirtySourcesSinceLastTimeFile.readLines().map(::File).filter { it.exists() }
+                val files = dirtySourcesSinceLastTimeFile.readLines().map(::File).filter(File::exists)
                 if (files.isNotEmpty()) {
                     logger.kotlinDebug { "Source files added since last compilation: $files" }
                 }
