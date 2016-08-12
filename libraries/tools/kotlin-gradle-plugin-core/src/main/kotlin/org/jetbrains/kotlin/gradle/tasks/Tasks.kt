@@ -312,10 +312,10 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
                     return ChangesEither.Unknown()
                 }
 
-                val (beforeLastBuild, afterLastBuild) = history.partition { it.timestamp < lastBuildInfo.timestamp }
+                val (beforeLastBuild, afterLastBuild) = history.partition { it.timestamp < lastBuildInfo.startTS }
                 if (beforeLastBuild.isEmpty()) {
                     logger.kotlinDebug { "No known build preceding last build for this module " +
-                            "(ts=${lastBuildInfo.timestamp}) for classpath entry $entry" }
+                            "(ts=${lastBuildInfo.startTS}) for classpath entry $entry" }
                     return ChangesEither.Unknown()
                 }
 
@@ -408,7 +408,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
             kaptAnnotationsFileUpdater = null
         }
 
-        lastBuildInfoFile.writeText(System.currentTimeMillis().toString())
+        BuildInfo.write(BuildInfo(System.currentTimeMillis()), lastBuildInfoFile)
 
         var exitCode = ExitCode.OK
         while (sourcesToCompile.any() || currentRemoved.any()) {

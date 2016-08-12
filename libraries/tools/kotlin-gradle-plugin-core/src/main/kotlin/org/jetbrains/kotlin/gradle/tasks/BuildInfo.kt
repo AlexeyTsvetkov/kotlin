@@ -2,7 +2,7 @@ package org.jetbrains.kotlin.gradle.tasks
 
 import java.io.*
 
-internal data class BuildInfo(val timestamp: Long) : Serializable {
+internal data class BuildInfo(val startTS: Long) : Serializable {
     companion object {
         fun read(file: File): BuildInfo? =
                 try {
