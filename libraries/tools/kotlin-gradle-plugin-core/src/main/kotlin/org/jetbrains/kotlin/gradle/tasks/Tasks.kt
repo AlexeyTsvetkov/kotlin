@@ -12,6 +12,7 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 import org.jetbrains.kotlin.annotation.AnnotationFileUpdater
+import org.jetbrains.kotlin.annotation.SourceAnnotationsRegistry
 import org.jetbrains.kotlin.build.GeneratedFile
 import org.jetbrains.kotlin.cli.common.CLICompiler
 import org.jetbrains.kotlin.cli.common.ExitCode
@@ -153,7 +154,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
     private val sourceRoots = HashSet<File>()
 
     // lazy because name is probably not available when constructor is called
-    private val taskBuildDirectory: File by lazy { File(File(project.buildDir, KOTLIN_BUILD_DIR_NAME), name) }
+    val taskBuildDirectory: File by lazy { File(File(project.buildDir, KOTLIN_BUILD_DIR_NAME), name) }
     private val cacheDirectory: File by lazy { File(taskBuildDirectory, CACHES_DIR_NAME) }
     private val dirtySourcesSinceLastTimeFile: File by lazy { File(taskBuildDirectory, DIRTY_SOURCES_FILE_NAME) }
     private val lastBuildInfoFile: File by lazy { File(taskBuildDirectory, LAST_BUILD_INFO_FILE_NAME) }
@@ -180,6 +181,8 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
     val pluginOptions = CompilerPluginOptions()
     var artifactDifferenceRegistry: ArtifactDifferenceRegistry? = null
     var artifactFile: File? = null
+    // created only if kapt2 is active
+    var sourceAnnotationsRegistry: SourceAnnotationsRegistry? = null
 
     override fun populateTargetSpecificArgs(args: K2JVMCompilerArguments) {
         logger.kotlinDebug("args.freeArgs = ${args.freeArgs}")
@@ -403,6 +406,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
                 ExitCode.INTERNAL_ERROR -> throw GradleException("Internal compiler error. See log for more details")
                 ExitCode.SCRIPT_EXECUTION_ERROR -> throw GradleException("Script execution error. See log for more details")
                 ExitCode.OK -> {
+                    sourceAnnotationsRegistry?.flush()
                     cacheVersions.forEach { it.saveIfNeeded() }
                     logger.kotlinInfo("Compilation succeeded")
                 }
@@ -530,6 +534,7 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
         args.module = moduleFile.absolutePath
         val outputItemCollector = OutputItemsCollectorImpl()
         val messageCollector = GradleMessageCollector(logger, outputItemCollector)
+        sourceAnnotationsRegistry?.clear()
 
         try {
             val incrementalCaches = makeIncrementalCachesMap(targets, { listOf<TargetId>() }, getIncrementalCache, { this })
@@ -539,7 +544,8 @@ open class KotlinCompile() : AbstractKotlinCompile<K2JVMCompilerArguments>() {
             }
 
             logger.kotlinDebug("compiling with args ${ArgumentUtils.convertArgumentsToStringList(args)}")
-            val exitCode = compiler.exec(messageCollector, makeCompileServices(incrementalCaches, lookupTracker, compilationCanceledStatus), args)
+            val compileServices = makeCompileServices(incrementalCaches, lookupTracker, compilationCanceledStatus, sourceAnnotationsRegistry)
+            val exitCode = compiler.exec(messageCollector, compileServices, args)
             return CompileChangedResults(
                     exitCode,
                     outputItemCollector.generatedFiles(

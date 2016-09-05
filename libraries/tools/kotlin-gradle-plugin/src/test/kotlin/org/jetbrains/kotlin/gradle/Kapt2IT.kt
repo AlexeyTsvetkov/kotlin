@@ -16,10 +16,11 @@
 
 package org.jetbrains.kotlin.gradle
 
+import org.jetbrains.kotlin.gradle.util.allKotlinFiles
 import org.jetbrains.kotlin.gradle.util.getFileByName
+import org.jetbrains.kotlin.gradle.util.getFilesByNames
 import org.junit.Test
 import java.io.File
-import java.io.FileFilter
 
 class Kapt2IT: BaseGradleIT() {
     companion object {
@@ -77,16 +78,15 @@ class Kapt2IT: BaseGradleIT() {
             assertContains(":compileJava")
         }
 
-        val files = listOf("InternalDummy.kt", "test.kt")
-        kotlin.repeat(2) { i ->
-            project.projectDir.getFileByName(files[i]).appendText(" ")
-
-            project.build("build", options = options) {
-                assertSuccessful()
-                assertKaptSuccessful()
-                assertContains(":compileKotlin")
-                assertContains(":compileJava")
-            }
+        project.projectDir.getFilesByNames("InternalDummy.kt", "test.kt").forEach { it.appendText(" ") }
+        project.build("build", options = options) {
+            assertSuccessful()
+            assertKaptSuccessful()
+            assertContains(":compileKotlin")
+            assertContains(":compileJava")
+            assertContains("Non-incremental compilation will be performed: kapt2 is not yet compatible with incremental compilation")
+            val nonTestKtFiles = File(project.projectDir, "src/main").allKotlinFiles()
+            assertCompiledKotlinSources(project.relativize(nonTestKtFiles))
         }
     }
 

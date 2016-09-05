@@ -459,26 +459,28 @@ private fun createSyncOutputTask(
         variantName: String
 ) {
     // if kotlinAfterJavaTask is not null then kotlinTask compiles stubs, so don't sync them
-    val kotlinDir = (kotlinAfterJavaTask ?: kotlinTask).destinationDir
+    val kotlinCompile = kotlinAfterJavaTask ?: kotlinTask
+    val kotlinDir = kotlinCompile.destinationDir
     val javaDir = javaTask.destinationDir
     val taskName = "copy${variantName.capitalize()}KotlinClasses"
 
     val syncTask = project.tasks.create(taskName, SyncOutputTask::class.java)
     syncTask.kotlinOutputDir = kotlinDir
     syncTask.javaOutputDir = javaDir
+    syncTask.kotlinTask = kotlinCompile
     kotlinTask.javaOutputDir = javaDir
     kotlinAfterJavaTask?.javaOutputDir = javaDir
 
     // copying should be executed after a latter task
-    val previousTask = kotlinAfterJavaTask ?: javaTask
-    previousTask.finalizedByIfNotFailed(syncTask)
+    kotlinCompile.finalizedByIfNotFailed(syncTask)
 
     project.logger.kotlinDebug { "Created task ${syncTask.path} to copy kotlin classes from $kotlinDir to $javaDir" }
 }
 
 private fun loadSubplugins(project: Project): SubpluginEnvironment {
     try {
-        val subplugins = ServiceLoader.load(KotlinGradleSubplugin::class.java, project.buildscript.classLoader).toList()
+        val subplugins = ServiceLoader.load(KotlinGradleSubplugin::class.java, project.buildscript.classLoader)
+                .map { @Suppress("UNCHECKED_CAST") (it as KotlinGradleSubplugin<KotlinCompile>) }
 
         fun Project.getResolvedArtifacts() = buildscript.configurations.getByName("classpath")
                 .resolvedConfiguration.resolvedArtifacts
@@ -489,7 +491,7 @@ private fun loadSubplugins(project: Project): SubpluginEnvironment {
             resolvedClasspathArtifacts += rootProject.getResolvedArtifacts()
         }
 
-        val subpluginClasspaths = hashMapOf<KotlinGradleSubplugin, List<File>>()
+        val subpluginClasspaths = hashMapOf<KotlinGradleSubplugin<KotlinCompile>, List<File>>()
 
         for (subplugin in subplugins) {
             val file = resolvedClasspathArtifacts
@@ -511,8 +513,8 @@ private fun loadSubplugins(project: Project): SubpluginEnvironment {
 }
 
 class SubpluginEnvironment(
-        val subpluginClasspaths: Map<KotlinGradleSubplugin, List<File>>,
-        val subplugins: List<KotlinGradleSubplugin>
+        val subpluginClasspaths: Map<KotlinGradleSubplugin<KotlinCompile>, List<File>>,
+        val subplugins: List<KotlinGradleSubplugin<KotlinCompile>>
 ) {
 
     fun addSubpluginArguments(
