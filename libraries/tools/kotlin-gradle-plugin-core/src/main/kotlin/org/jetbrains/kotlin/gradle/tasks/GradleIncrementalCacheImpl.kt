@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.gradle.tasks
 
 import org.gradle.api.logging.Logging
 import org.jetbrains.kotlin.build.GeneratedJvmClass
+import org.jetbrains.kotlin.com.intellij.util.io.EnumeratorStringDescriptor
 import org.jetbrains.kotlin.incremental.CompilationResult
 import org.jetbrains.kotlin.incremental.IncrementalCacheImpl
 import org.jetbrains.kotlin.incremental.dumpCollection
@@ -26,6 +27,7 @@ import org.jetbrains.kotlin.incremental.storage.PathStringDescriptor
 import org.jetbrains.kotlin.incremental.storage.StringCollectionExternalizer
 import org.jetbrains.kotlin.modules.TargetId
 import java.io.File
+import java.util.*
 
 class GradleIncrementalCacheImpl(targetDataRoot: File, targetOutputDir: File?, target: TargetId) : IncrementalCacheImpl<TargetId>(targetDataRoot, targetOutputDir, target) {
 
@@ -67,4 +69,37 @@ class GradleIncrementalCacheImpl(targetDataRoot: File, targetOutputDir: File?, t
         }
     }
 }
+
+internal class FileToTextMap(storageFile: File) : BasicStringMap<String>(storageFile, PathStringDescriptor, EnumeratorStringDescriptor()) {
+    override fun dumpValue(value: String): String = value
+
+    fun compareAndUpdate(files: Iterable<File>): TextFilesDifference {
+        val newOrModified = HashMap<File, String>()
+        val removed = HashMap<File, String>()
+        val newPaths = files.mapTo(HashSet()) { it.canonicalPath }
+        val oldPaths = storage.keys
+
+        for (oldPath in oldPaths) {
+            if (oldPath !in newPaths) {
+                removed[File(oldPath)] = storage[oldPath]!!
+                storage.remove(oldPath)
+            }
+        }
+
+        for (path in newPaths) {
+            val file = File(path)
+            val newText = file.readText()
+            val oldText = storage[path]
+
+            if (oldText == null || newText != oldText) {
+                storage[path] = newText
+                newOrModified[file] = newText
+            }
+        }
+
+        return TextFilesDifference(newOrModified, removed)
+    }
+}
+
+internal class TextFilesDifference(val newOrModified: Map<File, String>, val removed: Map<File, String>)
 
