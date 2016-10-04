@@ -201,7 +201,6 @@ internal class IncrementalJvmCompilerRunner(
             caches: IncrementalCachesManager,
             javaFilesProcessor: ChangedJavaFilesProcessor,
             allKotlinSources: List<File>,
-            targetId: TargetId,
             compilationMode: CompilationMode,
             messageCollector: MessageCollector
     ): ExitCode {
