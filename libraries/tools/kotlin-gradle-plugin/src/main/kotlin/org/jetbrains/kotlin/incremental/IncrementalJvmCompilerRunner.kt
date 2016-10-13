@@ -413,7 +413,7 @@ internal class IncrementalJvmCompilerRunner(
 
 internal var K2JVMCompilerArguments.destinationAsFile: File
         get() = File(destination)
-        set(value) { destination = destinationAsFile.path }
+        set(value) { destination = value.path }
 
 internal var K2JVMCompilerArguments.classpathAsList: List<File>
     get() = classpath.split(File.pathSeparator).map(::File)
