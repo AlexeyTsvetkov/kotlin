@@ -77,8 +77,7 @@ class KotlinStandaloneIncrementalCompilationTest : TestWithWorkingDir() {
         val args = K2JVMCompilerArguments()
         args.destination = outDir.path
         args.moduleName = testDir.name
-        args.includeRuntime = true
-        args.classpath = System.getProperty("java.class.path")
+        args.classpath = compileClasspath()
         // initial build
         make(cacheDir, sourceRoots, args)
 
@@ -109,6 +108,13 @@ class KotlinStandaloneIncrementalCompilationTest : TestWithWorkingDir() {
         }
 
         assertEquals(expectedSB.toString(), actualSB.toString())
+    }
+
+    private fun compileClasspath(): String {
+        val currentClasspath = System.getProperty("java.class.path").split(File.pathSeparator)
+        val stdlib = currentClasspath.find { it.contains("kotlin-stdlib") }
+        val runtime = currentClasspath.find { it.contains("kotlin-runtime") }
+        return listOf(stdlib, runtime).joinToString(File.pathSeparator)
     }
 
     data class CompilationResult(val exitCode: ExitCode, val compiledSources: Iterable<File>, val compileErrors: Collection<String>)
