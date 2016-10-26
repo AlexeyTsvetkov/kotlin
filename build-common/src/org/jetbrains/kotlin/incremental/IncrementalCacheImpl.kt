@@ -163,7 +163,10 @@ open class IncrementalCacheImpl<Target>(
         sourceFiles.forEach {
             sourceToClassesMap.add(it, className)
         }
-        internalNameToSource[className.internalName] = sourceFiles
+
+        if (IncrementalCompilation.isExperimental()) {
+            internalNameToSource[className.internalName] = sourceFiles
+        }
 
         if (kotlinClass.classId.isLocal) {
             return CompilationResult.NO_CHANGES
@@ -325,6 +328,7 @@ open class IncrementalCacheImpl<Target>(
             partToMultifileFacade.remove(it)
             constantsMap.remove(it)
             inlineFunctionsMap.remove(it)
+            internalNameToSource.remove(it.internalName)
         }
 
         removeAllFromClassStorage(dirtyClasses)
@@ -653,7 +657,6 @@ open class IncrementalCacheImpl<Target>(
         }
 
         removedFqNames.forEach { classFqNameToSourceMap.remove(it) }
-        removedClasses.forEach { internalNameToSource.remove(it.internalName) }
     }
 
     private inner class DirtyOutputClassesMap(storageFile: File) : BasicStringMap<Boolean>(storageFile, BooleanDataDescriptor.INSTANCE) {
