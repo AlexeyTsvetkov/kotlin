@@ -152,7 +152,7 @@ class KotlinStandaloneIncrementalCompilationTest : TestWithWorkingDir() {
         }
         else {
             sb.appendLine("FAILURE")
-            //errors.filter(String::isNotEmpty).forEach { sb.appendLine(it) }
+            errors.filter(String::isNotEmpty).forEach { sb.appendLine(it) }
         }
 
         return sb.toString()
