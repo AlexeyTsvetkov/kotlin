@@ -405,6 +405,11 @@ internal class IncrementalJvmCompilerRunner(
     private fun additionalDirtyFiles(caches: IncrementalCachesManager, dirtyFilesSet: Set<File>, generatedFiles: List<GeneratedFile<TargetId>>): Collection<File> {
         val result = HashSet<File>()
 
+        fun partsByFacadeName(caches: IncrementalCachesManager, facadeInternalName: String): List<File> {
+            val parts = caches.incrementalCache.getStableMultifileFacadeParts(facadeInternalName) ?: emptyList()
+            return parts.flatMap {caches.incrementalCache.sourcesByInternalName(it) }
+        }
+
         for (generatedFile in generatedFiles) {
             if (generatedFile !is GeneratedJvmClass<*>) continue
 
@@ -420,16 +425,10 @@ internal class IncrementalJvmCompilerRunner(
                     }
                 }
                 KotlinClassHeader.Kind.MULTIFILE_CLASS -> {
-                    val name = outputClass.className.internalName
-                    val parts = caches.incrementalCache.getStableMultifileFacadeParts(name) ?: emptyList()
-                    val partsSources = parts.flatMap { caches.incrementalCache.sourcesByInternalName(it) }
-                    result.addAll(partsSources)
+                    result.addAll(partsByFacadeName(caches, outputClass.className.internalName))
                 }
                 KotlinClassHeader.Kind.MULTIFILE_CLASS_PART -> {
-                    val facadeInternalName = outputClass.classHeader.multifileClassName!!
-                    val parts = caches.incrementalCache.getStableMultifileFacadeParts(facadeInternalName) ?: emptyList()
-                    val partsSources = parts.flatMap { caches.incrementalCache.sourcesByInternalName(it) }
-                    result.addAll(partsSources)
+                    result.addAll(partsByFacadeName(caches, outputClass.classHeader.multifileClassName!!))
                 }
             }
         }
