@@ -19,6 +19,9 @@ package org.jetbrains.kotlin.incremental
 import org.jetbrains.kotlin.TestWithWorkingDir
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.com.intellij.util.containers.HashMap
 import org.jetbrains.kotlin.config.IncrementalCompilation
 import org.jetbrains.kotlin.gradle.incremental.parseTestBuildLog
@@ -29,6 +32,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import java.io.File
+import java.util.*
 import kotlin.test.assertEquals
 
 @RunWith(Parameterized::class)
@@ -73,7 +77,8 @@ class KotlinStandaloneIncrementalCompilationTest : TestWithWorkingDir() {
         val args = K2JVMCompilerArguments()
         args.destination = outDir.path
         args.moduleName = testDir.name
-        args.classpath = ""
+        args.includeRuntime = true
+        args.classpath = System.getProperty("java.class.path")
         // initial build
         make(cacheDir, sourceRoots, args)
 
@@ -94,11 +99,11 @@ class KotlinStandaloneIncrementalCompilationTest : TestWithWorkingDir() {
         var step = 1
         for ((modificationStep, buildLogStep) in modifications.zip(buildLogSteps)) {
             modificationStep.forEach { it.perform(workingDir, mapWorkingToOriginalFile) }
-            val (exitCode, compiledSources) = make(cacheDir, sourceRoots, args)
+            val (exitCode, compiledSources, compileErrors) = make(cacheDir, sourceRoots, args)
 
-            val expectedStep = stepLogAsString(step, buildLogStep.compiledKotlinFiles, buildLogStep.compileSucceeded)
+            val expectedStep = stepLogAsString(step, buildLogStep.compiledKotlinFiles, buildLogStep.compileErrors)
             expectedSB.appendLine(expectedStep)
-            val actualStep = stepLogAsString(step, compiledSources.relativePaths(), compileSucceed = exitCode == ExitCode.OK)
+            val actualStep = stepLogAsString(step, compiledSources.relativePaths(), compileErrors)
             actualSB.appendLine(actualStep)
             step++
         }
@@ -106,7 +111,7 @@ class KotlinStandaloneIncrementalCompilationTest : TestWithWorkingDir() {
         assertEquals(expectedSB.toString(), actualSB.toString())
     }
 
-    data class CompilationResult(val exitCode: ExitCode, val compiledSources: Iterable<File>)
+    data class CompilationResult(val exitCode: ExitCode, val compiledSources: Iterable<File>, val compileErrors: Collection<String>)
 
     private fun make(cacheDir: File, sourceRoots: Iterable<File>, args: K2JVMCompilerArguments): CompilationResult {
         val compiledSources = arrayListOf<File>()
@@ -122,17 +127,27 @@ class KotlinStandaloneIncrementalCompilationTest : TestWithWorkingDir() {
             }
         }
 
-        makeIncrementally(cacheDir, sourceRoots, args, reporter = reporter)
-        return CompilationResult(resultExitCode, compiledSources)
+        val messageCollector = ErrorMessageCollector()
+        makeIncrementally(cacheDir, sourceRoots, args, reporter = reporter, messageCollector = messageCollector)
+        return CompilationResult(resultExitCode, compiledSources, messageCollector.errors)
     }
 
-    private fun stepLogAsString(step: Int, ktSources: Iterable<String>, compileSucceed: Boolean): String {
+    private fun stepLogAsString(step: Int, ktSources: Iterable<String>, errors: Collection<String>): String {
         val sb = StringBuilder()
 
         sb.appendLine("<======= STEP $step =======>")
+        sb.appendLine()
         sb.appendLine("Compiled kotlin sources:")
         ktSources.sorted().toTypedArray().forEach { sb.appendLine(it) }
-        sb.appendLine( if (compileSucceed) "SUCCESS" else "FAILURE")
+        sb.appendLine()
+
+        if (errors.isEmpty()) {
+            sb.appendLine("SUCCESS")
+        }
+        else {
+            sb.appendLine("FAILURE")
+            errors.filter(String::isNotEmpty).forEach { sb.appendLine(it) }
+        }
 
         return sb.toString()
     }
@@ -140,6 +155,23 @@ class KotlinStandaloneIncrementalCompilationTest : TestWithWorkingDir() {
     private fun StringBuilder.appendLine(line: String = "") {
         append(line)
         append('\n')
+    }
+
+    private class ErrorMessageCollector : MessageCollector {
+        val errors = ArrayList<String>()
+
+        override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation) {
+            if (severity.isError) {
+                errors.add(message)
+            }
+        }
+
+        override fun clear() {
+            errors.clear()
+        }
+
+        override fun hasErrors(): Boolean =
+                errors.isNotEmpty()
     }
 
     companion object {
@@ -172,7 +204,6 @@ class KotlinStandaloneIncrementalCompilationTest : TestWithWorkingDir() {
                     .map { arrayOf(it, it.relativeTo(it.parentFile.parentFile).path) }
                     .toList()
         }
-
     }
 }
 
