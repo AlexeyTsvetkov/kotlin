@@ -419,6 +419,12 @@ internal class IncrementalJvmCompilerRunner(
                         result.add(cachedSourceFile)
                     }
                 }
+                KotlinClassHeader.Kind.MULTIFILE_CLASS -> {
+                    val name = outputClass.className.internalName
+                    val parts = caches.incrementalCache.getStableMultifileFacadeParts(name) ?: emptyList()
+                    val partsSources = parts.flatMap { caches.incrementalCache.sourcesByInternalName(it) }
+                    result.addAll(partsSources)
+                }
                 KotlinClassHeader.Kind.MULTIFILE_CLASS_PART -> {
                     val facadeInternalName = outputClass.classHeader.multifileClassName!!
                     val parts = caches.incrementalCache.getStableMultifileFacadeParts(facadeInternalName) ?: emptyList()
