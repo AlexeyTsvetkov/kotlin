@@ -144,7 +144,7 @@ class KotlinStandaloneIncrementalCompilationTest : TestWithWorkingDir() {
         sb.appendLine("<======= STEP $step =======>")
         sb.appendLine()
         sb.appendLine("Compiled kotlin sources:")
-        ktSources.sorted().toTypedArray().forEach { sb.appendLine(it) }
+        ktSources.toSet().toTypedArray().sortedArray().forEach { sb.appendLine(it) }
         sb.appendLine()
 
         if (errors.isEmpty()) {
@@ -152,7 +152,7 @@ class KotlinStandaloneIncrementalCompilationTest : TestWithWorkingDir() {
         }
         else {
             sb.appendLine("FAILURE")
-            errors.filter(String::isNotEmpty).forEach { sb.appendLine(it) }
+            //errors.filter(String::isNotEmpty).forEach { sb.appendLine(it) }
         }
 
         return sb.toString()
