@@ -116,6 +116,26 @@ class KotlinStandaloneIncrementalCompilationTest : TestWithWorkingDir() {
         if (expectedSBWithoutErrors.toString() != actualSBWithoutErrors.toString()) {
             assertEquals(expectedSB.toString(), actualSB.toString())
         }
+
+        run rebuildAndCompareOutput@ {
+            val rebuildOutDir = File(workingDir, "rebuild-out").apply { mkdirs() }
+            val rebuildCacheDir = File(workingDir, "rebuild-cache").apply { mkdirs() }
+            args.destination = rebuildOutDir.path
+            val rebuildResult = make(rebuildCacheDir, sourceRoots, args)
+
+            val rebuildExpectedToSucceed = buildLogSteps.last().compileSucceeded
+            val rebuildSucceeded = rebuildResult.exitCode == ExitCode.OK
+            assertEquals(rebuildExpectedToSucceed, rebuildSucceeded, "Rebuild exit code differs from incremental exit code")
+
+            if (rebuildSucceeded) {
+                assertEqualDirectories(outDir, rebuildOutDir, forgiveExtraFiles = rebuildSucceeded)
+            }
+        }
+    }
+
+    private fun File.cleanDir() {
+        deleteRecursively()
+        mkdirs()
     }
 
     private fun compileClasspath(): String {
