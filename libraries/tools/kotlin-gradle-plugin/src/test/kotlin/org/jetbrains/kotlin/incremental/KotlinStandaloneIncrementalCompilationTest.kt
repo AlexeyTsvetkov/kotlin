@@ -206,12 +206,13 @@ class KotlinStandaloneIncrementalCompilationTest : TestWithWorkingDir() {
                 if (!isDirectory) return false
 
                 // multi-module tests
-                if ("dependencies.txt" in list()) return false
+                val files = list()
+                if ("dependencies.txt" in files) return false
 
                 val logFile = buildLogFinder.findBuildLog(this) ?: return false
                 val parsedLog = parseTestBuildLog(logFile)
                 // tests with java may be expected to fail in javac
-                return parsedLog.all { it.compiledJavaFiles.isEmpty() }
+                return files.none { it.endsWith(".java") } && parsedLog.all { it.compiledJavaFiles.isEmpty() }
             }
 
             return jpsResourcesPath.walk()
