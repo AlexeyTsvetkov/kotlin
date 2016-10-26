@@ -189,6 +189,7 @@ open class IncrementalCacheImpl<Target>(
                 // As a workaround we can remove proto values for multifile facades.
                 protoMap.remove(className)
                 classFqNameToSourceMap.remove(className.fqNameForClassNameWithoutDollars)
+                internalNameToSource.remove(className.internalName)
 
                 // TODO NO_CHANGES? (delegates only)
                 constantsMap.process(kotlinClass, isPackage = true) +
