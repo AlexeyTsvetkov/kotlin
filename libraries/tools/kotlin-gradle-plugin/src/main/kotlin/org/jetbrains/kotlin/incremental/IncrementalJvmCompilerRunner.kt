@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.com.intellij.util.io.PersistentEnumeratorBase
 import org.jetbrains.kotlin.compilerRunner.ArgumentUtils
 import org.jetbrains.kotlin.compilerRunner.OutputItemsCollector
 import org.jetbrains.kotlin.compilerRunner.OutputItemsCollectorImpl
+import org.jetbrains.kotlin.config.IncrementalCompilation
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.incremental.multiproject.ArtifactDifference
 import org.jetbrains.kotlin.incremental.multiproject.ArtifactDifferenceRegistryProvider
@@ -102,14 +103,15 @@ internal class IncrementalJvmCompilerRunner(
             allKotlinSources: List<File>,
             args: K2JVMCompilerArguments,
             messageCollector: MessageCollector,
-            changedFiles: (IncrementalCachesManager)->ChangedFiles
+            getChangedFiles: (IncrementalCachesManager)->ChangedFiles
     ): ExitCode {
         val targetId = TargetId(name = args.moduleName, type = "java-production")
         var caches = IncrementalCachesManager(targetId, cacheDirectory, File(args.destination))
 
         return try {
             val javaFilesProcessor = ChangedJavaFilesProcessor()
-            val compilationMode = calculateSourcesToCompile(javaFilesProcessor, caches, changedFiles(caches), args.classpathAsList)
+            val changedFiles = getChangedFiles(caches)
+            val compilationMode = calculateSourcesToCompile(javaFilesProcessor, caches, changedFiles, args.classpathAsList)
             compileIncrementally(args, caches, javaFilesProcessor, allKotlinSources, targetId, compilationMode, messageCollector)
         }
         catch (e: PersistentEnumeratorBase.CorruptedException) {
@@ -253,12 +255,15 @@ internal class IncrementalJvmCompilerRunner(
             compilationMode: CompilationMode,
             messageCollector: MessageCollector
     ): ExitCode {
+        assert(IncrementalCompilation.isEnabled()) { "Incremental compilation is not enabled" }
+        assert(IncrementalCompilation.isExperimental()) { "Experimental incremental compilation is not enabled" }
+
         val allGeneratedFiles = hashSetOf<GeneratedFile<TargetId>>()
         val dirtySources: MutableList<File>
 
         when (compilationMode) {
             is CompilationMode.Incremental -> {
-                dirtySources = allKotlinSources.filterTo(ArrayList()) { it in compilationMode.dirtyFiles }
+                dirtySources = ArrayList(compilationMode.dirtyFiles)
                 args.classpathAsList += args.destinationAsFile
             }
             is CompilationMode.Rebuild -> {
