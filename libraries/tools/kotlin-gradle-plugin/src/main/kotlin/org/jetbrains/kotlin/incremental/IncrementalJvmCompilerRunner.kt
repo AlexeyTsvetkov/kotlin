@@ -316,10 +316,13 @@ internal class IncrementalJvmCompilerRunner(
             }
 
             val generatedClassFiles = compilerOutput.generatedFiles
-            val sourcesWithPossibleRedeclarations = getSourcesWithPossibleRedeclarations(caches, generatedClassFiles)
-            if (sourcesWithPossibleRedeclarations.isNotEmpty()) {
-                dirtySources.addAll(sourcesWithPossibleRedeclarations)
-                continue
+
+            if (compilationMode is CompilationMode.Incremental) {
+                val additionalDirtyFiles = additionalDirtyFiles(caches, dirtySources.toHashSet(), generatedClassFiles)
+                if (additionalDirtyFiles.isNotEmpty()) {
+                    dirtySources.addAll(additionalDirtyFiles)
+                    continue
+                }
             }
 
             allGeneratedFiles.addAll(generatedClassFiles)
@@ -399,23 +402,33 @@ internal class IncrementalJvmCompilerRunner(
         return exitCode
     }
 
-    private fun getSourcesWithPossibleRedeclarations(caches: IncrementalCachesManager, generatedFiles: List<GeneratedFile<TargetId>>): ArrayList<File> {
-        val result = ArrayList<File>()
+    private fun additionalDirtyFiles(caches: IncrementalCachesManager, dirtyFilesSet: Set<File>, generatedFiles: List<GeneratedFile<TargetId>>): Collection<File> {
+        val result = HashSet<File>()
+
         for (generatedFile in generatedFiles) {
             if (generatedFile !is GeneratedJvmClass<*>) continue
 
             val outputClass = generatedFile.outputClass
-            if (outputClass.classHeader.kind != KotlinClassHeader.Kind.CLASS) continue
-            assert(generatedFile.sourceFiles.size == 1) { "KotlinClassHeader.Kind.CLASS cannot be generated from multiple files" }
 
-            val fqName = outputClass.className.fqNameForClassNameWithoutDollars
-            val currentSourceFile = generatedFile.sourceFiles.single()
-            val cachedSourceFile = caches.incrementalCache.getSourceFileIfClass(fqName)
+            when (outputClass.classHeader.kind) {
+                KotlinClassHeader.Kind.CLASS -> {
+                    val fqName = outputClass.className.fqNameForClassNameWithoutDollars
+                    val cachedSourceFile = caches.incrementalCache.getSourceFileIfClass(fqName)
 
-            if (cachedSourceFile != null && cachedSourceFile != currentSourceFile) {
-                result.add(cachedSourceFile)
+                    if (cachedSourceFile != null) {
+                        result.add(cachedSourceFile)
+                    }
+                }
+                KotlinClassHeader.Kind.MULTIFILE_CLASS_PART -> {
+                    val facadeInternalName = outputClass.classHeader.multifileClassName!!
+                    val parts = caches.incrementalCache.getStableMultifileFacadeParts(facadeInternalName) ?: emptyList()
+                    val partsSources = parts.flatMap { caches.incrementalCache.sourcesByInternalName(it) }
+                    result.addAll(partsSources)
+                }
             }
         }
+
+        result.removeAll(dirtyFilesSet)
         return result
     }
 

@@ -16,10 +16,12 @@
 
 package org.jetbrains.kotlin.incremental
 
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.util.io.FileUtil.toSystemIndependentName
 import com.intellij.util.SmartList
 import com.intellij.util.io.BooleanDataDescriptor
 import com.intellij.util.io.EnumeratorStringDescriptor
+import gnu.trove.THashSet
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.kotlin.build.GeneratedJvmClass
 import org.jetbrains.kotlin.config.IncrementalCompilation
@@ -66,6 +68,7 @@ open class IncrementalCacheImpl<Target>(
         private val SUBTYPES = "subtypes"
         private val SUPERTYPES = "supertypes"
         private val CLASS_FQ_NAME_TO_SOURCE = "class-fq-name-to-source"
+        private val INTERNAL_NAME_TO_SOURCE = "internal-name-to-source"
 
         private val MODULE_MAPPING_FILE_NAME = "." + ModuleMapping.MAPPING_FILE_EXT
     }
@@ -92,6 +95,8 @@ open class IncrementalCacheImpl<Target>(
     private val subtypesMap = registerExperimentalMap(SubtypesMap(SUBTYPES.storageFile))
     private val supertypesMap = registerExperimentalMap(SupertypesMap(SUPERTYPES.storageFile))
     private val classFqNameToSourceMap = registerExperimentalMap(ClassFqNameToSourceMap(CLASS_FQ_NAME_TO_SOURCE.storageFile))
+    // todo: try to use internal names only?
+    private val internalNameToSource = registerExperimentalMap(InternalNameToSourcesMap(INTERNAL_NAME_TO_SOURCE.storageFile))
 
     private val dependents = arrayListOf<IncrementalCacheImpl<Target>>()
     private val outputDir by lazy(LazyThreadSafetyMode.NONE) { requireNotNull(targetOutputDir) { "Target is expected to have output directory: $target" } }
@@ -132,6 +137,8 @@ open class IncrementalCacheImpl<Target>(
 
     fun getSourceFileIfClass(fqName: FqName): File? = classFqNameToSourceMap[fqName]
 
+    fun sourcesByInternalName(internalName: String): Collection<File> = internalNameToSource[internalName]
+
     fun isMultifileFacade(className: JvmClassName): Boolean =
             className.internalName in multifileFacadeToParts
 
@@ -156,6 +163,7 @@ open class IncrementalCacheImpl<Target>(
         sourceFiles.forEach {
             sourceToClassesMap.add(it, className)
         }
+        internalNameToSource[className.internalName] = sourceFiles
 
         if (kotlinClass.classId.isLocal) {
             return CompilationResult.NO_CHANGES
@@ -575,6 +583,23 @@ open class IncrementalCacheImpl<Target>(
         override fun dumpValue(value: String) = value
     }
 
+
+    inner class InternalNameToSourcesMap(storageFile: File) : BasicStringMap<Collection<String>>(storageFile, EnumeratorStringDescriptor(), PathCollectionExternalizer) {
+        operator fun set(internalName: String, sourceFiles: Iterable<File>) {
+            storage[internalName] = sourceFiles.map { it.canonicalPath }
+        }
+
+        operator fun get(internalName: String): Collection<File> =
+                (storage[internalName] ?: emptyList()).map(::File)
+
+        fun remove(internalName: String) {
+            storage.remove(internalName)
+        }
+
+        override fun dumpValue(value: Collection<String>): String =
+                value.dumpCollection()
+    }
+
     private fun addToClassStorage(kotlinClass: LocalFileKotlinClass, srcFile: File) {
         if (!IncrementalCompilation.isExperimental()) return
 
@@ -621,6 +646,7 @@ open class IncrementalCacheImpl<Target>(
         }
 
         removedFqNames.forEach { classFqNameToSourceMap.remove(it) }
+        removedClasses.forEach { internalNameToSource.remove(it.internalName) }
     }
 
     private inner class DirtyOutputClassesMap(storageFile: File) : BasicStringMap<Boolean>(storageFile, BooleanDataDescriptor.INSTANCE) {
@@ -726,6 +752,8 @@ open class IncrementalCacheImpl<Target>(
     ) {
     }
 }
+
+private object PathCollectionExternalizer : CollectionExternalizer<String>(PathStringDescriptor, { THashSet(FileUtil.PATH_HASHING_STRATEGY) })
 
 sealed class ChangeInfo(val fqName: FqName) {
     open class MembersChanged(fqName: FqName, val names: Collection<String>) : ChangeInfo(fqName) {
