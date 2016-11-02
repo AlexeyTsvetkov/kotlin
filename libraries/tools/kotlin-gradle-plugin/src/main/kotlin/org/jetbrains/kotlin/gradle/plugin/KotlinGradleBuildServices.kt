@@ -22,9 +22,9 @@ import org.gradle.BuildResult
 import org.gradle.api.invocation.Gradle
 import org.gradle.api.logging.Logging
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
-import org.jetbrains.kotlin.com.intellij.openapi.util.io.ZipFileCache
-import org.jetbrains.kotlin.com.intellij.openapi.vfs.impl.ZipHandler
-import org.jetbrains.kotlin.com.intellij.openapi.vfs.impl.jar.CoreJarFileSystem
+import com.intellij.openapi.util.io.ZipFileCache
+import com.intellij.openapi.vfs.impl.ZipHandler
+import com.intellij.openapi.vfs.impl.jar.CoreJarFileSystem
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 import org.jetbrains.kotlin.incremental.BuildCacheStorage
 import org.jetbrains.kotlin.incremental.multiproject.ArtifactDifferenceRegistryProvider

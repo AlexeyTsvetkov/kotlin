@@ -1,6 +1,6 @@
 package org.jetbrains.kotlin
 
-import org.jetbrains.kotlin.com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.util.io.FileUtil
 import org.junit.After
 import org.junit.Before
 import java.io.File

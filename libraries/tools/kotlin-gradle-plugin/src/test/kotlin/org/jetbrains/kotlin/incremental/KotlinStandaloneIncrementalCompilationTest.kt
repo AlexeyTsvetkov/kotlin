@@ -22,7 +22,7 @@ import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
-import org.jetbrains.kotlin.com.intellij.util.containers.HashMap
+import com.intellij.util.containers.HashMap
 import org.jetbrains.kotlin.gradle.incremental.parseTestBuildLog
 import org.jetbrains.kotlin.incremental.testingUtils.*
 import org.junit.Test

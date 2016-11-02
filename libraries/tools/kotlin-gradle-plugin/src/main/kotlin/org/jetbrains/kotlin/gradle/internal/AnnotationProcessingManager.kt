@@ -23,11 +23,11 @@ import org.gradle.api.tasks.compile.AbstractCompile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
-import org.jetbrains.kotlin.com.intellij.lang.Language
-import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
-import org.jetbrains.kotlin.com.intellij.psi.PsiFileFactory
-import org.jetbrains.kotlin.com.intellij.psi.PsiJavaFile
-import org.jetbrains.kotlin.com.intellij.psi.impl.PsiFileFactoryImpl
+import com.intellij.lang.Language
+import com.intellij.openapi.util.Disposer
+import com.intellij.psi.PsiFileFactory
+import com.intellij.psi.PsiJavaFile
+import com.intellij.psi.impl.PsiFileFactoryImpl
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptionsImpl
 import org.jetbrains.kotlin.gradle.plugin.*

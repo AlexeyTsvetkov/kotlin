@@ -2,7 +2,7 @@ package org.jetbrains.kotlin.bytecode
 
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
-import org.jetbrains.kotlin.com.intellij.openapi.util.io.FileUtil.createTempDirectory
+import com.intellij.openapi.util.io.FileUtil.createTempDirectory
 import org.jetbrains.kotlin.gradle.util.checkBytecodeContains
 import org.jetbrains.kotlin.gradle.util.checkBytecodeNotContains
 import org.junit.After

@@ -1,6 +1,6 @@
 package org.jetbrains.kotlin.gradle.incremental
 
-import org.jetbrains.kotlin.com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.util.io.FileUtil
 import java.io.File
 
 private const val BEGIN_COMPILED_FILES = "Compiling files:"
