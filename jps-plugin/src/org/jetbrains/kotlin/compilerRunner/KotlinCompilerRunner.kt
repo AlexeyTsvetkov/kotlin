@@ -16,13 +16,10 @@
 
 package org.jetbrains.kotlin.compilerRunner
 
-import com.intellij.util.xmlb.XmlSerializerUtil
 import org.jetbrains.jps.api.GlobalOptions
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.KOTLIN_COMPILER_ENVIRONMENT_KEEPALIVE_PROPERTY
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
-import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
-import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.ERROR
@@ -30,56 +27,26 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.INFO
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.MessageCollectorUtil
 import org.jetbrains.kotlin.daemon.client.CompilationServices
-import org.jetbrains.kotlin.daemon.client.DaemonReportMessage
-import org.jetbrains.kotlin.daemon.client.DaemonReportingTargets
 import org.jetbrains.kotlin.daemon.client.KotlinCompilerClient
-import org.jetbrains.kotlin.config.CompilerSettings
-import org.jetbrains.kotlin.daemon.common.*
-import org.jetbrains.kotlin.jps.build.KotlinBuilder
+import org.jetbrains.kotlin.daemon.common.CompileService
+import org.jetbrains.kotlin.daemon.common.isDaemonEnabled
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
-import org.jetbrains.kotlin.utils.rethrow
-import java.io.*
-import java.lang.reflect.Field
-import java.lang.reflect.Modifier
-import java.rmi.ConnectException
-import java.util.*
-import java.util.concurrent.TimeUnit
+import java.io.BufferedReader
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
+import java.io.StringReader
 
-object KotlinCompilerRunner {
-    private val K2JVM_COMPILER = "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler"
-    private val K2JS_COMPILER = "org.jetbrains.kotlin.cli.js.K2JSCompiler"
-    private val INTERNAL_ERROR = ExitCode.INTERNAL_ERROR.toString()
+abstract class KotlinCompilerRunner {
+    protected val K2JVM_COMPILER = "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler"
+    protected val K2JS_COMPILER = "org.jetbrains.kotlin.cli.js.K2JSCompiler"
+    protected val INTERNAL_ERROR = ExitCode.INTERNAL_ERROR.toString()
 
-    fun runK2JvmCompiler(
-            commonArguments: CommonCompilerArguments,
-            k2jvmArguments: K2JVMCompilerArguments,
-            compilerSettings: CompilerSettings,
-            messageCollector: MessageCollector,
-            environment: CompilerEnvironment,
-            moduleFile: File,
-            collector: OutputItemsCollector) {
-        val arguments = mergeBeans(commonArguments, k2jvmArguments)
-        setupK2JvmArguments(moduleFile, arguments)
+    class DaemonConnection(val daemon: CompileService?, val sessionId: Int = CompileService.NO_SESSION)
+    protected abstract fun getDaemonConnection(environment: CompilerEnvironment, messageCollector: MessageCollector): DaemonConnection
 
-        runCompiler(K2JVM_COMPILER, arguments, compilerSettings.additionalArguments, messageCollector, collector, environment)
-    }
-
-    fun runK2JsCompiler(
-            commonArguments: CommonCompilerArguments,
-            k2jsArguments: K2JSCompilerArguments,
-            compilerSettings: CompilerSettings,
-            messageCollector: MessageCollector,
-            environment: CompilerEnvironment,
-            collector: OutputItemsCollector,
-            sourceFiles: Collection<File>,
-            libraryFiles: List<String>,
-            outputFile: File) {
-        val arguments = mergeBeans(commonArguments, k2jsArguments)
-        setupK2JsArguments(outputFile, sourceFiles, libraryFiles, arguments)
-
-        runCompiler(K2JS_COMPILER, arguments, compilerSettings.additionalArguments, messageCollector, collector, environment)
-    }
+    protected abstract fun logInfo(msg: String)
+    protected abstract fun logDebug(msg: String)
 
     private fun processCompilerOutput(
             messageCollector: MessageCollector,
@@ -98,7 +65,7 @@ object KotlinCompilerRunner {
         messageCollector.report(ERROR, "Compiler terminated with internal error", CompilerMessageLocation.NO_LOCATION)
     }
 
-    private fun runCompiler(
+    protected fun runCompiler(
             compilerClassName: String,
             arguments: CommonCompilerArguments,
             additionalArguments: String,
@@ -115,7 +82,7 @@ object KotlinCompilerRunner {
 
             if (!tryCompileWithDaemon(compilerClassName, argsArray, environment, messageCollector, collector)) {
                 // otherwise fallback to in-process
-                KotlinBuilder.LOG.info("Compile in-process")
+                logInfo("Compile in-process")
 
                 val stream = ByteArrayOutputStream()
                 val out = PrintStream(stream)
@@ -140,44 +107,6 @@ object KotlinCompilerRunner {
 
     }
 
-    internal class DaemonConnection(val daemon: CompileService?, val sessionId: Int = CompileService.NO_SESSION)
-
-    internal object getDaemonConnection {
-        private @Volatile var connection: DaemonConnection? = null
-
-        @Synchronized operator fun invoke(environment: CompilerEnvironment, messageCollector: MessageCollector): DaemonConnection {
-            if (connection == null) {
-                val libPath = CompilerRunnerUtil.getLibPath(environment.kotlinPaths, messageCollector)
-                val compilerId = CompilerId.makeCompilerId(File(libPath, "kotlin-compiler.jar"))
-                val daemonOptions = configureDaemonOptions()
-                val daemonJVMOptions = configureDaemonJVMOptions(inheritMemoryLimits = true, inheritAdditionalProperties = true)
-
-                val daemonReportMessages = ArrayList<DaemonReportMessage>()
-
-                val profiler = if (daemonOptions.reportPerf) WallAndThreadAndMemoryTotalProfiler(withGC = false) else DummyProfiler()
-
-                profiler.withMeasure(null) {
-                    fun newFlagFile(): File {
-                        val flagFile = File.createTempFile("kotlin-compiler-jps-session-", "-is-running")
-                        flagFile.deleteOnExit()
-                        return flagFile
-                    }
-                    val daemon = KotlinCompilerClient.connectToCompileService(compilerId, daemonJVMOptions, daemonOptions, DaemonReportingTargets(null, daemonReportMessages), true, true)
-                    connection = DaemonConnection(daemon, daemon?.leaseCompileSession(newFlagFile().absolutePath)?.get() ?: CompileService.NO_SESSION)
-                }
-
-                for (msg in daemonReportMessages) {
-                    messageCollector.report(CompilerMessageSeverity.INFO,
-                                            (if (msg.category == DaemonReportCategory.EXCEPTION && connection?.daemon == null)  "Falling  back to compilation without daemon due to error: " else "") + msg.message,
-                                            CompilerMessageLocation.NO_LOCATION)
-                }
-
-                reportTotalAndThreadPerf("Daemon connect", daemonOptions, messageCollector, profiler)
-            }
-            return connection!!
-        }
-    }
-
     private fun tryCompileWithDaemon(compilerClassName: String,
                                      argsArray: Array<String>,
                                      environment: CompilerEnvironment,
@@ -187,11 +116,11 @@ object KotlinCompilerRunner {
 
         if (isDaemonEnabled()) {
 
-            KotlinBuilder.LOG.debug("Try to connect to daemon")
+            logDebug("Try to connect to daemon")
             val connection = getDaemonConnection(environment, messageCollector)
 
             if (connection.daemon != null) {
-                KotlinBuilder.LOG.info("Connected to daemon")
+                logInfo("Connected to daemon")
 
                 val compilerOut = ByteArrayOutputStream()
                 val daemonOut = ByteArrayOutputStream()
@@ -208,10 +137,10 @@ object KotlinCompilerRunner {
 
                 fun retryOrFalse(e: Exception): Boolean {
                     if (retryOnConnectionError) {
-                        KotlinBuilder.LOG.debug("retrying once on daemon connection error: ${e.message}")
+                        logDebug("retrying once on daemon connection error: ${e.message}")
                         return tryCompileWithDaemon(compilerClassName, argsArray, environment, messageCollector, collector, retryOnConnectionError = false)
                     }
-                    KotlinBuilder.LOG.info("daemon connection error: ${e.message}")
+                    logInfo("daemon connection error: ${e.message}")
                     return false
                 }
 
@@ -232,19 +161,9 @@ object KotlinCompilerRunner {
                 return true
             }
 
-            KotlinBuilder.LOG.info("Daemon not found")
+            logInfo("Daemon not found")
         }
         return false
-    }
-
-    private fun reportTotalAndThreadPerf(message: String, daemonOptions: DaemonOptions, messageCollector: MessageCollector, profiler: Profiler) {
-        if (daemonOptions.reportPerf) {
-            fun Long.ms() = TimeUnit.NANOSECONDS.toMillis(this)
-            val counters = profiler.getTotalCounters()
-            messageCollector.report(INFO,
-                                    "PERF: $message ${counters.time.ms()} ms, thread ${counters.threadTime.ms()}",
-                                    CompilerMessageLocation.NO_LOCATION)
-        }
     }
 
     private fun getReturnCodeFromObject(rc: Any?): String {
@@ -254,53 +173,5 @@ object KotlinCompilerRunner {
             else -> throw IllegalStateException("Unexpected return: " + rc)
         }
     }
-
-    private fun <T : CommonCompilerArguments> mergeBeans(from: CommonCompilerArguments, to: T): T {
-        // TODO: rewrite when updated version of com.intellij.util.xmlb is available on TeamCity
-        val copy = XmlSerializerUtil.createCopy(to)
-
-        val fromFields = collectFieldsToCopy(from.javaClass)
-        for (fromField in fromFields) {
-            val toField = copy.javaClass.getField(fromField.name)
-            toField.set(copy, fromField.get(from))
-        }
-
-        return copy
-    }
-
-    private fun collectFieldsToCopy(clazz: Class<*>): List<Field> {
-        val fromFields = ArrayList<Field>()
-
-        var currentClass: Class<*>? = clazz
-        while (currentClass != null) {
-            for (field in currentClass.declaredFields) {
-                val modifiers = field.modifiers
-                if (!Modifier.isStatic(modifiers) && Modifier.isPublic(modifiers)) {
-                    fromFields.add(field)
-                }
-            }
-            currentClass = currentClass.superclass
-        }
-
-        return fromFields
-    }
-
-    private fun setupK2JvmArguments(moduleFile: File, settings: K2JVMCompilerArguments) {
-        with(settings) {
-            module = moduleFile.absolutePath
-            noStdlib = true
-            noReflect = true
-            noJdk = true
-        }
-    }
-
-    private fun setupK2JsArguments( _outputFile: File, sourceFiles: Collection<File>, _libraryFiles: List<String>, settings: K2JSCompilerArguments) {
-        with(settings) {
-            noStdlib = true
-            freeArgs = sourceFiles.map { it.path }
-            outputFile = _outputFile.path
-            metaInfo = true
-            libraryFiles = _libraryFiles.toTypedArray()
-        }
-    }
 }
+

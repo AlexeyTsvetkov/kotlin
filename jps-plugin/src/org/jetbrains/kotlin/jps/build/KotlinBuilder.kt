@@ -48,6 +48,7 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.OutputMessageUtil
 import org.jetbrains.kotlin.compilerRunner.CompilerEnvironment
+import org.jetbrains.kotlin.compilerRunner.JpsKotlinCompilerRunner
 import org.jetbrains.kotlin.compilerRunner.KotlinCompilerRunner
 import org.jetbrains.kotlin.compilerRunner.OutputItemsCollectorImpl
 import org.jetbrains.kotlin.config.CompilerRunnerConstants
@@ -624,7 +625,8 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         val compilerSettings = JpsKotlinCompilerSettings.getCompilerSettings(project)
         val k2JsArguments = JpsKotlinCompilerSettings.getK2JsCompilerArguments(project)
 
-        KotlinCompilerRunner.runK2JsCompiler(commonArguments, k2JsArguments, compilerSettings, messageCollector, environment, outputItemCollector, sourceFiles, libraryFiles, outputFile)
+        val compilerRunner = JpsKotlinCompilerRunner()
+        compilerRunner.runK2JsCompiler(commonArguments, k2JsArguments, compilerSettings, messageCollector, environment, outputItemCollector, sourceFiles, libraryFiles, outputFile)
         return outputItemCollector
     }
 
@@ -690,7 +692,8 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
                                 + (if (totalRemovedFiles == 0) "" else " ($totalRemovedFiles removed files)")
                                 + " in " + filesToCompile.keySet().joinToString { it.presentableName })
 
-        KotlinCompilerRunner.runK2JvmCompiler(commonArguments, k2JvmArguments, compilerSettings, messageCollector, environment, moduleFile, outputItemCollector)
+        val compilerRunner = JpsKotlinCompilerRunner()
+        compilerRunner.runK2JvmCompiler(commonArguments, k2JvmArguments, compilerSettings, messageCollector, environment, moduleFile, outputItemCollector)
         moduleFile.delete()
 
         return outputItemCollector
