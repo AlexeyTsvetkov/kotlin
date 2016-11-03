@@ -16,9 +16,7 @@
 
 package org.jetbrains.kotlin.compilerRunner
 
-import org.jetbrains.jps.api.GlobalOptions
 import org.jetbrains.kotlin.cli.common.ExitCode
-import org.jetbrains.kotlin.cli.common.KOTLIN_COMPILER_ENVIRONMENT_KEEPALIVE_PROPERTY
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
@@ -34,7 +32,6 @@ import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompil
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
 import java.io.BufferedReader
 import java.io.ByteArrayOutputStream
-import java.io.PrintStream
 import java.io.StringReader
 
 abstract class KotlinCompilerRunner {
@@ -48,11 +45,12 @@ abstract class KotlinCompilerRunner {
     protected abstract fun logInfo(msg: String)
     protected abstract fun logDebug(msg: String)
 
-    private fun processCompilerOutput(
+    protected fun processCompilerOutput(
             messageCollector: MessageCollector,
             collector: OutputItemsCollector,
             stream: ByteArrayOutputStream,
-            exitCode: String) {
+            exitCode: String
+    ) {
         val reader = BufferedReader(StringReader(stream.toString()))
         CompilerOutputParser.parseCompilerMessagesFromReader(messageCollector, reader, collector)
 
@@ -61,7 +59,7 @@ abstract class KotlinCompilerRunner {
         }
     }
 
-    private fun reportInternalCompilerError(messageCollector: MessageCollector) {
+    protected fun reportInternalCompilerError(messageCollector: MessageCollector) {
         messageCollector.report(ERROR, "Compiler terminated with internal error", CompilerMessageLocation.NO_LOCATION)
     }
 
@@ -81,23 +79,7 @@ abstract class KotlinCompilerRunner {
             val argsArray = argumentsList.toTypedArray()
 
             if (!tryCompileWithDaemon(compilerClassName, argsArray, environment, messageCollector, collector)) {
-                // otherwise fallback to in-process
-                logInfo("Compile in-process")
-
-                val stream = ByteArrayOutputStream()
-                val out = PrintStream(stream)
-
-                // the property should be set at least for parallel builds to avoid parallel building problems (racing between destroying and using environment)
-                // unfortunately it cannot be currently set by default globally, because it breaks many tests
-                // since there is no reliable way so far to detect running under tests, switching it on only for parallel builds
-                if (System.getProperty(GlobalOptions.COMPILE_PARALLEL_OPTION, "false").toBoolean())
-                    System.setProperty(KOTLIN_COMPILER_ENVIRONMENT_KEEPALIVE_PROPERTY, "true")
-
-                val rc = CompilerRunnerUtil.invokeExecMethod(compilerClassName, argsArray, environment, messageCollector, out)
-
-                // exec() returns an ExitCode object, class of which is loaded with a different class loader,
-                // so we take it's contents through reflection
-                processCompilerOutput(messageCollector, collector, stream, getReturnCodeFromObject(rc))
+                fallbackCompileStrategy(argsArray, collector, compilerClassName, environment, messageCollector)
             }
         }
         catch (e: Throwable) {
@@ -106,6 +88,13 @@ abstract class KotlinCompilerRunner {
         }
 
     }
+
+    protected abstract fun fallbackCompileStrategy(
+            argsArray: Array<String>,
+            collector: OutputItemsCollector,
+            compilerClassName: String,
+            environment: CompilerEnvironment,
+            messageCollector: MessageCollector)
 
     private fun tryCompileWithDaemon(compilerClassName: String,
                                      argsArray: Array<String>,
@@ -164,14 +153,6 @@ abstract class KotlinCompilerRunner {
             logInfo("Daemon not found")
         }
         return false
-    }
-
-    private fun getReturnCodeFromObject(rc: Any?): String {
-        when {
-            rc == null -> return INTERNAL_ERROR
-            ExitCode::class.java.name == rc.javaClass.name -> return rc.toString()
-            else -> throw IllegalStateException("Unexpected return: " + rc)
-        }
     }
 }
 

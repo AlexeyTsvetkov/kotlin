@@ -17,6 +17,9 @@
 package org.jetbrains.kotlin.compilerRunner
 
 import com.intellij.util.xmlb.XmlSerializerUtil
+import org.jetbrains.jps.api.GlobalOptions
+import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.KOTLIN_COMPILER_ENVIRONMENT_KEEPALIVE_PROPERTY
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
@@ -29,7 +32,9 @@ import org.jetbrains.kotlin.daemon.client.DaemonReportingTargets
 import org.jetbrains.kotlin.daemon.client.KotlinCompilerClient
 import org.jetbrains.kotlin.daemon.common.*
 import org.jetbrains.kotlin.jps.build.KotlinBuilder
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.PrintStream
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.util.*
@@ -128,6 +133,40 @@ class JpsKotlinCompilerRunner : KotlinCompilerRunner() {
             messageCollector.report(CompilerMessageSeverity.INFO,
                                     "PERF: $message ${counters.time.ms()} ms, thread ${counters.threadTime.ms()}",
                                     CompilerMessageLocation.NO_LOCATION)
+        }
+    }
+
+    override fun fallbackCompileStrategy(
+            argsArray: Array<String>,
+            collector: OutputItemsCollector,
+            compilerClassName: String,
+            environment: CompilerEnvironment,
+            messageCollector: MessageCollector
+    ) {
+        // otherwise fallback to in-process
+        logInfo("Compile in-process")
+
+        val stream = ByteArrayOutputStream()
+        val out = PrintStream(stream)
+
+        // the property should be set at least for parallel builds to avoid parallel building problems (racing between destroying and using environment)
+        // unfortunately it cannot be currently set by default globally, because it breaks many tests
+        // since there is no reliable way so far to detect running under tests, switching it on only for parallel builds
+        if (System.getProperty(GlobalOptions.COMPILE_PARALLEL_OPTION, "false").toBoolean())
+            System.setProperty(KOTLIN_COMPILER_ENVIRONMENT_KEEPALIVE_PROPERTY, "true")
+
+        val rc = CompilerRunnerUtil.invokeExecMethod(compilerClassName, argsArray, environment, messageCollector, out)
+
+        // exec() returns an ExitCode object, class of which is loaded with a different class loader,
+        // so we take it's contents through reflection
+        processCompilerOutput(messageCollector, collector, stream, getReturnCodeFromObject(rc))
+    }
+
+    private fun getReturnCodeFromObject(rc: Any?): String {
+        when {
+            rc == null -> return INTERNAL_ERROR
+            ExitCode::class.java.name == rc.javaClass.name -> return rc.toString()
+            else -> throw IllegalStateException("Unexpected return: " + rc)
         }
     }
 
