@@ -367,7 +367,7 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
 
     private fun doCompileModuleChunk(
             allCompiledFiles: MutableSet<File>, chunk: ModuleChunk, commonArguments: CommonCompilerArguments, context: CompileContext,
-            dirtyFilesHolder: DirtyFilesHolder<JavaSourceRootDescriptor, ModuleBuildTarget>, environment: CompilerEnvironment,
+            dirtyFilesHolder: DirtyFilesHolder<JavaSourceRootDescriptor, ModuleBuildTarget>, environment: JpsCompilerEnvironment,
             filesToCompile: MultiMap<ModuleBuildTarget, File>, incrementalCaches: Map<ModuleBuildTarget, IncrementalCacheImpl<*>>,
             messageCollector: MessageCollectorAdapter, project: JpsProject
     ): OutputItemsCollectorImpl? {
@@ -590,7 +590,7 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
     // if null is returned, nothing was done
     private fun compileToJs(chunk: ModuleChunk,
                             commonArguments: CommonCompilerArguments,
-                            environment: CompilerEnvironment,
+                            environment: JpsCompilerEnvironment,
                             messageCollector: MessageCollectorAdapter,
                             project: JpsProject
     ): OutputItemsCollectorImpl? {
@@ -646,7 +646,7 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
                              commonArguments: CommonCompilerArguments,
                              context: CompileContext,
                              dirtyFilesHolder: DirtyFilesHolder<JavaSourceRootDescriptor, ModuleBuildTarget>,
-                             environment: CompilerEnvironment,
+                             environment: JpsCompilerEnvironment,
                              filesToCompile: MultiMap<ModuleBuildTarget, File>, messageCollector: MessageCollectorAdapter
     ): OutputItemsCollectorImpl? {
         val outputItemCollector = OutputItemsCollectorImpl()

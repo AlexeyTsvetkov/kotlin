@@ -40,7 +40,7 @@ import java.lang.reflect.Modifier
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class JpsKotlinCompilerRunner : KotlinCompilerRunner() {
+class JpsKotlinCompilerRunner : KotlinCompilerRunner<JpsCompilerEnvironment>() {
     companion object {
         private @Volatile var jpsDaemonConnection: DaemonConnection? = null
     }
@@ -50,7 +50,7 @@ class JpsKotlinCompilerRunner : KotlinCompilerRunner() {
             k2jvmArguments: K2JVMCompilerArguments,
             compilerSettings: CompilerSettings,
             messageCollector: MessageCollector,
-            environment: CompilerEnvironment,
+            environment: JpsCompilerEnvironment,
             moduleFile: File,
             collector: OutputItemsCollector
     ) {
@@ -65,7 +65,7 @@ class JpsKotlinCompilerRunner : KotlinCompilerRunner() {
             k2jsArguments: K2JSCompilerArguments,
             compilerSettings: CompilerSettings,
             messageCollector: MessageCollector,
-            environment: CompilerEnvironment,
+            environment: JpsCompilerEnvironment,
             collector: OutputItemsCollector,
             sourceFiles: Collection<File>,
             libraryFiles: List<String>,
@@ -140,7 +140,7 @@ class JpsKotlinCompilerRunner : KotlinCompilerRunner() {
             argsArray: Array<String>,
             collector: OutputItemsCollector,
             compilerClassName: String,
-            environment: CompilerEnvironment,
+            environment: JpsCompilerEnvironment,
             messageCollector: MessageCollector
     ) {
         // otherwise fallback to in-process
@@ -170,7 +170,7 @@ class JpsKotlinCompilerRunner : KotlinCompilerRunner() {
         }
     }
 
-    override fun getDaemonConnection(environment: CompilerEnvironment, messageCollector: MessageCollector): DaemonConnection {
+    override fun getDaemonConnection(environment: JpsCompilerEnvironment, messageCollector: MessageCollector): DaemonConnection {
         if (jpsDaemonConnection == null) {
             val libPath = CompilerRunnerUtil.getLibPath(environment.kotlinPaths, messageCollector)
             val compilerId = CompilerId.makeCompilerId(File(libPath, "kotlin-compiler.jar"))

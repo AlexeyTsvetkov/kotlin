@@ -34,13 +34,13 @@ import java.io.BufferedReader
 import java.io.ByteArrayOutputStream
 import java.io.StringReader
 
-abstract class KotlinCompilerRunner {
+abstract class KotlinCompilerRunner<in Env : CompilerEnvironment> {
     protected val K2JVM_COMPILER = "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler"
     protected val K2JS_COMPILER = "org.jetbrains.kotlin.cli.js.K2JSCompiler"
     protected val INTERNAL_ERROR = ExitCode.INTERNAL_ERROR.toString()
 
     class DaemonConnection(val daemon: CompileService?, val sessionId: Int = CompileService.NO_SESSION)
-    protected abstract fun getDaemonConnection(environment: CompilerEnvironment, messageCollector: MessageCollector): DaemonConnection
+    protected abstract fun getDaemonConnection(environment: Env, messageCollector: MessageCollector): DaemonConnection
 
     protected abstract fun logInfo(msg: String)
     protected abstract fun logDebug(msg: String)
@@ -69,7 +69,7 @@ abstract class KotlinCompilerRunner {
             additionalArguments: String,
             messageCollector: MessageCollector,
             collector: OutputItemsCollector,
-            environment: CompilerEnvironment) {
+            environment: Env) {
         try {
             messageCollector.report(INFO, "Using kotlin-home = " + environment.kotlinPaths.homePath, CompilerMessageLocation.NO_LOCATION)
 
@@ -93,12 +93,12 @@ abstract class KotlinCompilerRunner {
             argsArray: Array<String>,
             collector: OutputItemsCollector,
             compilerClassName: String,
-            environment: CompilerEnvironment,
+            environment: Env,
             messageCollector: MessageCollector)
 
     private fun tryCompileWithDaemon(compilerClassName: String,
                                      argsArray: Array<String>,
-                                     environment: CompilerEnvironment,
+                                     environment: Env,
                                      messageCollector: MessageCollector,
                                      collector: OutputItemsCollector,
                                      retryOnConnectionError: Boolean = true): Boolean {
