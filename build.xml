@@ -734,6 +734,59 @@
         </jar>
     </target>
 
+    <target name="cli-common">
+        <cleandir dir="${output}/classes/cli-common"/>
+
+        <kotlinc output="${output}/classes/cli-common" modulename="cli-common">
+            <src>
+                <pathelement path="compiler/cli/cli-common/src"/>
+            </src>
+            <classpath>
+            </classpath>
+        </kotlinc>
+
+        <jar destfile="${kotlin-home}/lib/kotlin-compiler-runner.jar">
+            <fileset dir="${output}/classes/compiler-runner"/>
+            <zipfileset file="${kotlin-home}/build.txt" prefix="META-INF"/>
+
+            <manifest>
+                <attribute name="Built-By" value="${manifest.impl.vendor}"/>
+
+                <attribute name="Implementation-Vendor" value="${manifest.impl.vendor}"/>
+                <attribute name="Implementation-Title" value="${manifest.impl.title.kotlin.compiler.runner}"/>
+                <attribute name="Implementation-Version" value="${build.number}"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="compiler-runner" depends="cli-common,kotlin-build-common,daemon-client">
+        <cleandir dir="${output}/classes/compiler-runner"/>
+
+        <kotlinc output="${output}/classes/compiler-runner" modulename="compiler-runner">
+            <src>
+                <pathelement path="compiler/compiler-runner/src"/>
+            </src>
+            <classpath>
+                <pathelement path="${kotlin-home}/lib/kotlin-build-common.jar"/>
+                <pathelement path="${kotlin-home}/lib/kotlin-daemon-client.jar"/>
+                <pathelement path="${kotlin-home}/lib/kotlin-compiler.jar"/>
+            </classpath>
+        </kotlinc>
+
+        <jar destfile="${kotlin-home}/lib/kotlin-compiler-runner.jar">
+            <fileset dir="${output}/classes/compiler-runner"/>
+            <zipfileset file="${kotlin-home}/build.txt" prefix="META-INF"/>
+
+            <manifest>
+                <attribute name="Built-By" value="${manifest.impl.vendor}"/>
+
+                <attribute name="Implementation-Vendor" value="${manifest.impl.vendor}"/>
+                <attribute name="Implementation-Title" value="${manifest.impl.title.kotlin.compiler.runner}"/>
+                <attribute name="Implementation-Version" value="${build.number}"/>
+            </manifest>
+        </jar>
+    </target>
+
     <target name="android-extensions-compiler">
         <cleandir dir="${output}/classes/android-extensions/android-extensions-compiler"/>
         <javac2 destdir="${output}/classes/android-extensions/android-extensions-compiler" debug="true" debuglevel="lines,vars,source" includeAntRuntime="false">
@@ -1133,7 +1186,7 @@
             depends="builtins,stdlib,kotlin-test,core,reflection,pack-runtime,pack-runtime-sources,mock-runtime-for-test"/>
 
     <target name="dist"
-            depends="clean,init,prepare-dist,preloader,runner,serialize-builtins,compiler,compiler-sources,kotlin-build-common,ant-tools,runtime,kotlin-js-stdlib,android-extensions-compiler,annotation-processing-under-jdk8,daemon-client,kotlin-build-common-test"
+            depends="clean,init,prepare-dist,preloader,runner,serialize-builtins,compiler,compiler-sources,kotlin-build-common,ant-tools,runtime,kotlin-js-stdlib,android-extensions-compiler,annotation-processing-under-jdk8,daemon-client,compiler-runner,kotlin-build-common-test"
             description="Builds redistributables from sources"/>
 
     <target name="dist-quick"
