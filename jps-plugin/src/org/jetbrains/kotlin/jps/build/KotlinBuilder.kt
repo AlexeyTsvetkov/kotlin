@@ -47,10 +47,7 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.OutputMessageUtil
-import org.jetbrains.kotlin.compilerRunner.CompilerEnvironment
-import org.jetbrains.kotlin.compilerRunner.JpsKotlinCompilerRunner
-import org.jetbrains.kotlin.compilerRunner.KotlinCompilerRunner
-import org.jetbrains.kotlin.compilerRunner.OutputItemsCollectorImpl
+import org.jetbrains.kotlin.compilerRunner.*
 import org.jetbrains.kotlin.config.CompilerRunnerConstants
 import org.jetbrains.kotlin.config.CompilerRunnerConstants.INTERNAL_ERROR_PREFIX
 import org.jetbrains.kotlin.config.IncrementalCompilation
@@ -64,6 +61,7 @@ import org.jetbrains.kotlin.jps.incremental.*
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCache
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
 import org.jetbrains.kotlin.modules.TargetId
+import org.jetbrains.kotlin.preloading.ClassCondition
 import org.jetbrains.kotlin.progress.CompilationCanceledException
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
 import org.jetbrains.kotlin.utils.JsLibraryUtils
@@ -414,7 +412,7 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
             lookupTracker: LookupTracker,
             sourceRetentionAnnotationHandler: SourceRetentionAnnotationHandler?,
             context: CompileContext
-    ): CompilerEnvironment {
+    ): JpsCompilerEnvironment {
         val compilerServices = with(Services.Builder()) {
             register(IncrementalCompilationComponents::class.java,
                   IncrementalCompilationComponentsImpl(incrementalCaches.mapKeys { TargetId(it.key) },
@@ -430,9 +428,10 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
             build()
         }
 
-        return CompilerEnvironment.getEnvironmentFor(
+        return JpsCompilerEnvironment(
                 PathUtil.getKotlinPathsForJpsPluginOrJpsTests(),
-                { className ->
+                compilerServices,
+                ClassCondition { className ->
                     className.startsWith("org.jetbrains.kotlin.load.kotlin.incremental.components.")
                     || className.startsWith("org.jetbrains.kotlin.incremental.components.")
                     || className == "org.jetbrains.kotlin.config.Services"
@@ -440,8 +439,7 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
                     || className == "org.jetbrains.kotlin.progress.CompilationCanceledStatus"
                     || className == "org.jetbrains.kotlin.progress.CompilationCanceledException"
                     || className == "org.jetbrains.kotlin.modules.TargetId"
-                },
-                compilerServices
+                }
         )
     }
 

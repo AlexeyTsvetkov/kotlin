@@ -16,39 +16,8 @@
 
 package org.jetbrains.kotlin.compilerRunner
 
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.config.Services
-import org.jetbrains.kotlin.preloading.ClassCondition
 import org.jetbrains.kotlin.utils.KotlinPaths
-import org.jetbrains.kotlin.utils.PathUtil
 
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation.Companion.NO_LOCATION
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.ERROR
+open class CompilerEnvironment(val kotlinPaths: KotlinPaths, val services: Services)
 
-class CompilerEnvironment private constructor(
-        val kotlinPaths: KotlinPaths,
-        val classesToLoadByParent: ClassCondition,
-        val services: Services
-) {
-
-    fun success(): Boolean {
-        return kotlinPaths.homePath.exists()
-    }
-
-    fun reportErrorsTo(messageCollector: MessageCollector) {
-        if (!kotlinPaths.homePath.exists()) {
-            messageCollector.report(ERROR, "Cannot find kotlinc home: " + kotlinPaths.homePath + ". Make sure plugin is properly installed, " +
-                                           "or specify " + PathUtil.JPS_KOTLIN_HOME_PROPERTY + " system property", NO_LOCATION)
-        }
-    }
-
-    companion object {
-        fun getEnvironmentFor(
-                kotlinPaths: KotlinPaths,
-                classesToLoadByParent: ClassCondition,
-                compilerServices: Services
-        ): CompilerEnvironment {
-            return CompilerEnvironment(kotlinPaths, classesToLoadByParent, compilerServices)
-        }
-    }
-}
