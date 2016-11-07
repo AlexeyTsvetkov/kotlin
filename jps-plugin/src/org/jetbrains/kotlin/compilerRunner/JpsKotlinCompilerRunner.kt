@@ -77,6 +77,11 @@ class JpsKotlinCompilerRunner : KotlinCompilerRunner<JpsCompilerEnvironment>() {
         runCompiler(K2JS_COMPILER, arguments, compilerSettings.additionalArguments, messageCollector, collector, environment)
     }
 
+    override fun runCompiler(compilerClassName: String, arguments: CommonCompilerArguments, additionalArguments: String, messageCollector: MessageCollector, collector: OutputItemsCollector, environment: JpsCompilerEnvironment) {
+        messageCollector.report(CompilerMessageSeverity.INFO, "Using kotlin-home = " + environment.kotlinPaths.homePath, CompilerMessageLocation.NO_LOCATION)
+        super.runCompiler(compilerClassName, arguments, additionalArguments, messageCollector, collector, environment)
+    }
+
     private fun setupK2JvmArguments(moduleFile: File, settings: K2JVMCompilerArguments) {
         with(settings) {
             module = moduleFile.absolutePath

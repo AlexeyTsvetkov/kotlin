@@ -63,7 +63,7 @@ abstract class KotlinCompilerRunner<in Env : CompilerEnvironment> {
         messageCollector.report(ERROR, "Compiler terminated with internal error", CompilerMessageLocation.NO_LOCATION)
     }
 
-    protected fun runCompiler(
+    protected open fun runCompiler(
             compilerClassName: String,
             arguments: CommonCompilerArguments,
             additionalArguments: String,
@@ -71,8 +71,6 @@ abstract class KotlinCompilerRunner<in Env : CompilerEnvironment> {
             collector: OutputItemsCollector,
             environment: Env) {
         try {
-            messageCollector.report(INFO, "Using kotlin-home = " + environment.kotlinPaths.homePath, CompilerMessageLocation.NO_LOCATION)
-
             val argumentsList = ArgumentUtils.convertArgumentsToStringList(arguments)
             argumentsList.addAll(additionalArguments.split(" "))
 
