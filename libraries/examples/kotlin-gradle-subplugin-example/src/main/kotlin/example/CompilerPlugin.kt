@@ -22,7 +22,7 @@ import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.compiler.plugin.CliOptionProcessingException
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
-import org.jetbrains.kotlin.com.intellij.mock.MockProject
+import com.intellij.mock.MockProject
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 
 public object ExampleConfigurationKeys {
