@@ -33,8 +33,12 @@ import java.net.URL
 import java.util.zip.ZipFile
 import kotlin.concurrent.thread
 
+internal const val KOTLIN_COMPILER_EXECUTION_STRATEGY_PROPERTY = "kotlin.compiler.execution.strategy"
+internal const val DAEMON_EXECUTION_STRATEGY = "daemon"
+internal const val IN_PROCESS_EXECUTION_STRATEGY = "in-process"
+internal const val OUT_OF_PROCESS_EXECUTION_STRATEGY = "out-of-process"
 
-const val KOTLIN_COMPILER_JAR_PATH_PROPERTY = "kotlin.compiler.jar.path"
+internal const val KOTLIN_COMPILER_JAR_PATH_PROPERTY = "kotlin.compiler.jar.path"
 
 internal class GradleCompilerRunner(private val project: Project) : KotlinCompilerRunner<GradleCompilerEnvironment>() {
     override val log = GradleKotlinLogger(project.logger)
@@ -80,23 +84,34 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
         }
     }
 
-    override fun fallbackCompileStrategy(
-            argsArray: Array<String>,
-            collector: OutputItemsCollector,
-            compilerClassName: String,
-            environment: GradleCompilerEnvironment,
-            messageCollector: MessageCollector
-    ): ExitCode {
-        val isGradleDaemonUsed = System.getProperty("org.gradle.daemon")?.let(String::toBoolean) ?: true
+    override fun doRunCompiler(compilerClassName: String, argsArray: Array<String>, environment: GradleCompilerEnvironment, messageCollector: MessageCollector, collector: OutputItemsCollector): ExitCode {
+        val executionStrategy = System.getProperty(KOTLIN_COMPILER_EXECUTION_STRATEGY_PROPERTY) ?: DAEMON_EXECUTION_STRATEGY
+        if (executionStrategy == DAEMON_EXECUTION_STRATEGY) {
+            val daemonExitCode = compileWithDaemon(compilerClassName, argsArray, environment, messageCollector, collector)
 
-        if (isGradleDaemonUsed) {
-            log.warn("Could not connect to kotlin daemon. Falling back to out-of-process compilation.")
-            return compileOutOfProcess(argsArray, compilerClassName, environment)
+            if (daemonExitCode != null) {
+                return daemonExitCode
+            }
+            else {
+                log.warn("Could not connect to kotlin daemon. Using fallback strategy.")
+            }
+        }
+
+        val isGradleDaemonUsed = System.getProperty("org.gradle.daemon")?.let(String::toBoolean)
+        return if (executionStrategy == IN_PROCESS_EXECUTION_STRATEGY || isGradleDaemonUsed == false) {
+            compileInProcess(argsArray, collector, compilerClassName, environment, messageCollector)
         }
         else {
-            log.warn("Could not connect to kotlin daemon. Falling back to in-process compilation.")
-            return compileInProcess(argsArray, collector, compilerClassName, environment, messageCollector)
+            compileOutOfProcess(argsArray, compilerClassName, environment)
         }
+    }
+
+    override fun compileWithDaemon(compilerClassName: String, argsArray: Array<String>, environment: GradleCompilerEnvironment, messageCollector: MessageCollector, collector: OutputItemsCollector, retryOnConnectionError: Boolean): ExitCode? {
+        val exitCode = super.compileWithDaemon(compilerClassName, argsArray, environment, messageCollector, collector, retryOnConnectionError)
+        exitCode?.let {
+            logFinish(DAEMON_EXECUTION_STRATEGY)
+        }
+        return exitCode
     }
 
     private fun compileOutOfProcess(
@@ -121,6 +136,7 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
         readErrThread.join()
 
         val exitCode = process.waitFor()
+        logFinish(OUT_OF_PROCESS_EXECUTION_STRATEGY)
         return exitCodeFromProcessExitCode(exitCode)
     }
 
@@ -149,7 +165,12 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
         val res = exec.invoke(compiler.newInstance(), out, emptyServices, argsArray)
         val exitCode = ExitCode.valueOf(res.toString())
         processCompilerOutput(messageCollector, collector, stream, exitCode)
+        logFinish(IN_PROCESS_EXECUTION_STRATEGY)
         return exitCode
+    }
+
+    private fun logFinish(strategy: String) {
+        log.debug("Finished executing kotlin compiler using $strategy strategy")
     }
 
     @Synchronized
