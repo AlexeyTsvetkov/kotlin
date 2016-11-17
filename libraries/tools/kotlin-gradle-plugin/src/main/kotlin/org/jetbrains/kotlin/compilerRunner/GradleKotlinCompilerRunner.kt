@@ -80,6 +80,78 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
         }
     }
 
+    override fun fallbackCompileStrategy(
+            argsArray: Array<String>,
+            collector: OutputItemsCollector,
+            compilerClassName: String,
+            environment: GradleCompilerEnvironment,
+            messageCollector: MessageCollector
+    ): ExitCode {
+        val isGradleDaemonUsed = System.getProperty("org.gradle.daemon")?.let(String::toBoolean) ?: true
+
+        if (isGradleDaemonUsed) {
+            log.warn("Could not connect to kotlin daemon. Falling back to out-of-process compilation.")
+            return compileOutOfProcess(argsArray, compilerClassName, environment)
+        }
+        else {
+            log.warn("Could not connect to kotlin daemon. Falling back to in-process compilation.")
+            return compileInProcess(argsArray, collector, compilerClassName, environment, messageCollector)
+        }
+    }
+
+    private fun compileOutOfProcess(
+            argsArray: Array<String>,
+            compilerClassName: String,
+            environment: GradleCompilerEnvironment
+    ): ExitCode {
+        val javaBin = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java"
+        val classpathString = environment.compilerClasspath.map {it.absolutePath}.joinToString(separator = File.pathSeparator)
+        val builder = ProcessBuilder(javaBin, "-cp", classpathString, compilerClassName, *argsArray)
+        val process = builder.start()
+
+        // important to read inputStream, otherwise the process may hang on some systems
+        val readErrThread = thread {
+            process.errorStream!!.bufferedReader().forEachLine {
+                System.err.println(it)
+            }
+        }
+        process.inputStream!!.bufferedReader().forEachLine {
+            System.out.println(it)
+        }
+        readErrThread.join()
+
+        val exitCode = process.waitFor()
+        return exitCodeFromProcessExitCode(exitCode)
+    }
+
+    private fun compileInProcess(
+            argsArray: Array<String>,
+            collector: OutputItemsCollector,
+            compilerClassName: String,
+            environment: GradleCompilerEnvironment,
+            messageCollector: MessageCollector
+    ): ExitCode {
+        val stream = ByteArrayOutputStream()
+        val out = PrintStream(stream)
+        // todo: cache classloader?
+        val classLoader = ParentLastURLClassLoader(environment.compilerClasspathURLs, this.javaClass.classLoader)
+        val servicesClass = Class.forName(Services::class.java.canonicalName, true, classLoader)
+        val emptyServices = servicesClass.getField("EMPTY").get(servicesClass)
+        val compiler = Class.forName(compilerClassName, true, classLoader)
+
+        val exec = compiler.getMethod(
+                "execAndOutputXml",
+                PrintStream::class.java,
+                servicesClass,
+                Array<String>::class.java
+        )
+
+        val res = exec.invoke(compiler.newInstance(), out, emptyServices, argsArray)
+        val exitCode = ExitCode.valueOf(res.toString())
+        processCompilerOutput(messageCollector, collector, stream, exitCode)
+        return exitCode
+    }
+
     @Synchronized
     override fun getDaemonConnection(environment: GradleCompilerEnvironment, messageCollector: MessageCollector): DaemonConnection {
         return newDaemonConnection(environment.compilerJar, messageCollector, flagFile)
@@ -93,13 +165,18 @@ internal class GradleCompilerEnvironment(
     val compilerJar: File by lazy {
         val file = findKotlinCompilerJar(project, compilerClassName)
                 ?: throw IllegalStateException("Could not found Kotlin compiler jar. " +
-                        "As a workaround you may specify path to compiler jar using " +
-                        "\"$KOTLIN_COMPILER_JAR_PATH_PROPERTY\" system property")
+                "As a workaround you may specify path to compiler jar using " +
+                "\"$KOTLIN_COMPILER_JAR_PATH_PROPERTY\" system property")
 
         project.logger.kotlinInfo("Using kotlin compiler jar: $file")
         file
     }
 
+    val compilerClasspath: List<File>
+        get() = listOf(compilerJar).filterNotNull()
+
+    val compilerClasspathURLs: List<URL>
+        get() = compilerClasspath.map { it.toURI().toURL() }
 }
 
 fun findKotlinCompilerJar(project: Project, compilerClassName: String): File? {
