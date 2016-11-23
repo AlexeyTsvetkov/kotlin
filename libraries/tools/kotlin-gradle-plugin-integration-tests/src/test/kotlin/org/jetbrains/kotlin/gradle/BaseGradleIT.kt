@@ -76,6 +76,8 @@ abstract class BaseGradleIT {
             val androidGradlePluginVersion: String? = null,
             val forceOutputToStdout: Boolean = false,
             val debug: Boolean = false)
+            val forceOutputToStdout: Boolean = false,
+            val freeCommandLineArgs: List<String> = emptyList())
 
     open inner class Project(
             val projectName: String,
@@ -280,6 +282,7 @@ abstract class BaseGradleIT {
                 if (options.debug) {
                     add("-Dorg.gradle.debug=true")
                 }
+                addAll(options.freeCommandLineArgs)
             }
 
     private fun Project.createEnvironmentVariablesMap(options: BuildOptions): Map<String, String> =

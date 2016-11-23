@@ -166,6 +166,9 @@ class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
             pluginOptions += SubpluginOption("apoption", "$key:$value")
         }
 
+        val incrementalCompilationDataFile = File(project.buildDir, "tmp/kapt2/$sourceSetName/incrementalData.txt")
+        pluginOptions += SubpluginOption("incrementalData", incrementalCompilationDataFile.absolutePath)
+
         addMiscOptions(pluginOptions)
 
         return pluginOptions
@@ -182,6 +185,7 @@ class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
         if (project.hasProperty(VERBOSE_OPTION_NAME) && project.property(VERBOSE_OPTION_NAME) == "true") {
             pluginOptions += SubpluginOption("verbose", "true")
             pluginOptions += SubpluginOption("stubs", getKaptStubsDir(project, sourceSetName).canonicalPath)
+            kotlinCompile.kotlinOptions.verbose = true
         }
     }
 
