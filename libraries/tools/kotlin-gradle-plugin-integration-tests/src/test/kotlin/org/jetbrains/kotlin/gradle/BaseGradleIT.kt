@@ -74,7 +74,8 @@ abstract class BaseGradleIT {
             val incremental: Boolean? = null,
             val androidHome: File? = null,
             val androidGradlePluginVersion: String? = null,
-            val forceOutputToStdout: Boolean = false)
+            val forceOutputToStdout: Boolean = false,
+            val freeCommandLineArgs: List<String> = emptyList())
 
     open inner class Project(
             val projectName: String,
@@ -270,6 +271,7 @@ abstract class BaseGradleIT {
                 add("-Pkotlin_version=" + KOTLIN_VERSION)
                 options.incremental?.let { add("-Pkotlin.incremental=$it") }
                 options.androidGradlePluginVersion?.let { add("-Pandroid_tools_version=$it")}
+                addAll(options.freeCommandLineArgs)
             }
 
     private fun Project.createEnvironmentVariablesMap(options: BuildOptions): Map<String, String> =

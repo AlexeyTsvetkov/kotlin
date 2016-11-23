@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.annotation.processing.RoundAnnotations
 import org.jetbrains.kotlin.annotation.processing.diagnostic.ErrorsAnnotationProcessing
 import org.jetbrains.kotlin.annotation.processing.impl.*
+import org.jetbrains.kotlin.cli.common.messages.*
 import org.jetbrains.kotlin.codegen.ClassBuilderMode
 import org.jetbrains.kotlin.codegen.state.IncompatibleClassTracker
 import org.jetbrains.kotlin.codegen.state.KotlinTypeMapper
@@ -57,10 +58,12 @@ class ClasspathBasedAnnotationProcessingExtension(
         javaSourceRoots: List<File>,
         verboseOutput: Boolean,
         incrementalDataFile: File?,
-        sourceRetentionAnnotationHandler: SourceRetentionAnnotationHandler?
+        sourceRetentionAnnotationHandler: SourceRetentionAnnotationHandler?,
+        messageCollector: MessageCollector?
 ) : AbstractAnnotationProcessingExtension(generatedSourcesOutputDir, 
                                           classesOutputDir, javaSourceRoots, verboseOutput,
-                                          incrementalDataFile, sourceRetentionAnnotationHandler) {
+                                          incrementalDataFile, sourceRetentionAnnotationHandler,
+                                          messageCollector) {
     override fun loadAnnotationProcessors(): List<Processor> {
         val classLoader = URLClassLoader(annotationProcessingClasspath.map { it.toURI().toURL() }.toTypedArray())
         return ServiceLoader.load(Processor::class.java, classLoader).toList()
@@ -73,17 +76,23 @@ abstract class AbstractAnnotationProcessingExtension(
         val javaSourceRoots: List<File>,
         val verboseOutput: Boolean,
         val incrementalDataFile: File? = null,
-        val sourceRetentionAnnotationHandler: SourceRetentionAnnotationHandler? = null
+        val sourceRetentionAnnotationHandler: SourceRetentionAnnotationHandler? = null,
+        messageCollector: MessageCollector? = null
 ) : AnalysisHandlerExtension {
     private companion object {
         val LINE_SEPARATOR = System.getProperty("line.separator") ?: "\n"
     }
 
     private var annotationProcessingComplete = false
-    private val messager = KotlinMessager()
+    private val messager = run {
+        val collector = messageCollector ?: PrintingMessageCollector(System.err, MessageRenderer.WITHOUT_PATHS, verboseOutput)
+        KotlinMessager(collector)
+    }
 
     private inline fun log(message: () -> String) {
-        if (verboseOutput) messager.printMessage(Diagnostic.Kind.OTHER, "Kapt: " + message())
+        if (verboseOutput) {
+            messager.printMessage(Diagnostic.Kind.OTHER, "Kapt: " + message())
+        }
     }
     
     private fun Int.count(noun: String) = if (this == 1) "$this $noun" else "$this ${noun}s"
