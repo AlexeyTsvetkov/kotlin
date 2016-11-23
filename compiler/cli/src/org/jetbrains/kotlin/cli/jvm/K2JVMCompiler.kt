@@ -270,10 +270,6 @@ class K2JVMCompiler : CLICompiler<K2JVMCompilerArguments>() {
                 configuration.put(JVMConfigurationKeys.INCREMENTAL_COMPILATION_COMPONENTS, components)
             }
         }
-
-        services.get(SourceRetentionAnnotationHandler::class.java)?.let { handler ->
-            configuration.put(JVMConfigurationKeys.SOURCE_RETENTION_ANNOTATION_HANDLER, handler)
-        }
     }
 
     /**

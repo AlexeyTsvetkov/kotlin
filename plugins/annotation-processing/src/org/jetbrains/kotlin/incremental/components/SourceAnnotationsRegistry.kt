@@ -14,55 +14,31 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.annotation
+package org.jetbrains.kotlin.incremental.components
 
-import org.jetbrains.kotlin.incremental.components.SourceRetentionAnnotationHandler
 import java.io.*
 import java.util.*
 
 internal class SourceAnnotationsRegistry(private val file: File) : SourceRetentionAnnotationHandler {
-    private val mutableAnnotations: MutableSet<String> by lazy { readAnnotations() }
+    private val mutableAnnotations: MutableSet<String> = HashSet()
     val annotations: Set<String>
             get() = mutableAnnotations
+
+    init {
+        file.delete()
+    }
 
     override fun register(internalName: String) {
         mutableAnnotations.add(internalName)
     }
 
-    fun clear() {
-        mutableAnnotations.clear()
-        file.delete()
-    }
-
-    fun flush() {
-        if (mutableAnnotations.isEmpty()) {
-            file.delete()
-            return
-        }
-
-        if (!file.exists()) {
-            file.parentFile.mkdirs()
-            file.createNewFile()
-        }
+    override fun flush() {
+        file.parentFile.mkdirs()
+        file.createNewFile()
 
         ObjectOutputStream(BufferedOutputStream(file.outputStream())).use { out ->
             out.writeInt(mutableAnnotations.size)
             mutableAnnotations.forEach { out.writeUTF(it) }
         }
-    }
-
-    private fun readAnnotations(): MutableSet<String> {
-        val result = HashSet<String>()
-
-        if (!file.exists()) return result
-
-        ObjectInputStream(BufferedInputStream(file.inputStream())).use { input ->
-            val size = input.readInt()
-            repeat(size) {
-                result.add(input.readUTF())
-            }
-        }
-
-        return result
     }
 }

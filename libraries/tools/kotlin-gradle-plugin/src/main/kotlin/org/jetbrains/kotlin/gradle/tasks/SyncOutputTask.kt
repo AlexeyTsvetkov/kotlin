@@ -25,6 +25,7 @@ import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 import org.gradle.api.tasks.incremental.InputFileDetails
 import org.jetbrains.kotlin.bytecode.AnnotationsRemover
 import org.jetbrains.kotlin.gradle.plugin.kotlinDebug
+import java.io.BufferedInputStream
 import java.io.File
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
@@ -59,7 +60,7 @@ internal open class SyncOutputTask : DefaultTask() {
     var javaOutputDir: File by Delegates.notNull()
     var kotlinTask: KotlinCompile by Delegates.notNull()
     private val sourceAnnotations: Set<String> by lazy {
-        kotlinTask.sourceAnnotationsRegistry?.annotations ?: emptySet()
+        kotlinTask.sourceAnnotationsFile?.let(::readAnnotations) ?: emptySet()
     }
     private val annotationsRemover by lazy {
         AnnotationsRemover(sourceAnnotations)
@@ -199,4 +200,19 @@ private fun saveTimestamps(snapshotFile: File, timestamps: Map<File, Long>) {
             out.writeLong(timestamp)
         }
     }
+}
+
+private fun readAnnotations(file: File): Set<String> {
+    val result = HashSet<String>()
+
+    if (!file.exists()) return result
+
+    ObjectInputStream(BufferedInputStream(file.inputStream())).use { input ->
+        val size = input.readInt()
+        repeat(size) {
+            result.add(input.readUTF())
+        }
+    }
+
+    return result
 }

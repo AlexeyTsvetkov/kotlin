@@ -170,6 +170,7 @@ abstract class AbstractAnnotationProcessingExtension(
             return null
         }
 
+        sourceRetentionAnnotationHandler?.flush()
         return AnalysisResult.RetryWithAdditionalJavaRoots(
                 bindingTrace.bindingContext,
                 module,

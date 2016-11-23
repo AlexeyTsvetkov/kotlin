@@ -50,7 +50,7 @@ class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
     }
 
     private val kotlinToKaptTasksMap = mutableMapOf<KotlinCompile, KaptTask>()
-    
+
     override fun isApplicable(project: Project, task: KotlinCompile) = Kapt3GradleSubplugin.isEnabled(project)
 
     fun getKaptGeneratedDir(project: Project, sourceSetName: String): File {
@@ -150,6 +150,10 @@ class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
         for ((key, value) in kaptExtension.getAdditionalArguments(project, variantData, androidPlugin)) {
             pluginOptions += SubpluginOption("apoption", "$key:$value")
         }
+
+        val annotationsFile = File(kotlinCompile.taskBuildDirectory, "source-annotations.txt")
+        pluginOptions += SubpluginOption("sourceAnnotationsFile", annotationsFile.absolutePath)
+        kotlinCompile.sourceAnnotationsFile = annotationsFile
 
         addMiscOptions(pluginOptions)
 

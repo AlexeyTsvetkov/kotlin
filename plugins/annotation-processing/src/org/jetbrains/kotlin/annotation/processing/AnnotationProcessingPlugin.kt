@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.annotation.processing
 import com.intellij.mock.MockProject
 import com.intellij.openapi.extensions.Extensions
 import org.jetbrains.kotlin.annotation.ClasspathBasedAnnotationProcessingExtension
+import org.jetbrains.kotlin.incremental.components.SourceAnnotationsRegistry
 import org.jetbrains.kotlin.annotation.processing.diagnostic.DefaultErrorMessagesAnnotationProcessing
 import org.jetbrains.kotlin.cli.jvm.config.IS_KAPT2_ENABLED_KEY
 import org.jetbrains.kotlin.cli.jvm.config.JavaSourceRoot
@@ -37,6 +38,7 @@ import java.io.File
 
 import org.jetbrains.kotlin.annotation.processing.AnnotationProcessingConfigurationKeys.ANNOTATION_PROCESSOR_CLASSPATH
 import org.jetbrains.kotlin.annotation.processing.AnnotationProcessingConfigurationKeys.APT_OPTIONS
+import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 
 object AnnotationProcessingConfigurationKeys {
     val GENERATED_OUTPUT_DIR: CompilerConfigurationKey<String> =
@@ -53,6 +55,9 @@ object AnnotationProcessingConfigurationKeys {
 
     val INCREMENTAL_DATA_FILE: CompilerConfigurationKey<String> =
             CompilerConfigurationKey.create<String>("data file for incremental compilation support")
+
+    val SOURCE_RETENTION_ANNOTATIONS_FILE: CompilerConfigurationKey<String> =
+            CompilerConfigurationKey.create<String>("file to store source retention annotations for incremental compilations")
 
     val VERBOSE_MODE: CompilerConfigurationKey<String> = 
             CompilerConfigurationKey.create<String>("verbose mode")
@@ -79,6 +84,9 @@ class AnnotationProcessingCommandLineProcessor : CommandLineProcessor {
         val INCREMENTAL_DATA_FILE_OPTION: CliOption =
                 CliOption("incrementalData", "<path>", "Location of the incremental data file", required = false)
 
+        val SOURCE_RETENTION_ANNOTATIONS_FILE_OPTION: CliOption =
+                CliOption("sourceAnnotationsFile", "<path>", "Location of the source annotations file", required = false)
+
         val VERBOSE_MODE_OPTION: CliOption =
                 CliOption("verbose", "true | false", "Enable verbose output", required = false)
     }
@@ -87,7 +95,8 @@ class AnnotationProcessingCommandLineProcessor : CommandLineProcessor {
 
     override val pluginOptions: Collection<CliOption> =
             listOf(GENERATED_OUTPUT_DIR_OPTION, ANNOTATION_PROCESSOR_CLASSPATH_OPTION, APT_OPTIONS_OPTION,
-                   CLASS_FILES_OUTPUT_DIR_OPTION, INCREMENTAL_DATA_FILE_OPTION, VERBOSE_MODE_OPTION)
+                   CLASS_FILES_OUTPUT_DIR_OPTION, INCREMENTAL_DATA_FILE_OPTION, SOURCE_RETENTION_ANNOTATIONS_FILE_OPTION,
+                   VERBOSE_MODE_OPTION)
 
     private fun <T> CompilerConfiguration.appendList(option: CompilerConfigurationKey<List<T>>, value: T) {
         val paths = getList(option).toMutableList()
@@ -102,6 +111,7 @@ class AnnotationProcessingCommandLineProcessor : CommandLineProcessor {
             GENERATED_OUTPUT_DIR_OPTION -> configuration.put(AnnotationProcessingConfigurationKeys.GENERATED_OUTPUT_DIR, value)
             CLASS_FILES_OUTPUT_DIR_OPTION -> configuration.put(AnnotationProcessingConfigurationKeys.CLASS_FILES_OUTPUT_DIR, value)
             INCREMENTAL_DATA_FILE_OPTION -> configuration.put(AnnotationProcessingConfigurationKeys.INCREMENTAL_DATA_FILE, value)
+            SOURCE_RETENTION_ANNOTATIONS_FILE_OPTION -> configuration.put(AnnotationProcessingConfigurationKeys.SOURCE_RETENTION_ANNOTATIONS_FILE, value)
             VERBOSE_MODE_OPTION -> configuration.put(AnnotationProcessingConfigurationKeys.VERBOSE_MODE, value)
             else -> throw CliOptionProcessingException("Unknown option: ${option.name}")
         }
@@ -142,8 +152,9 @@ class AnnotationProcessingComponentRegistrar : ComponentRegistrar {
         // Annotations with the "SOURCE" retention will be written to class files
         project.putUserData(IS_KAPT2_ENABLED_KEY, true)
         
-        val sourceRetentionAnnotationHandler = configuration[JVMConfigurationKeys.SOURCE_RETENTION_ANNOTATION_HANDLER]
-        
+
+        val sourceRetentionAnnotationHandler = configuration.get(AnnotationProcessingConfigurationKeys.SOURCE_RETENTION_ANNOTATIONS_FILE)
+                ?.let { SourceAnnotationsRegistry(File(it)) }
         val annotationProcessingExtension = ClasspathBasedAnnotationProcessingExtension(
                 classpath, apOptions, generatedOutputDirFile, classesOutputDir, javaRoots, verboseOutput,
                 incrementalDataFile, sourceRetentionAnnotationHandler)

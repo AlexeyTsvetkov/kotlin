@@ -27,4 +27,7 @@ class SourceRetentionAnnotationHandlerImpl : SourceRetentionAnnotationHandler {
     override fun register(internalName: String) {
         mutableSourceRetentionAnnotations += internalName
     }
+
+    override fun flush() {
+    }
 }

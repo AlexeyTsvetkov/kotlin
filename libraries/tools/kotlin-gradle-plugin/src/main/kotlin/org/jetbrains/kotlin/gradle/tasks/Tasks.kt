@@ -26,7 +26,6 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 import org.jetbrains.kotlin.annotation.AnnotationFileUpdater
-import org.jetbrains.kotlin.annotation.SourceAnnotationsRegistry
 import org.jetbrains.kotlin.cli.common.CLICompiler
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
@@ -148,8 +147,7 @@ open class KotlinCompile : AbstractKotlinCompile<K2JVMCompilerArguments>(), Kotl
     internal val pluginOptions = CompilerPluginOptions()
     internal var artifactDifferenceRegistryProvider: ArtifactDifferenceRegistryProvider? = null
     internal var artifactFile: File? = null
-    // created only if kapt2 is active
-    internal var sourceAnnotationsRegistry: SourceAnnotationsRegistry? = null
+    internal var sourceAnnotationsFile: File? = null
 
     override fun findKotlinCompilerJar(project: Project): File? =
             findKotlinJvmCompilerJar(project)
@@ -210,7 +208,6 @@ open class KotlinCompile : AbstractKotlinCompile<K2JVMCompilerArguments>(), Kotl
                 cacheVersions,
                 reporter,
                 kaptAnnotationsFileUpdater,
-                sourceAnnotationsRegistry,
                 artifactDifferenceRegistryProvider,
                 artifactFile
         )

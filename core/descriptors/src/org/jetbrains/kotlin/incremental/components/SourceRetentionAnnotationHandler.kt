@@ -18,4 +18,5 @@ package org.jetbrains.kotlin.incremental.components
 
 interface SourceRetentionAnnotationHandler {
     fun register(internalName: String)
+    fun flush()
 }
