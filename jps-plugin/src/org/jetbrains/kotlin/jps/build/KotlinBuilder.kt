@@ -207,7 +207,7 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         val lookupTracker = getLookupTracker(project)
         val incrementalCaches = getIncrementalCaches(chunk, context)
         val sourceRetentionAnnotationHandler = SourceRetentionAnnotationHandlerImpl()
-        val environment = createCompileEnvironment(incrementalCaches, lookupTracker, sourceRetentionAnnotationHandler, context)
+        val environment = createCompileEnvironment(incrementalCaches, lookupTracker, sourceRetentionAnnotationHandler, context, messageCollector)
         if (!environment.success()) {
             environment.reportErrorsTo(messageCollector)
             return ABORT
@@ -240,7 +240,7 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
             LOG.info("Compiled successfully")
         }
 
-        val generatedFiles = getGeneratedFiles(chunk, outputItemCollector)
+        val generatedFiles = getGeneratedFiles(chunk, environment.outputItemsCollector)
 
         registerOutputItems(outputConsumer, generatedFiles)
         saveVersions(context, chunk)
@@ -370,11 +370,11 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
             dirtyFilesHolder: DirtyFilesHolder<JavaSourceRootDescriptor, ModuleBuildTarget>, environment: JpsCompilerEnvironment,
             filesToCompile: MultiMap<ModuleBuildTarget, File>, incrementalCaches: Map<ModuleBuildTarget, IncrementalCacheImpl<*>>,
             messageCollector: MessageCollectorAdapter, project: JpsProject
-    ): OutputItemsCollectorImpl? {
+    ): OutputItemsCollector? {
 
         if (JpsUtils.isJsKotlinModule(chunk.representativeTarget())) {
             LOG.debug("Compiling to JS ${filesToCompile.values().size} files in ${filesToCompile.keySet().joinToString { it.presentableName }}")
-            return compileToJs(chunk, commonArguments, environment, messageCollector, project)
+            return compileToJs(chunk, commonArguments, environment, project)
         }
 
         if (IncrementalCompilation.isEnabled()) {
@@ -404,14 +404,15 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
             )
         }
 
-        return compileToJvm(allCompiledFiles, chunk, commonArguments, context, dirtyFilesHolder, environment, filesToCompile, messageCollector)
+        return compileToJvm(allCompiledFiles, chunk, commonArguments, context, dirtyFilesHolder, environment, filesToCompile)
     }
 
     private fun createCompileEnvironment(
             incrementalCaches: Map<ModuleBuildTarget, IncrementalCache>,
             lookupTracker: LookupTracker,
             sourceRetentionAnnotationHandler: SourceRetentionAnnotationHandler?,
-            context: CompileContext
+            context: CompileContext,
+            messageCollector: MessageCollectorAdapter
     ): JpsCompilerEnvironment {
         val compilerServices = with(Services.Builder()) {
             register(IncrementalCompilationComponents::class.java,
@@ -439,7 +440,9 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
                     || className == "org.jetbrains.kotlin.progress.CompilationCanceledStatus"
                     || className == "org.jetbrains.kotlin.progress.CompilationCanceledException"
                     || className == "org.jetbrains.kotlin.modules.TargetId"
-                }
+                },
+                messageCollector,
+                OutputItemsCollectorImpl()
         )
     }
 
@@ -591,16 +594,13 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
     private fun compileToJs(chunk: ModuleChunk,
                             commonArguments: CommonCompilerArguments,
                             environment: JpsCompilerEnvironment,
-                            messageCollector: MessageCollectorAdapter,
                             project: JpsProject
-    ): OutputItemsCollectorImpl? {
-        val outputItemCollector = OutputItemsCollectorImpl()
-
+    ): OutputItemsCollector? {
         val representativeTarget = chunk.representativeTarget()
         if (chunk.modules.size > 1) {
             // We do not support circular dependencies, but if they are present, we do our best should not break the build,
             // so we simply yield a warning and report NOTHING_DONE
-            messageCollector.report(
+            environment.messageCollector.report(
                     WARNING,
                     "Circular dependencies are not supported. The following JS modules depend on each other: "
                     + chunk.modules.map { it.name }.joinToString(", ") + ". "
@@ -625,8 +625,8 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         val k2JsArguments = JpsKotlinCompilerSettings.getK2JsCompilerArguments(representativeModule)
 
         val compilerRunner = JpsKotlinCompilerRunner()
-        compilerRunner.runK2JsCompiler(commonArguments, k2JsArguments, compilerSettings, messageCollector, environment, outputItemCollector, sourceFiles, libraryFiles, outputFile)
-        return outputItemCollector
+        compilerRunner.runK2JsCompiler(commonArguments, k2JsArguments, compilerSettings, environment, sourceFiles, libraryFiles, outputFile)
+        return environment.outputItemsCollector
     }
 
     private fun copyJsLibraryFilesIfNeeded(chunk: ModuleChunk, project: JpsProject) {
@@ -648,12 +648,10 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
                              context: CompileContext,
                              dirtyFilesHolder: DirtyFilesHolder<JavaSourceRootDescriptor, ModuleBuildTarget>,
                              environment: JpsCompilerEnvironment,
-                             filesToCompile: MultiMap<ModuleBuildTarget, File>, messageCollector: MessageCollectorAdapter
-    ): OutputItemsCollectorImpl? {
-        val outputItemCollector = OutputItemsCollectorImpl()
-
+                             filesToCompile: MultiMap<ModuleBuildTarget, File>
+    ): OutputItemsCollector? {
         if (chunk.modules.size > 1) {
-            messageCollector.report(
+            environment.messageCollector.report(
                     WARNING,
                     "Circular dependencies are only partially supported. The following modules depend on each other: "
                     + chunk.modules.map { it.name }.joinToString(", ") + ". "
@@ -692,10 +690,10 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
                                 + " in " + filesToCompile.keySet().joinToString { it.presentableName })
 
         val compilerRunner = JpsKotlinCompilerRunner()
-        compilerRunner.runK2JvmCompiler(commonArguments, k2JvmArguments, compilerSettings, messageCollector, environment, moduleFile, outputItemCollector)
+        compilerRunner.runK2JvmCompiler(commonArguments, k2JvmArguments, compilerSettings, environment, moduleFile)
         moduleFile.delete()
 
-        return outputItemCollector
+        return environment.outputItemsCollector
     }
 
     class MessageCollectorAdapter(private val context: CompileContext) : MessageCollector {
