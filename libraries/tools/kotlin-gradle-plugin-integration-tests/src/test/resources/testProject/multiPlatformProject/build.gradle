@@ -1,0 +1,18 @@
+buildscript {
+    repositories {
+        mavenLocal()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+apply plugin: "kotlin-multi-platform"
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+}
