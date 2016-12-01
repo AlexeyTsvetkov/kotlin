@@ -18,9 +18,33 @@ package org.jetbrains.kotlin.gradle.plugin
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.plugins.JavaBasePlugin
+import org.gradle.api.plugins.JavaPluginConvention
+import org.jetbrains.kotlin.cli.metadata.K2MetadataCompiler
+import java.io.File
 
 class KotlinMultiPlatformPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val javaBasePlugin = project.plugins.apply(JavaBasePlugin::class.java)
+        val javaPluginConvention = project.convention.getPlugin(JavaPluginConvention::class.java)
+
+        val sourceSets = javaPluginConvention.sourceSets
+        sourceSets.clear()
+
+        val commonSourceSet = sourceSets.create("common")
+        val jvmSourceSet = sourceSets.create("jvm")
+        val jsSourceSet = sourceSets.create("js")
+
+        commonSourceSet.allSource.srcDirs += File("src/common")
+        jvmSourceSet.allSource.srcDirs += File("src/jvm")
+        jsSourceSet.allSource.srcDirs += File("src/js")
+        jvmSourceSet.allSource.source(commonSourceSet.allSource)
+        jsSourceSet.allSource.source(commonSourceSet.allSource)
+
+        K2MetadataCompiler
+
+        project.afterEvaluate {
+
+        }
     }
 }
