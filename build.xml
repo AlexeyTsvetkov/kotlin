@@ -249,6 +249,8 @@
             <fileset dir="compiler/conditional-preprocessor/src"/>
             <fileset dir="compiler/daemon/src"/>
             <fileset dir="compiler/daemon/daemon-common/src"/>
+            <fileset dir="build-common/src"/>
+            <fileset dir="compiler/incremental-compilation-impl/src"/>
             <fileset dir="compiler/container/src"/>
             <fileset dir="compiler/frontend/src"/>
             <fileset dir="compiler/resolution/src"/>
