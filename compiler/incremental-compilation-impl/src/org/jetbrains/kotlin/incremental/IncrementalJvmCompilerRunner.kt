@@ -32,7 +32,7 @@ import org.jetbrains.kotlin.compilerRunner.OutputItemsCollector
 import org.jetbrains.kotlin.compilerRunner.OutputItemsCollectorImpl
 import org.jetbrains.kotlin.config.IncrementalCompilation
 import org.jetbrains.kotlin.incremental.components.LookupTracker
-import org.jetbrains.kotlin.incremental.multiproject.ArtifactChanges
+import org.jetbrains.kotlin.incremental.multiproject.ArtifactChangesProvider
 import org.jetbrains.kotlin.incremental.multiproject.ChangesRegistry
 import org.jetbrains.kotlin.load.kotlin.header.KotlinClassHeader
 import org.jetbrains.kotlin.modules.TargetId
@@ -92,7 +92,7 @@ class IncrementalJvmCompilerRunner(
         private val cacheVersions: List<CacheVersion>,
         private val reporter: ICReporter,
         private var kaptAnnotationsFileUpdater: AnnotationFileUpdater? = null,
-        private val artifactChanges: ArtifactChanges? = null,
+        private val artifactChangesProvider: ArtifactChangesProvider? = null,
         private val changesRegistry: ChangesRegistry? = null
 ) {
     var anyClassesCompiled: Boolean = false
@@ -233,7 +233,7 @@ class IncrementalJvmCompilerRunner(
         val symbols = HashSet<LookupSymbol>()
         val fqNames = HashSet<FqName>()
         for (file in modifiedClasspath) {
-            val diffs = artifactChanges?.getChanges(file, lastBuildTS)
+            val diffs = artifactChangesProvider?.getChanges(file, lastBuildTS)
 
             if (diffs == null) {
                 reporter.report {"Could not get changes for file: $file"}

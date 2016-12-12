@@ -19,6 +19,6 @@ package org.jetbrains.kotlin.incremental.multiproject
 import org.jetbrains.kotlin.incremental.DirtyData
 import java.io.File
 
-interface ArtifactChanges {
+interface ArtifactChangesProvider {
     fun getChanges(artifact: File, sinceTS: Long): Iterable<DirtyData>?
 }
