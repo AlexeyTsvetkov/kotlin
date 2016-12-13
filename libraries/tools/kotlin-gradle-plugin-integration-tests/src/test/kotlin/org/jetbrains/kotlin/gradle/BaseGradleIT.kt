@@ -74,7 +74,8 @@ abstract class BaseGradleIT {
             val incremental: Boolean? = null,
             val androidHome: File? = null,
             val androidGradlePluginVersion: String? = null,
-            val forceOutputToStdout: Boolean = false)
+            val forceOutputToStdout: Boolean = false,
+            val debug: Boolean = false)
 
     open inner class Project(
             val projectName: String,
@@ -127,8 +128,14 @@ abstract class BaseGradleIT {
         val compiledJavaSources: Iterable<File> by lazy { javaSourcesListRegex.findAll(output).asIterable().flatMap { it.groups[1]!!.value.split(" ").filter { it.endsWith(".java", ignoreCase = true) }.map { File(it).canonicalFile } } }
     }
 
+    // Basically the same as `Project.build`, tells gradle to wait for debug on 5005 port
+    // Faster to type than `project.build("-Dorg.gradle.debug=true")` or `project.build(options = defaultBuildOptions().copy(debug = true))`
+    fun Project.debug(vararg params: String, options: BuildOptions = defaultBuildOptions(), check: CompiledProject.() -> Unit) {
+        build(*params, options = options.copy(debug = true), check = check)
+    }
+
     fun Project.build(vararg params: String, options: BuildOptions = defaultBuildOptions(), check: CompiledProject.() -> Unit) {
-        val cmd = createBuildCommand(params, options)
+        var cmd = createBuildCommand(params, options)
         val env = createEnvironmentVariablesMap(options)
 
         if (options.withDaemon) {
@@ -270,6 +277,9 @@ abstract class BaseGradleIT {
                 add("-Pkotlin_version=" + KOTLIN_VERSION)
                 options.incremental?.let { add("-Pkotlin.incremental=$it") }
                 options.androidGradlePluginVersion?.let { add("-Pandroid_tools_version=$it")}
+                if (options.debug) {
+                    add("-Dorg.gradle.debug=true")
+                }
             }
 
     private fun Project.createEnvironmentVariablesMap(options: BuildOptions): Map<String, String> =
