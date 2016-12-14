@@ -16,16 +16,14 @@
 
 package org.jetbrains.kotlin.gradle.tasks
 
+import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.cli.common.arguments.K2MetadataCompilerArguments
 import org.jetbrains.kotlin.cli.metadata.K2MetadataCompiler
 import org.jetbrains.kotlin.config.Services
 import org.jetbrains.kotlin.incremental.ChangedFiles
 import java.io.File
 
-// todo rename
 internal open class KotlinCompileCommon : AbstractKotlinCompile<K2MetadataCompilerArguments>() {
-    // todo add test and set
-    internal var friendTask: KotlinCompileCommon? = null
     override val compiler = K2MetadataCompiler()
 
     override fun populateCompilerArguments(): K2MetadataCompilerArguments =
@@ -36,6 +34,7 @@ internal open class KotlinCompileCommon : AbstractKotlinCompile<K2MetadataCompil
 
     override fun callCompiler(args: K2MetadataCompilerArguments, sourceRoots: SourceRoots, changedFiles: ChangedFiles) {
         val classpathList = classpath.files.toMutableList()
+        val friendTask = friendTaskName?.let { project.tasks.findByName(it) } as? AbstractCompile
         friendTask?.let { classpathList.add(it.destinationDir) }
 
         with(args) {
