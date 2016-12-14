@@ -81,7 +81,7 @@ open class KotlinPlatformImplementationPluginBase(platformName: String) : Kotlin
             get() = ((getConvention("kotlin") ?: getConvention("kotlin2js")) as? KotlinSourceSet)?.kotlin
 }
 
-private inline fun <T> Project.whenEvaluated(crossinline fn: Project.()->T) {
+private fun <T> Project.whenEvaluated(fn: Project.()->T) {
     if (state.executed) {
         fn()
     }
