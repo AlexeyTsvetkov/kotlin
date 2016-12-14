@@ -1,0 +1,5 @@
+apply plugin: 'kotlin-platform-js'
+
+dependencies {
+    kotlinCommon project(":lib")
+}
