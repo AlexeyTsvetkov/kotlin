@@ -28,7 +28,7 @@ import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinTask
 
 abstract class KotlinPlatformPluginBase(protected val platformName: String) : Plugin<Project>
 
-open class KotlinPlatformPluginCommon : KotlinPlatformPluginBase("common") {
+open class KotlinPlatformCommonPlugin : KotlinPlatformPluginBase("common") {
     override fun apply(project: Project) {
         project.applyPlugin<KotlinCommonPluginWrapper>()
     }
@@ -63,7 +63,7 @@ open class KotlinPlatformImplementationPluginBase(platformName: String) : Kotlin
         }
 
         commonProject.whenEvaluated {
-            if ((!commonProject.plugins.hasPlugin(KotlinPlatformPluginCommon::class.java))) {
+            if ((!commonProject.plugins.hasPlugin(KotlinPlatformCommonPlugin::class.java))) {
                 throw GradleException("Platform project $platformProject implements non-common project $commonProject (`apply plugin 'kotlin-platform-kotlin'`)")
             }
 
@@ -90,14 +90,14 @@ private inline fun <T> Project.whenEvaluated(crossinline fn: Project.()->T) {
     }
 }
 
-open class KotlinPlatformPluginJvm : KotlinPlatformImplementationPluginBase("jvm") {
+open class KotlinPlatformJvmPlugin : KotlinPlatformImplementationPluginBase("jvm") {
     override fun apply(project: Project) {
         project.applyPlugin<KotlinPluginWrapper>()
         super.apply(project)
     }
 }
 
-open class KotlinPlatformPluginJs : KotlinPlatformImplementationPluginBase("js") {
+open class KotlinPlatformJsPlugin : KotlinPlatformImplementationPluginBase("js") {
     override fun apply(project: Project) {
         project.applyPlugin<Kotlin2JsPluginWrapper>()
         super.apply(project)
