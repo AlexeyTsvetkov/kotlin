@@ -223,7 +223,6 @@ internal class KotlinCommonSourceSetProcessor(
 ) {
     override fun doTargetSpecificProcessing() {
         project.afterEvaluate { project ->
-            sourceSet.java.srcDirs.forEach { kotlinSourceSet.kotlin.srcDir(it) }
             kotlinTask.source(kotlinSourceSet.kotlin)
             project.tasks.findByName(sourceSet.classesTaskName).dependsOn(kotlinTask)
             // can be missing (e.g. in case of tests)
