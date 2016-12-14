@@ -22,7 +22,9 @@ import org.jetbrains.kotlin.config.Services
 import org.jetbrains.kotlin.incremental.ChangedFiles
 import java.io.File
 
+// todo rename
 internal open class KotlinCompileCommon : AbstractKotlinCompile<K2MetadataCompilerArguments>() {
+    // todo add test and set
     internal var friendTask: KotlinCompileCommon? = null
     override val compiler = K2MetadataCompiler()
 

@@ -23,6 +23,7 @@ import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.SourceSet
+import org.gradle.api.tasks.SourceSetContainer
 import org.jetbrains.kotlin.gradle.dsl.KotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinTask
 
@@ -43,15 +44,16 @@ open class KotlinPlatformImplementationPluginBase(platformName: String) : Kotlin
             (it as KotlinCompile<*>).kotlinOptions.freeCompilerArgs += listOf("-Xmulti-platform")
         }
 
-        project.convention.getPlugin(JavaPluginConvention::class.java).sourceSets.forEach {
-            platformSourceSets[it.name] = it
-        }
+        project.sourceSets.associateByTo(platformSourceSets, SourceSet::getName)
 
-        val kotlinCommonConfig = project.configurations.create("kotlinCommon")
-        kotlinCommonConfig.isTransitive = false
-        kotlinCommonConfig.dependencies.whenObjectAdded { dep ->
+        val implementConfig = project.configurations.create("implement")
+        implementConfig.isTransitive = false
+        implementConfig.dependencies.whenObjectAdded { dep ->
             if (dep is ProjectDependency) {
                 addCommonProject(dep.dependencyProject, project)
+            }
+            else {
+                throw GradleException("$project `implement` dependency is not a project: $dep")
             }
         }
     }
@@ -67,8 +69,7 @@ open class KotlinPlatformImplementationPluginBase(platformName: String) : Kotlin
                 throw GradleException("Platform project $platformProject implements non-common project $commonProject (`apply plugin 'kotlin-platform-kotlin'`)")
             }
 
-            val javaPluginConvention = commonProject.convention.getPlugin(JavaPluginConvention::class.java)
-            javaPluginConvention.sourceSets.all { commonSourceSet ->
+            commonProject.sourceSets.all { commonSourceSet ->
                 // todo: warn if not found
                 val platformSourceSet = platformSourceSets[commonSourceSet.name]
                 val platformKotlinSourceDirectorySet = platformSourceSet?.kotlin
@@ -79,15 +80,6 @@ open class KotlinPlatformImplementationPluginBase(platformName: String) : Kotlin
 
     private val SourceSet.kotlin: SourceDirectorySet?
             get() = ((getConvention("kotlin") ?: getConvention("kotlin2js")) as? KotlinSourceSet)?.kotlin
-}
-
-private fun <T> Project.whenEvaluated(fn: Project.()->T) {
-    if (state.executed) {
-        fn()
-    }
-    else {
-        afterEvaluate { it.fn() }
-    }
 }
 
 open class KotlinPlatformJvmPlugin : KotlinPlatformImplementationPluginBase("jvm") {
@@ -101,6 +93,18 @@ open class KotlinPlatformJsPlugin : KotlinPlatformImplementationPluginBase("js")
     override fun apply(project: Project) {
         project.applyPlugin<Kotlin2JsPluginWrapper>()
         super.apply(project)
+    }
+}
+
+private val Project.sourceSets: SourceSetContainer
+    get() = convention.getPlugin(JavaPluginConvention::class.java).sourceSets
+
+private fun <T> Project.whenEvaluated(fn: Project.()->T) {
+    if (state.executed) {
+        fn()
+    }
+    else {
+        afterEvaluate { it.fn() }
     }
 }
 
