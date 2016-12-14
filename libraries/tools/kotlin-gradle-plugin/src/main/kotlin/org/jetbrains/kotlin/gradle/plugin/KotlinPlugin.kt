@@ -218,7 +218,7 @@ internal class KotlinCommonSourceSetProcessor(
 ) : KotlinSourceSetProcessor<KotlinCompileCommon>(
         project, javaBasePlugin, sourceSet, tasksProvider, kotlinSourceSetProvider,
         dslExtensionName = KOTLIN_DSL_NAME,
-        taskDescription = "Compiles the kotlin sources in $sourceSet to JavaScript.",
+        taskDescription = "Compiles the kotlin sources in $sourceSet to Metadata.",
         compileTaskNameSuffix = "kotlinCommon"
 ) {
     override fun doTargetSpecificProcessing() {
