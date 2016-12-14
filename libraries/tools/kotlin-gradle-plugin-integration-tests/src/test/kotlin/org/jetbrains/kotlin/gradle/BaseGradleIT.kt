@@ -135,7 +135,7 @@ abstract class BaseGradleIT {
     }
 
     fun Project.build(vararg params: String, options: BuildOptions = defaultBuildOptions(), check: CompiledProject.() -> Unit) {
-        var cmd = createBuildCommand(params, options)
+        val cmd = createBuildCommand(params, options)
         val env = createEnvironmentVariablesMap(options)
 
         if (options.withDaemon) {
