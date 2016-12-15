@@ -305,7 +305,7 @@ open class Kotlin2JsCompile() : AbstractKotlinCompile<K2JSCompilerArguments>(), 
 
     @Suppress("unused")
     val outputFile: String?
-        get() = kotlinOptions.outputFile
+        get() = kotlinOptions.outputFile ?: defaultOutputFile.canonicalPath
 
     init {
         @Suppress("LeakingThis")
@@ -314,6 +314,8 @@ open class Kotlin2JsCompile() : AbstractKotlinCompile<K2JSCompilerArguments>(), 
 
     override fun populateCompilerArguments(): K2JSCompilerArguments {
         val args = K2JSCompilerArguments().apply { fillDefaultValues() }
+        args.outputFile = outputFile
+
         val friendDependency = friendTaskName
                 ?.let { project.getTasksByName(it, false).singleOrNull() as? Kotlin2JsCompile }
                 ?.outputFile
@@ -342,10 +344,6 @@ open class Kotlin2JsCompile() : AbstractKotlinCompile<K2JSCompilerArguments>(), 
         logger.debug("Calling compiler")
         destinationDir.mkdirs()
         args.freeArgs = args.freeArgs + sourceRoots.kotlinSourceFiles.map { it.absolutePath }
-
-        if (args.outputFile == null) {
-            args.outputFile = defaultOutputFile.canonicalPath
-        }
 
         logger.kotlinDebug("compiling with args ${ArgumentUtils.convertArgumentsToStringList(args)}")
 
