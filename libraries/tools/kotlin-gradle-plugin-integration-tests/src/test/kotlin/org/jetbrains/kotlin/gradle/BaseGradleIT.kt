@@ -75,8 +75,7 @@ abstract class BaseGradleIT {
             val androidHome: File? = null,
             val androidGradlePluginVersion: String? = null,
             val forceOutputToStdout: Boolean = false,
-            val debug: Boolean = false)
-            val forceOutputToStdout: Boolean = false,
+            val debug: Boolean = false,
             val freeCommandLineArgs: List<String> = emptyList())
 
     open inner class Project(
