@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.gradle.tasks
 
+import org.gradle.api.Project
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.cli.common.arguments.K2MetadataCompilerArguments
 import org.jetbrains.kotlin.cli.metadata.K2MetadataCompiler
@@ -31,6 +32,9 @@ internal open class KotlinCompileCommon : AbstractKotlinCompile<K2MetadataCompil
 
     override fun getSourceRoots(): SourceRoots =
             SourceRoots.KotlinOnly.create(getSource())
+
+    override fun findKotlinCompilerJar(project: Project): File? =
+            findKotlinMetadataCompilerJar(project)
 
     override fun callCompiler(args: K2MetadataCompilerArguments, sourceRoots: SourceRoots, changedFiles: ChangedFiles) {
         val classpathList = classpath.files.toMutableList()
