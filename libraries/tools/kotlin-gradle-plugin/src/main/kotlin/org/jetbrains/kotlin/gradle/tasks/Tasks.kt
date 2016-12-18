@@ -335,7 +335,7 @@ open class Kotlin2JsCompile() : AbstractKotlinCompile<K2JSCompilerArguments>(), 
     }
 
     override fun findKotlinCompilerJar(project: Project): File? =
-            findKotlinJvmCompilerJar(project)
+            findKotlinJsCompilerJar(project)
 
     override fun populateCompilerArguments(): K2JSCompilerArguments {
         val args = K2JSCompilerArguments().apply { fillDefaultValues() }
