@@ -24,7 +24,7 @@ import org.jetbrains.kotlin.name.FqName
 fun SimpleDirtyData.toDirtyData(): DirtyData {
     val dirtyClassesFqNames = dirtyClassesFqNames.map(::FqName)
     val dirtyLookupSymbols = dirtyLookupSymbols.map {
-        LookupSymbol(scope = it.substringBeforeLast(""), name = it.substringAfterLast(""))
+        LookupSymbol(scope = it.substringBeforeLast("."), name = it.substringAfterLast("."))
     }
     return DirtyData(dirtyLookupSymbols, dirtyClassesFqNames)
 }
