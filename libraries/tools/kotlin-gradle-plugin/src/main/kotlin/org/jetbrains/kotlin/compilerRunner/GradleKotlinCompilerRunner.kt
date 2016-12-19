@@ -60,10 +60,10 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
             environment: GradleCompilerEnvironment
     ): ExitCode {
         val outputDir = args.destinationAsFile
-        log.debug("Removing all kotlin classes in $outputDir")
         log.info("Using kotlin compiler jar: ${environment.compilerJar}")
 
         if (environment !is GradleIncrementalCompilerEnvironment) {
+            log.debug("Removing all kotlin classes in $outputDir")
             // we're free to delete all classes since only we know about that directory
             outputDir.deleteRecursively()
         }
