@@ -63,6 +63,6 @@ open class ExecutionStrategyIT : BaseGradleIT() {
     }
 
     protected open fun CompiledProject.checkOutput() {
-        assertFileExists("build/classes/main/foo/UseFKt.class")
+        assertFileExists("app/build/classes/main/foo/MainKt.class")
     }
 }
