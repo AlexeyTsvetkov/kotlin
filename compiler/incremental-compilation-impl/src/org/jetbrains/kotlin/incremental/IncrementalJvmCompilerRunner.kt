@@ -49,7 +49,7 @@ fun makeIncrementally(
         messageCollector: MessageCollector = MessageCollector.NONE,
         reporter: ICReporter = EmptyICReporter
 ) {
-    val versions = commonCacheVersions(cachesDir) + standaloneCacheVersion(cachesDir)
+    val versions = commonCacheVersions(cachesDir) + customCacheVersion(cachesDir)
 
     val kotlinExtensions = listOf("kt", "kts")
     val allExtensions = kotlinExtensions + listOf("java")

@@ -141,7 +141,7 @@ open class KotlinCompile : AbstractKotlinCompile<K2JVMCompilerArguments>(), Kotl
         listOf(normalCacheVersion(taskBuildDirectory),
                experimentalCacheVersion(taskBuildDirectory),
                dataContainerCacheVersion(taskBuildDirectory),
-               gradleCacheVersion(taskBuildDirectory))
+               standaloneCacheVersion(taskBuildDirectory))
     }
     internal val isCacheFormatUpToDate: Boolean
         get() {
