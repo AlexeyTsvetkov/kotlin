@@ -35,7 +35,10 @@ internal class GradleICReporter(private val projectRootFile: File) : ICReporter(
             files.pathsAsStringRelativeTo(projectRootFile)
 
     override fun reportCompileIteration(sourceFiles: Iterable<File>, exitCode: ExitCode) {
-        report { "compile iteration: ${pathsAsString(sourceFiles)}" }
+        if (sourceFiles.any()) {
+            report { "compile iteration: ${pathsAsString(sourceFiles)}" }
+        }
+        report { "compiler exit code: $exitCode" }
     }
 }
 
