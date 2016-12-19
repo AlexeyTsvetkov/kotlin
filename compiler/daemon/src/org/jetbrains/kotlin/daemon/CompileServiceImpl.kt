@@ -41,6 +41,7 @@ import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.multiproject.ArtifactChangesProvider
 import org.jetbrains.kotlin.incremental.multiproject.ChangesRegistry
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
+import org.jetbrains.kotlin.modules.Module
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
 import org.jetbrains.kotlin.resolve.jvm.JvmClassName
@@ -348,6 +349,7 @@ class CompileServiceImpl(
             val parsedModule = ModuleXmlParser.parseModuleScript(k2jvmArgs.module, filteringMessageCollector)
             val javaSourceRoots = parsedModule.modules.flatMapTo(HashSet()) { it.getJavaSourceRoots().map { File(it.path) } }
             val allKotlinFiles = parsedModule.modules.flatMap { it.getSourceFiles().map(::File) }
+            k2jvmArgs.friendPaths = parsedModule.modules.flatMap(Module::getFriendPaths).toTypedArray()
 
             val changedFiles = if (servicesFacade.areFileChangesKnown()) {
                 ChangedFiles.Known(servicesFacade.modifiedFiles()!!, servicesFacade.deletedFiles()!!)
@@ -360,7 +362,8 @@ class CompileServiceImpl(
             val changesRegistry = RemoteChangesRegostry(servicesFacade)
 
             val workingDir = servicesFacade.workingDir()
-            val versions = commonCacheVersions(workingDir) + standaloneCacheVersion(workingDir, forceEnable = true)
+            val versions = commonCacheVersions(workingDir) +
+                           customCacheVersion(servicesFacade.customCacheVersion(), servicesFacade.customCacheVersionFileName(), workingDir, forceEnable = true)
 
             try {
                 printStream.print(renderer.renderPreamble())
