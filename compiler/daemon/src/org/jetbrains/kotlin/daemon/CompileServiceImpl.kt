@@ -615,7 +615,10 @@ class CompileServiceImpl(
                     val serviceOutputStream = PrintStream(BufferedOutputStream(RemoteOutputStreamClient(serviceOutputStreamProxy, rpcProfiler), REMOTE_STREAM_BUFFER_SIZE))
                     try {
                         val compileServiceReporter = CompileServiceReporterStreamAdapter(serviceOutputStream)
-                        val exitCode = checkedCompile(args, compileServiceReporter, rpcProfiler) {
+                        if (args.none())
+                            throw IllegalArgumentException("Error: empty arguments list.")
+                        log.info("Starting compilation with args: " + args.joinToString(" "))
+                        val exitCode = checkedCompile(compileServiceReporter, rpcProfiler) {
                             body(compilerMessagesStream, eventManger, rpcProfiler).code
                         }
                         CompileService.CallResult.Good(exitCode)
@@ -630,7 +633,6 @@ class CompileServiceImpl(
             }
 
     private fun doCompile(sessionId: Int,
-                          args: Array<out String>,
                           compileServiceReporter: CompileServiceReporter,
                           operationsTracer: RemoteOperationsTracer?,
                           body: (EventManger, Profiler) -> ExitCode): CompileService.CallResult<Int> =
@@ -640,7 +642,7 @@ class CompileServiceImpl(
                     val rpcProfiler = if (daemonOptions.reportPerf) WallAndThreadTotalProfiler() else DummyProfiler()
                     val eventManger = EventMangerImpl()
                     try {
-                        val exitCode = checkedCompile(args, compileServiceReporter, rpcProfiler) {
+                        val exitCode = checkedCompile(compileServiceReporter, rpcProfiler) {
                             body(eventManger, rpcProfiler).code
                         }
                         CompileService.CallResult.Good(exitCode)
@@ -664,12 +666,8 @@ class CompileServiceImpl(
     }
 
 
-    private fun<R> checkedCompile(args: Array<out String>, compileServiceReporter: CompileServiceReporter, rpcProfiler: Profiler, body: () -> R): R {
+    private fun<R> checkedCompile(compileServiceReporter: CompileServiceReporter, rpcProfiler: Profiler, body: () -> R): R {
         try {
-            if (args.none())
-                throw IllegalArgumentException("Error: empty arguments list.")
-            log.info("Starting compilation with args: " + args.joinToString(" "))
-
             val profiler = if (daemonOptions.reportPerf) WallAndThreadAndMemoryTotalProfiler(withGC = false) else DummyProfiler()
 
             val res = profiler.withMeasure(null, body)
