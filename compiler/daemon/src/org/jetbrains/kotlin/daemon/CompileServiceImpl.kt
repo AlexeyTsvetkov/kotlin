@@ -599,6 +599,7 @@ class CompileServiceImpl(
         return res
     }
 
+    // todo: remove after remoteIncrementalCompile is removed
     private fun doCompile(sessionId: Int,
                           args: Array<out String>,
                           compilerMessagesStreamProxy: RemoteOutputStream,
@@ -613,14 +614,38 @@ class CompileServiceImpl(
                     val compilerMessagesStream = PrintStream(BufferedOutputStream(RemoteOutputStreamClient(compilerMessagesStreamProxy, rpcProfiler), REMOTE_STREAM_BUFFER_SIZE))
                     val serviceOutputStream = PrintStream(BufferedOutputStream(RemoteOutputStreamClient(serviceOutputStreamProxy, rpcProfiler), REMOTE_STREAM_BUFFER_SIZE))
                     try {
-                        CompileService.CallResult.Good(
-                                checkedCompile(args, serviceOutputStream, rpcProfiler) {
-                                    body(compilerMessagesStream, eventManger, rpcProfiler).code
-                                })
+                        val compileServiceReporter = CompileServiceReporterStreamAdapter(serviceOutputStream)
+                        val exitCode = checkedCompile(args, compileServiceReporter, rpcProfiler) {
+                            body(compilerMessagesStream, eventManger, rpcProfiler).code
+                        }
+                        CompileService.CallResult.Good(exitCode)
                     }
                     finally {
                         serviceOutputStream.flush()
                         compilerMessagesStream.flush()
+                        eventManger.fireCompilationFinished()
+                        operationsTracer?.after("compile")
+                    }
+                }
+            }
+
+    private fun doCompile(sessionId: Int,
+                          args: Array<out String>,
+                          compileServiceReporter: CompileServiceReporter,
+                          operationsTracer: RemoteOperationsTracer?,
+                          body: (EventManger, Profiler) -> ExitCode): CompileService.CallResult<Int> =
+            ifAlive {
+                withValidClientOrSessionProxy(sessionId) { session ->
+                    operationsTracer?.before("compile")
+                    val rpcProfiler = if (daemonOptions.reportPerf) WallAndThreadTotalProfiler() else DummyProfiler()
+                    val eventManger = EventMangerImpl()
+                    try {
+                        val exitCode = checkedCompile(args, compileServiceReporter, rpcProfiler) {
+                            body(eventManger, rpcProfiler).code
+                        }
+                        CompileService.CallResult.Good(exitCode)
+                    }
+                    finally {
                         eventManger.fireCompilationFinished()
                         operationsTracer?.after("compile")
                     }
@@ -639,7 +664,7 @@ class CompileServiceImpl(
     }
 
 
-    private fun<R> checkedCompile(args: Array<out String>, serviceOut: PrintStream, rpcProfiler: Profiler, body: () -> R): R {
+    private fun<R> checkedCompile(args: Array<out String>, compileServiceReporter: CompileServiceReporter, rpcProfiler: Profiler, body: () -> R): R {
         try {
             if (args.none())
                 throw IllegalArgumentException("Error: empty arguments list.")
@@ -660,14 +685,14 @@ class CompileServiceImpl(
                 val rpc = rpcProfiler.getTotalCounters()
 
                 "PERF: Compile on daemon: ${pc.time.ms()} ms; thread: user ${pc.threadUserTime.ms()} ms, sys ${(pc.threadTime - pc.threadUserTime).ms()} ms; rpc: ${rpc.count} calls, ${rpc.time.ms()} ms, thread ${rpc.threadTime.ms()} ms; memory: ${endMem.kb()} kb (${"%+d".format(pc.memory.kb())} kb)".let {
-                    serviceOut.println(it)
+                    compileServiceReporter.info(it)
                     log.info(it)
                 }
 
                 // this will only be reported if if appropriate (e.g. ByClass) profiler is used
                 for ((obj, counters) in rpcProfiler.getCounters()) {
                     "PERF: rpc by $obj: ${counters.count} calls, ${counters.time.ms()} ms, thread ${counters.threadTime.ms()} ms".let {
-                        serviceOut.println(it)
+                        compileServiceReporter.info(it)
                         log.info(it)
                     }
                 }
