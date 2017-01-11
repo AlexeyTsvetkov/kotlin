@@ -18,23 +18,19 @@ package org.jetbrains.kotlin.daemon.common
 
 import java.io.Serializable
 
-enum class ReportCategory : Serializable {
-    /**
-     * Messages from compiler
-     * For related severities see [org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity]
-     */
-    COMPILER_MESSAGE,
-    /**
-     * Messages from compile daemon
-     * For related severities see [org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity]
-     */
-    DAEMON_MESSAGE,
-    /**
-     * For related severities see [org.jetbrains.kotlin.daemon.incremental.IncrementalCompilationSeverity]
-     */
-    INCREMENTAL_COMPILATION;
+enum class ReportCategory(val code: Int) : Serializable {
+    COMPILER_MESSAGE(0),
+    DAEMON_MESSAGE(1),
+    IC_MESSAGE(2);
 
     companion object {
         const val serialVersionUID: Long = 0
     }
+}
+
+enum class ReportSeverity(val code: Int) {
+    ERROR(0),
+    WARNING(1),
+    INFO(2),
+    TRACE(3)
 }
