@@ -24,15 +24,18 @@ import java.io.File
 import java.io.PrintStream
 import kotlin.reflect.KAnnotatedElement
 import kotlin.reflect.KProperty1
-import kotlin.reflect.declaredMemberProperties
-import kotlin.reflect.memberProperties
+import kotlin.reflect.full.declaredMemberProperties
 
 // Additional properties that should be included in interface
 @Suppress("unused")
 interface AdditionalGradleProperties {
+    @property:Deprecated("freeCompilerArgs property is deprecated, use freeCompilerArgs function instead")
     @GradleOption(EmptyList::class)
     @Argument(description = "A list of additional compiler arguments")
-    var freeCompilerArgs: List<String>
+    var freeCompilerArgs: List<Any>
+
+    @GradleFunction
+    fun freeCompilerArgs(vararg args: String)
 
     object EmptyList : DefaultValues("emptyList()")
 }
@@ -185,6 +188,11 @@ private fun Printer.generateDeclaration(
 }
 
 private fun Printer.generatePropertyDeclaration(property: KProperty1<*, *>, modifiers: String = "") {
+    val deprecatedAnnotation = property.annotations.firstOrNull { it is Deprecated }
+    (deprecatedAnnotation as? Deprecated)?.let {
+        println("@property:kotlin.Deprecated(level=DeprecationLevel.${it.level}, message = \"${it.message}\")")
+    }
+
     val returnType = property.gradleReturnType
     println("$modifiers var ${property.name}: $returnType")
 }

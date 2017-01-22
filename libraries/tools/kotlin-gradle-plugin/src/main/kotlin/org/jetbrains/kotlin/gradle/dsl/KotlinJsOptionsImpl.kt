@@ -20,10 +20,10 @@ import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
 import org.jetbrains.kotlin.cli.js.K2JSCompiler
 
 internal class KotlinJsOptionsImpl() : KotlinJsOptionsBase() {
-    override var freeCompilerArgs: List<String> = listOf()
+    override var freeCompilerArgs: List<Any> = listOf()
 
     override fun updateArguments(args: K2JSCompilerArguments) {
         super.updateArguments(args)
-        K2JSCompiler().parseArguments(freeCompilerArgs.toTypedArray(), args)
+        K2JSCompiler().parseArguments(freeCompilerArgs.map { it.toString() }.toTypedArray(), args)
     }
 }

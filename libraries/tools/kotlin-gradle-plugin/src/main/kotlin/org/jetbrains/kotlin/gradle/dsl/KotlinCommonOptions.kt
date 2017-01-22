@@ -34,5 +34,6 @@ interface KotlinCommonOptions {
      * A list of additional compiler arguments
      * Default value: emptyList()
      */
-     var freeCompilerArgs: kotlin.collections.List<kotlin.String>
+    @property:kotlin.Deprecated(level=DeprecationLevel.WARNING, message = "freeCompilerArgs property is deprecated, use freeCompilerArgs function instead")
+     var freeCompilerArgs: kotlin.collections.List<kotlin.Any>
 }

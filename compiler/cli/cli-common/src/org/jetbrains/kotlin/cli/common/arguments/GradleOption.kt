@@ -20,3 +20,6 @@ import kotlin.reflect.KClass
 
 @Retention(AnnotationRetention.RUNTIME)
 annotation class GradleOption(val value: KClass<out DefaultValues> = DefaultValues::class)
+
+@Retention(AnnotationRetention.RUNTIME)
+annotation class GradleFunction
