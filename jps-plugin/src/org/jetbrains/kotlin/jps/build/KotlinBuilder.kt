@@ -25,6 +25,8 @@ import gnu.trove.THashSet
 import org.jetbrains.jps.ModuleChunk
 import org.jetbrains.jps.builders.BuildTarget
 import org.jetbrains.jps.builders.DirtyFilesHolder
+import org.jetbrains.jps.builders.FileProcessor
+import org.jetbrains.jps.builders.impl.DirtyFilesHolderBase
 import org.jetbrains.jps.builders.java.JavaBuilderUtil
 import org.jetbrains.jps.builders.java.JavaSourceRootDescriptor
 import org.jetbrains.jps.incremental.*
@@ -56,6 +58,7 @@ import org.jetbrains.kotlin.daemon.common.isDaemonEnabled
 import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.jps.JpsKotlinCompilerSettings
+import org.jetbrains.kotlin.jps.build.KotlinSourceFileCollector.isKotlinSourceFile
 import org.jetbrains.kotlin.jps.incremental.*
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCache
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
@@ -118,6 +121,23 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
 
         val fsOperations = FSOperationsHelper(context, chunk, LOG)
         applyActionsOnCacheVersionChange(actions, cacheVersionsProvider, context, dataManager, targets, fsOperations)
+
+        // todo: check if version is not changed
+        val dfh = object : DirtyFilesHolderBase<JavaSourceRootDescriptor, ModuleBuildTarget>(context) {
+            override fun processDirtyFiles(processor: FileProcessor<JavaSourceRootDescriptor, ModuleBuildTarget>) {
+            }
+        }
+
+        if (dfh.hasRemovedFiles()) {
+            val removedFiles = targets.filter { hasKotlin[it] == true }.keysToMap { dfh.getRemovedFiles(it).filter { it.endsWith(".kt") } }
+
+            val incrementalCaches = getIncrementalCaches(chunk, context)
+            for ((target, files) in removedFiles) {
+                if (files.isEmpty()) continue
+                incrementalCaches[target]?.markOutputClassesDirty(files.map(::File))
+            }
+            incrementalCaches.values.forEach { it.flush(false); it.close() }
+        }
     }
 
 
