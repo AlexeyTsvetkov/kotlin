@@ -52,16 +52,14 @@ import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.jps.JpsKotlinCompilerSettings
 import org.jetbrains.kotlin.jps.incremental.*
-import org.jetbrains.kotlin.load.java.JvmBytecodeBinaryVersion
-import org.jetbrains.kotlin.load.kotlin.DeserializedDescriptorResolver
-import org.jetbrains.kotlin.load.kotlin.JvmMetadataVersion
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCache
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
 import org.jetbrains.kotlin.modules.TargetId
 import org.jetbrains.kotlin.preloading.ClassCondition
 import org.jetbrains.kotlin.progress.CompilationCanceledException
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
-import org.jetbrains.kotlin.serialization.deserialization.BinaryVersion
+import org.jetbrains.kotlin.build.JvmBuildMetaInfo
+import org.jetbrains.kotlin.build.JvmBuildMetaInfo.Companion
 import org.jetbrains.kotlin.utils.*
 import org.jetbrains.org.objectweb.asm.ClassReader
 import java.io.File
@@ -120,12 +118,12 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
 
             for (target in chunk.targets) {
                 val file = jvmBuildMetaInfoFile(target, dataManager)
-                val lastBuildMetaInfo = deserializeFromXmlFile<JvmBuildMetaInfo>(file) ?: continue
+                val lastBuildMetaInfo = JvmBuildMetaInfo.deserializeFromString(file.readText()) ?: continue
 
-                val lastBuildLangVersion = LanguageVersion.fromVersionString(lastBuildMetaInfo.baseInfo?.languageVersionString)
-                if (lastBuildLangVersion != null && lastBuildLangVersion != LanguageVersion.KOTLIN_1_0
-                    && lastBuildMetaInfo.baseInfo?.isEAP == true
-                    && currentBuildMetaInfo.baseInfo?.isEAP == false
+                val lastBuildLangVersion = LanguageVersion.fromVersionString(lastBuildMetaInfo.languageVersionString)
+                if (lastBuildLangVersion != LanguageVersion.KOTLIN_1_0
+                    && lastBuildMetaInfo.isEAP
+                    && !currentBuildMetaInfo.isEAP
                 ) {
                     // If EAP->Non-EAP build with IC, then rebuild all kotlin
                     LOG.info("Last build was compiled with EAP-plugin. Performing non-incremental rebuild")
@@ -382,9 +380,10 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
 
         if (!JpsUtils.isJsKotlinModule(chunk.representativeTarget())) {
             val jvmBuildMetaInfo = JvmBuildMetaInfo(commonArguments)
+            val serializedMetaInfo = JvmBuildMetaInfo.serializeToString(jvmBuildMetaInfo)
 
             for (target in chunk.targets) {
-                jvmBuildMetaInfo.serializeToXmlFile(jvmBuildMetaInfoFile(target, dataManager))
+                jvmBuildMetaInfoFile(target, dataManager).writeText(serializedMetaInfo)
             }
         }
     }
@@ -933,17 +932,3 @@ private fun hasKotlinDirtyOrRemovedFiles(
 
 fun jvmBuildMetaInfoFile(target: ModuleBuildTarget, dataManager: BuildDataManager): File =
         File(dataManager.dataPaths.getTargetDataRoot(target), KotlinBuilder.JVM_BUILD_META_INFO_FILE_NAME)
-
-private fun JvmBuildMetaInfo(args: CommonCompilerArguments): JvmBuildMetaInfo {
-    val commonMetaInfo = BaseBuildMetaInfo(
-        isEAP = KotlinCompilerVersion.IS_PRE_RELEASE,
-        compilerBuildVersion = KotlinCompilerVersion.VERSION,
-        languageVersionString = args.languageVersion ?: LanguageVersion.LATEST.versionString,
-        apiVersionString = args.apiVersion ?: ApiVersion.LATEST.versionString,
-        coroutinesStatus = CoroutinesStatus(args.coroutinesEnable, args.coroutinesWarn, args.coroutinesError),
-        multiplatformStatus = MultiplatformStatus(enable = args.multiPlatform))
-    return JvmBuildMetaInfo(commonMetaInfo,
-                            metadataVersionNumbers = JvmMetadataVersion.INSTANCE.numbers,
-                            binaryVersionNumbers = JvmBytecodeBinaryVersion.INSTANCE.numbers)
-
-}

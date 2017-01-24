@@ -16,85 +16,100 @@
 
 package org.jetbrains.kotlin.build
 
-import java.io.Serializable
-import java.util.*
+import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
+import org.jetbrains.kotlin.config.ApiVersion
+import org.jetbrains.kotlin.config.KotlinCompilerVersion
+import org.jetbrains.kotlin.config.LanguageVersion
+import org.jetbrains.kotlin.load.java.JvmBytecodeBinaryVersion
+import org.jetbrains.kotlin.load.kotlin.JvmMetadataVersion
+import kotlin.reflect.full.memberProperties
+import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.full.starProjectedType
 
 /**
- * IMPORTANT!
- * This file can be written by one plugin version and read by another.
- * Serializable can automatically handle some changes (such as adding a nullable field).
- * Full info on compatible and incompatible changes: http://docs.oracle.com/javase/8/docs/platform/serialization/spec/version.html
- *
- * TL;DR:
- *  1. Do not change type of a field.
- *  2. Do not change declaration order of fields.
- *  3. Do not delete a field.
- *  4. Nullable field can be added.
+ * If you want to add a new field, check its type is supported by [serializeToPlainText], [deserializeFromPlainText]
  */
-data class BaseBuildMetaInfo(
-        var isEAP: Boolean? = null,
-        var compilerBuildVersion: String? = null,
-        var languageVersionString: String? = null,
-        var apiVersionString: String? = null,
-        var coroutinesStatus: CoroutinesStatus? = null,
-        var multiplatformStatus: MultiplatformStatus? = null,
-        var ownVersion: Int = BaseBuildMetaInfo.OWN_VERSION
-) : Serializable {
-    companion object {
-        /** DO NOT CHANGE unless you want InvalidClassException to be thrown! */
-        const val serialVersionUID: Long = 0
-        const val OWN_VERSION: Int = 0
-    }
-}
-
 data class JvmBuildMetaInfo(
-        var baseInfo: BaseBuildMetaInfo? = null,
-        var metadataVersionNumbers: IntArray? = null,
-        var binaryVersionNumbers: IntArray? = null,
-        var ownVersion: Int = JvmBuildMetaInfo.OWN_VERSION
-) : Serializable {
-    override fun equals(other: Any?): Boolean =
-            other is JvmBuildMetaInfo
-            && baseInfo == other.baseInfo
-            && Arrays.equals(metadataVersionNumbers, other.metadataVersionNumbers)
-            && Arrays.equals(binaryVersionNumbers, other.binaryVersionNumbers)
-            && ownVersion == other.ownVersion
-
-    override fun hashCode(): Int {
-        var code = baseInfo!!.hashCode()
-        code = 31 * code + metadataVersionNumbers!!.contentHashCode()
-        code = 31 * code + binaryVersionNumbers!!.contentHashCode()
-        code = 31 * code + ownVersion
-        return code
-    }
-
+        val isEAP: Boolean,
+        val compilerBuildVersion: String,
+        val languageVersionString: String,
+        val apiVersionString: String,
+        val coroutinesEnable: Boolean,
+        val coroutinesWarn: Boolean,
+        val coroutinesError: Boolean,
+        val multiplatformEnable: Boolean,
+        val metadataVersionMajor: Int,
+        val metadataVersionMinor: Int,
+        val metadataVersionPatch: Int,
+        val bytecodeVersionMajor: Int,
+        val bytecodeVersionMinor: Int,
+        val bytecodeVersionPatch: Int,
+        val ownVersion: Int = JvmBuildMetaInfo.OWN_VERSION,
+        val coroutinesVersion: Int = JvmBuildMetaInfo.COROUTINES_VERSION,
+        val multiplatformVersion: Int = JvmBuildMetaInfo.MULTIPLATFORM_VERSION
+) {
     companion object {
-        /** DO NOT CHANGE unless you want InvalidClassException to be thrown! */
-        const val serialVersionUID: Long = 0
         const val OWN_VERSION: Int = 0
+        const val COROUTINES_VERSION: Int = 0
+        const val MULTIPLATFORM_VERSION: Int = 0
+
+        fun serializeToString(info: JvmBuildMetaInfo): String =
+                serializeToPlainText(info)
+
+        fun deserializeFromString(str: String): JvmBuildMetaInfo? =
+                deserializeFromPlainText(str)
     }
 }
 
-data class CoroutinesStatus(
-        var enable: Boolean? = null,
-        var warn: Boolean? = null,
-        var error: Boolean? = null,
-        var version: Int = CoroutinesStatus.OWN_VERSION
-) : Serializable {
-    companion object {
-        /** DO NOT CHANGE unless you want InvalidClassException to be thrown! */
-        const val serialVersionUID: Long = 0
-        const val OWN_VERSION: Int = 0
+fun JvmBuildMetaInfo(args: CommonCompilerArguments): JvmBuildMetaInfo =
+        JvmBuildMetaInfo(isEAP = KotlinCompilerVersion.IS_PRE_RELEASE,
+                         compilerBuildVersion = KotlinCompilerVersion.VERSION,
+                         languageVersionString = args.languageVersion ?: LanguageVersion.LATEST.versionString,
+                         apiVersionString = args.apiVersion ?: ApiVersion.LATEST.versionString,
+                         coroutinesEnable = args.coroutinesEnable,
+                         coroutinesWarn = args.coroutinesWarn,
+                         coroutinesError = args.coroutinesError,
+                         multiplatformEnable = args.multiPlatform,
+                         metadataVersionMajor = JvmMetadataVersion.INSTANCE.major,
+                         metadataVersionMinor = JvmMetadataVersion.INSTANCE.minor,
+                         metadataVersionPatch = JvmMetadataVersion.INSTANCE.patch,
+                         bytecodeVersionMajor = JvmBytecodeBinaryVersion.INSTANCE.major,
+                         bytecodeVersionMinor = JvmBytecodeBinaryVersion.INSTANCE.minor,
+                         bytecodeVersionPatch = JvmBytecodeBinaryVersion.INSTANCE.patch)
+
+//
+// very simple serialization/deserialization to/from plain text
+// write tests
+private inline fun <reified T : Any> serializeToPlainText(instance: T): String {
+    val lines = ArrayList<String>()
+    for (property in T::class.memberProperties) {
+        lines.add("${property.name}=${property.get(instance)}")
     }
+    return lines.joinToString("\n")
 }
 
-data class MultiplatformStatus(
-        var enable: Boolean? = null,
-        var version: Int = MultiplatformStatus.OWN_VERSION
-) : Serializable {
-    companion object {
-        /** DO NOT CHANGE unless you want InvalidClassException to be thrown! */
-        const val serialVersionUID: Long = 0
-        const val OWN_VERSION: Int = 0
+private inline fun <reified T : Any> deserializeFromPlainText(str: String): T? {
+    val primaryConstructor = T::class.primaryConstructor
+                             ?: throw IllegalStateException("Class ${T::class.java} does not have primary constructor")
+    val params = primaryConstructor.parameters
+    val args = ArrayList<Any>()
+    val properties = str
+            .split("\n")
+            .filter(String::isNotBlank)
+            .map { it.substringBefore("=") to it.substringAfter("=") }
+            .toMap()
+
+    for (param in params.sortedBy { it.index }) {
+        val argumentString = properties[param.name] ?: return null
+
+        val argument: Any = when (param.type) {
+            Int::class.starProjectedType -> argumentString.toInt()
+            Boolean::class.starProjectedType -> argumentString.toBoolean()
+            String::class.starProjectedType -> argumentString
+            else -> throw IllegalStateException("Unexpected property type: ${param.type}")
+        }
+        args.add(argument)
     }
+
+    return primaryConstructor.call(*args.toTypedArray())
 }
