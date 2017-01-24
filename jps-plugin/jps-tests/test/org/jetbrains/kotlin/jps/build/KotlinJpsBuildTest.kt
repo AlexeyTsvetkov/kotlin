@@ -51,7 +51,9 @@ import org.jetbrains.kotlin.codegen.AsmUtil
 import org.jetbrains.kotlin.codegen.JvmCodegenUtil
 import org.jetbrains.kotlin.incremental.CacheVersion
 import org.jetbrains.kotlin.incremental.components.LookupTracker
+import org.jetbrains.kotlin.incremental.withIC
 import org.jetbrains.kotlin.jps.build.KotlinJpsBuildTest.LibraryDependency.*
+import org.jetbrains.kotlin.load.kotlin.DeserializedDescriptorResolver
 import org.jetbrains.kotlin.load.kotlin.PackagePartClassUtils
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.test.KotlinTestUtils
@@ -783,6 +785,34 @@ class KotlinJpsBuildTest : AbstractKotlinJpsBuildTestCase() {
 
     fun testKotlinProjectWithEmptyOutputDirInSomeModules() {
         doTest()
+    }
+
+    fun testEAPToReleaseIC() {
+        val backup = DeserializedDescriptorResolver.IS_PRE_RELEASE
+        try {
+            withIC {
+                initProject(JVM_MOCK_RUNTIME)
+                DeserializedDescriptorResolver.IS_PRE_RELEASE = true
+                makeAll().assertSuccessful()
+                assertCompiled(KotlinBuilder.KOTLIN_BUILDER_NAME, "src/Bar.kt", "src/Foo.kt")
+
+                // no changes
+                makeAll()
+                assertCompiled(KotlinBuilder.KOTLIN_BUILDER_NAME)
+
+                DeserializedDescriptorResolver.IS_PRE_RELEASE = false
+                touch("src/Foo.kt").apply()
+                makeAll().assertSuccessful()
+                assertCompiled(KotlinBuilder.KOTLIN_BUILDER_NAME, "src/Bar.kt", "src/Foo.kt")
+
+                // no changes
+                makeAll()
+                assertCompiled(KotlinBuilder.KOTLIN_BUILDER_NAME)
+            }
+        }
+        finally {
+            DeserializedDescriptorResolver.IS_PRE_RELEASE = backup
+        }
     }
 
     fun testGetDependentTargets() {

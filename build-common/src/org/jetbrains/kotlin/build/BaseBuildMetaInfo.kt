@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.config.ApiVersion
 import org.jetbrains.kotlin.config.KotlinCompilerVersion
 import org.jetbrains.kotlin.config.LanguageVersion
 import org.jetbrains.kotlin.load.java.JvmBytecodeBinaryVersion
+import org.jetbrains.kotlin.load.kotlin.DeserializedDescriptorResolver
 import org.jetbrains.kotlin.load.kotlin.JvmMetadataVersion
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
@@ -62,7 +63,7 @@ data class JvmBuildMetaInfo(
 }
 
 fun JvmBuildMetaInfo(args: CommonCompilerArguments): JvmBuildMetaInfo =
-        JvmBuildMetaInfo(isEAP = KotlinCompilerVersion.IS_PRE_RELEASE,
+        JvmBuildMetaInfo(isEAP = DeserializedDescriptorResolver.IS_PRE_RELEASE,
                          compilerBuildVersion = KotlinCompilerVersion.VERSION,
                          languageVersionString = args.languageVersion ?: LanguageVersion.LATEST.versionString,
                          apiVersionString = args.apiVersion ?: ApiVersion.LATEST.versionString,
