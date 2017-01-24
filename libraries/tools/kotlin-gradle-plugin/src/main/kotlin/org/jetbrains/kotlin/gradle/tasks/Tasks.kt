@@ -300,6 +300,7 @@ open class Kotlin2JsCompile() : AbstractKotlinCompile<K2JSCompilerArguments>(), 
     override fun populateCompilerArguments(): K2JSCompilerArguments {
         val args = K2JSCompilerArguments().apply { fillDefaultValues() }
         args.outputFile = outputFile
+        args.moduleName = moduleName
 
         val friendDependency = friendTaskName
                 ?.let { project.getTasksByName(it, false).singleOrNull() as? Kotlin2JsCompile }

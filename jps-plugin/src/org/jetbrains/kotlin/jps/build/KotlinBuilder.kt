@@ -37,9 +37,7 @@ import org.jetbrains.jps.model.JpsProject
 import org.jetbrains.jps.model.java.JpsJavaClasspathKind
 import org.jetbrains.jps.model.java.JpsJavaExtensionService
 import org.jetbrains.jps.model.module.JpsModule
-import org.jetbrains.kotlin.build.GeneratedFile
-import org.jetbrains.kotlin.build.GeneratedJvmClass
-import org.jetbrains.kotlin.build.isModuleMappingFile
+import org.jetbrains.kotlin.build.*
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
@@ -47,25 +45,24 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.OutputMessageUtil
 import org.jetbrains.kotlin.compilerRunner.*
-import org.jetbrains.kotlin.config.CompilerRunnerConstants
+import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.config.CompilerRunnerConstants.INTERNAL_ERROR_PREFIX
-import org.jetbrains.kotlin.config.IncrementalCompilation
-import org.jetbrains.kotlin.config.KotlinCompilerVersion
-import org.jetbrains.kotlin.config.Services
 import org.jetbrains.kotlin.daemon.common.isDaemonEnabled
 import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.jps.JpsKotlinCompilerSettings
 import org.jetbrains.kotlin.jps.incremental.*
+import org.jetbrains.kotlin.load.java.JvmBytecodeBinaryVersion
+import org.jetbrains.kotlin.load.kotlin.DeserializedDescriptorResolver
+import org.jetbrains.kotlin.load.kotlin.JvmMetadataVersion
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCache
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
 import org.jetbrains.kotlin.modules.TargetId
 import org.jetbrains.kotlin.preloading.ClassCondition
 import org.jetbrains.kotlin.progress.CompilationCanceledException
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
-import org.jetbrains.kotlin.utils.JsLibraryUtils
-import org.jetbrains.kotlin.utils.PathUtil
-import org.jetbrains.kotlin.utils.keysToMap
+import org.jetbrains.kotlin.serialization.deserialization.BinaryVersion
+import org.jetbrains.kotlin.utils.*
 import org.jetbrains.org.objectweb.asm.ClassReader
 import java.io.File
 import java.util.*
@@ -75,6 +72,7 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         @JvmField val KOTLIN_BUILDER_NAME: String = "Kotlin Builder"
 
         val LOG = Logger.getInstance("#org.jetbrains.kotlin.jps.build.KotlinBuilder")
+        const val JVM_BUILD_META_INFO_FILE_NAME = "jvm-build-meta.xml"
     }
 
     private val statisticsLogger = TeamcityStatisticsLogger()
@@ -114,7 +112,27 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
 
         val cacheVersionsProvider = CacheVersionProvider(dataManager.dataPaths)
         val allVersions = cacheVersionsProvider.allVersions(targets)
-        val actions = allVersions.map { it.checkVersion() }.toSet()
+        val actions = allVersions.map { it.checkVersion() }.toMutableSet()
+
+        if (!JpsUtils.isJsKotlinModule(chunk.representativeTarget())) {
+            val args = compilerArgumentsForChunk(chunk)
+            val currentBuildMetaInfo = JvmBuildMetaInfo(args)
+
+            for (target in chunk.targets) {
+                val file = jvmBuildMetaInfoFile(target, dataManager)
+                val lastBuildMetaInfo = deserializeFromXmlFile<JvmBuildMetaInfo>(file) ?: continue
+
+                val lastBuildLangVersion = LanguageVersion.fromVersionString(lastBuildMetaInfo.baseInfo?.languageVersionString)
+                if (lastBuildLangVersion != null && lastBuildLangVersion != LanguageVersion.KOTLIN_1_0
+                    && lastBuildMetaInfo.baseInfo?.isEAP == true
+                    && currentBuildMetaInfo.baseInfo?.isEAP == false
+                ) {
+                    // If EAP->Non-EAP build with IC, then rebuild all kotlin
+                    LOG.info("Last build was compiled with EAP-plugin. Performing non-incremental rebuild")
+                    actions.add(CacheVersion.Action.REBUILD_ALL_KOTLIN)
+                }
+            }
+        }
 
         val fsOperations = FSOperationsHelper(context, chunk, LOG)
         applyActionsOnCacheVersionChange(actions, cacheVersionsProvider, context, dataManager, targets, fsOperations)
@@ -211,7 +229,7 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
             return ABORT
         }
 
-        val commonArguments = JpsKotlinCompilerSettings.getCommonCompilerArguments(chunk.representativeTarget().module)
+        val commonArguments = compilerArgumentsForChunk(chunk)
         commonArguments.verbose = true // Make compiler report source to output files mapping
 
         val allCompiledFiles = getAllCompiledFilesContainer(context)
@@ -241,7 +259,7 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         val generatedFiles = getGeneratedFiles(chunk, environment.outputItemsCollector)
 
         registerOutputItems(outputConsumer, generatedFiles)
-        saveVersions(context, chunk)
+        saveVersions(context, chunk, commonArguments)
 
         if (targets.any { hasKotlin[it] == null }) {
             fsOperations.markChunk(recursively = false, kotlinOnly = true, excludeFiles = filesToCompile.values().toSet())
@@ -356,12 +374,23 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         }
     }
 
-    private fun saveVersions(context: CompileContext, chunk: ModuleChunk) {
+    private fun saveVersions(context: CompileContext, chunk: ModuleChunk, commonArguments: CommonCompilerArguments) {
         val dataManager = context.projectDescriptor.dataManager
         val targets = chunk.targets
         val cacheVersionsProvider = CacheVersionProvider(dataManager.dataPaths)
         cacheVersionsProvider.allVersions(targets).forEach { it.saveIfNeeded() }
+
+        if (!JpsUtils.isJsKotlinModule(chunk.representativeTarget())) {
+            val jvmBuildMetaInfo = JvmBuildMetaInfo(commonArguments)
+
+            for (target in chunk.targets) {
+                jvmBuildMetaInfo.serializeToXmlFile(jvmBuildMetaInfoFile(target, dataManager))
+            }
+        }
     }
+
+    private fun compilerArgumentsForChunk(chunk: ModuleChunk): CommonCompilerArguments =
+            JpsKotlinCompilerSettings.getCommonCompilerArguments(chunk.representativeTarget().module)
 
     private fun doCompileModuleChunk(
             allCompiledFiles: MutableSet<File>, chunk: ModuleChunk, commonArguments: CommonCompilerArguments, context: CompileContext,
@@ -902,3 +931,19 @@ private fun hasKotlinDirtyOrRemovedFiles(
     return chunk.targets.any { KotlinSourceFileCollector.getRemovedKotlinFiles(dirtyFilesHolder, it).isNotEmpty() }
 }
 
+fun jvmBuildMetaInfoFile(target: ModuleBuildTarget, dataManager: BuildDataManager): File =
+        File(dataManager.dataPaths.getTargetDataRoot(target), KotlinBuilder.JVM_BUILD_META_INFO_FILE_NAME)
+
+private fun JvmBuildMetaInfo(args: CommonCompilerArguments): JvmBuildMetaInfo {
+    val commonMetaInfo = BaseBuildMetaInfo(
+        isEAP = KotlinCompilerVersion.IS_PRE_RELEASE,
+        compilerBuildVersion = KotlinCompilerVersion.VERSION,
+        languageVersionString = args.languageVersion ?: LanguageVersion.LATEST.versionString,
+        apiVersionString = args.apiVersion ?: ApiVersion.LATEST.versionString,
+        coroutinesStatus = CoroutinesStatus(args.coroutinesEnable, args.coroutinesWarn, args.coroutinesError),
+        multiplatformStatus = MultiplatformStatus(enable = args.multiPlatform))
+    return JvmBuildMetaInfo(commonMetaInfo,
+                            metadataVersionNumbers = JvmMetadataVersion.INSTANCE.numbers,
+                            binaryVersionNumbers = JvmBytecodeBinaryVersion.INSTANCE.numbers)
+
+}
