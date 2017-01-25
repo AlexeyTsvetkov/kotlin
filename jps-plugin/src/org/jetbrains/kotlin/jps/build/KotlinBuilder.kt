@@ -117,7 +117,16 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
 
             for (target in chunk.targets) {
                 val file = jvmBuildMetaInfoFile(target, dataManager)
-                val lastBuildMetaInfo = JvmBuildMetaInfo.deserializeFromString(file.readText()) ?: continue
+                if (!file.exists()) continue
+
+                val lastBuildMetaInfo =
+                        try {
+                            JvmBuildMetaInfo.deserializeFromString(file.readText()) ?: continue
+                        }
+                        catch (e: Exception) {
+                            LOG.error("Could not deserialize jvm build meta info", e)
+                            continue
+                        }
 
                 val lastBuildLangVersion = LanguageVersion.fromVersionString(lastBuildMetaInfo.languageVersionString)
                 // reuse logic from compiler?

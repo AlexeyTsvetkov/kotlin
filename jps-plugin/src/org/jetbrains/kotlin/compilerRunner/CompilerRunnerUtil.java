@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.compilerRunner;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector;
+import org.jetbrains.kotlin.load.kotlin.DeserializedDescriptorResolver;
 import org.jetbrains.kotlin.preloading.ClassPreloadingUtils;
 import org.jetbrains.kotlin.preloading.Preloader;
 import org.jetbrains.kotlin.utils.KotlinPaths;
@@ -81,6 +82,20 @@ public class CompilerRunnerUtil {
 
         ClassLoader classLoader = getOrCreateClassLoader(environment, libPath);
 
+        if ("true".equalsIgnoreCase(System.getProperty("kotlin.jps.tests"))) {
+            Class<?> aClass = Class.forName(DeserializedDescriptorResolver.class.getCanonicalName(), true, classLoader);
+            Object companion = aClass.getDeclaredField("Companion").get(aClass);
+            Class<?> boolClass = Class.forName(Boolean.class.getCanonicalName());
+            Object trueValue = boolClass.getField("TRUE").get(boolClass);
+            Object falseValue = boolClass.getField("FALSE").get(boolClass);
+            Method setIsPreRelease = companion.getClass().getDeclaredMethod("setIS_PRE_RELEASE", boolClass);
+            if (DeserializedDescriptorResolver.Companion.getIS_PRE_RELEASE()) {
+                setIsPreRelease.invoke(companion, trueValue);
+            }
+            else {
+                setIsPreRelease.invoke(companion, falseValue);
+            }
+        }
         Class<?> kompiler = Class.forName(compilerClassName, true, classLoader);
         Method exec = kompiler.getMethod(
                 "execAndOutputXml",
