@@ -59,7 +59,6 @@ import org.jetbrains.kotlin.preloading.ClassCondition
 import org.jetbrains.kotlin.progress.CompilationCanceledException
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
 import org.jetbrains.kotlin.build.JvmBuildMetaInfo
-import org.jetbrains.kotlin.build.JvmBuildMetaInfo.Companion
 import org.jetbrains.kotlin.utils.*
 import org.jetbrains.org.objectweb.asm.ClassReader
 import java.io.File
@@ -70,7 +69,7 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         @JvmField val KOTLIN_BUILDER_NAME: String = "Kotlin Builder"
 
         val LOG = Logger.getInstance("#org.jetbrains.kotlin.jps.build.KotlinBuilder")
-        const val JVM_BUILD_META_INFO_FILE_NAME = "jvm-build-meta.xml"
+        const val JVM_BUILD_META_INFO_FILE_NAME = "jvm-build-meta-info.txt"
     }
 
     private val statisticsLogger = TeamcityStatisticsLogger()
@@ -121,12 +120,13 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
                 val lastBuildMetaInfo = JvmBuildMetaInfo.deserializeFromString(file.readText()) ?: continue
 
                 val lastBuildLangVersion = LanguageVersion.fromVersionString(lastBuildMetaInfo.languageVersionString)
+                // reuse logic from compiler?
                 if (lastBuildLangVersion != LanguageVersion.KOTLIN_1_0
                     && lastBuildMetaInfo.isEAP
                     && !currentBuildMetaInfo.isEAP
                 ) {
                     // If EAP->Non-EAP build with IC, then rebuild all kotlin
-                    LOG.info("Last build was compiled with EAP-plugin. Performing non-incremental rebuild")
+                    LOG.info("Last build was compiled with EAP-plugin. Performing non-incremental rebuild (kotlin only)")
                     actions.add(CacheVersion.Action.REBUILD_ALL_KOTLIN)
                 }
             }

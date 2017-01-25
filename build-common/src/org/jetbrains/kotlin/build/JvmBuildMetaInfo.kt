@@ -23,9 +23,8 @@ import org.jetbrains.kotlin.config.LanguageVersion
 import org.jetbrains.kotlin.load.java.JvmBytecodeBinaryVersion
 import org.jetbrains.kotlin.load.kotlin.DeserializedDescriptorResolver
 import org.jetbrains.kotlin.load.kotlin.JvmMetadataVersion
-import kotlin.reflect.full.memberProperties
-import kotlin.reflect.full.primaryConstructor
-import kotlin.reflect.full.starProjectedType
+import org.jetbrains.kotlin.build.deserializeFromPlainText
+import org.jetbrains.kotlin.build.serializeToPlainText
 
 /**
  * If you want to add a new field, check its type is supported by [serializeToPlainText], [deserializeFromPlainText]
@@ -77,40 +76,3 @@ fun JvmBuildMetaInfo(args: CommonCompilerArguments): JvmBuildMetaInfo =
                          bytecodeVersionMajor = JvmBytecodeBinaryVersion.INSTANCE.major,
                          bytecodeVersionMinor = JvmBytecodeBinaryVersion.INSTANCE.minor,
                          bytecodeVersionPatch = JvmBytecodeBinaryVersion.INSTANCE.patch)
-
-//
-// very simple serialization/deserialization to/from plain text
-// write tests
-private inline fun <reified T : Any> serializeToPlainText(instance: T): String {
-    val lines = ArrayList<String>()
-    for (property in T::class.memberProperties) {
-        lines.add("${property.name}=${property.get(instance)}")
-    }
-    return lines.joinToString("\n")
-}
-
-private inline fun <reified T : Any> deserializeFromPlainText(str: String): T? {
-    val primaryConstructor = T::class.primaryConstructor
-                             ?: throw IllegalStateException("Class ${T::class.java} does not have primary constructor")
-    val params = primaryConstructor.parameters
-    val args = ArrayList<Any>()
-    val properties = str
-            .split("\n")
-            .filter(String::isNotBlank)
-            .map { it.substringBefore("=") to it.substringAfter("=") }
-            .toMap()
-
-    for (param in params.sortedBy { it.index }) {
-        val argumentString = properties[param.name] ?: return null
-
-        val argument: Any = when (param.type) {
-            Int::class.starProjectedType -> argumentString.toInt()
-            Boolean::class.starProjectedType -> argumentString.toBoolean()
-            String::class.starProjectedType -> argumentString
-            else -> throw IllegalStateException("Unexpected property type: ${param.type}")
-        }
-        args.add(argument)
-    }
-
-    return primaryConstructor.call(*args.toTypedArray())
-}
