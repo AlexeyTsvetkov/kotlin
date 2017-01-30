@@ -365,4 +365,18 @@ class KotlinGradleIT: BaseGradleIT() {
             assertSuccessful()
         }
     }
+
+    @Test
+    fun testDowngradeTo106() {
+        val project = Project("kotlinProject", "3.3")
+        val options = defaultBuildOptions().copy(incremental = true)
+
+        project.build("assemble", options = options) {
+            assertSuccessful()
+        }
+
+        project.build("clean", "assemble", options = options.copy(kotlinVersion = "1.0.6")) {
+            assertSuccessful()
+        }
+    }
 }
