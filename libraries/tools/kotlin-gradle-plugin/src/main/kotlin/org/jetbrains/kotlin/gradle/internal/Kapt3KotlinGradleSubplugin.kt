@@ -75,6 +75,9 @@ class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
         return dir
     }
 
+    fun getKaptClasssesDir(project: Project, sourceSetName: String): File =
+            File(project.project.buildDir, "tmp/kapt3/classes/$sourceSetName")
+
     private class Kapt3SubpluginContext(
             val project: Project,
             val kotlinCompile: KotlinCompile,
@@ -156,7 +159,7 @@ class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
         javaCompile.source(generatedFilesDir)
 
         pluginOptions += SubpluginOption("sources", generatedFilesDir.canonicalPath)
-        pluginOptions += SubpluginOption("classes", kotlinCompile.destinationDir.canonicalPath)
+        pluginOptions += SubpluginOption("classes", getKaptClasssesDir(project, sourceSetName).canonicalPath)
 
         val androidPlugin = variantData?.let {
             project.extensions.findByName("android") as? BaseExtension
@@ -193,6 +196,7 @@ class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
 
     private fun Kapt3SubpluginContext.createKaptKotlinTask() {
         val sourcesOutputDir = getKaptGeneratedDir(project, sourceSetName)
+        val classesOutputDir = getKaptClasssesDir(project, sourceSetName)
 
         // Replace compile*Kotlin to kapt*Kotlin
         assert(kotlinCompile.name.startsWith("compile"))
@@ -207,6 +211,7 @@ class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
 
         kaptTask.mapClasspath { kotlinCompile.classpath }
         kaptTask.destinationDir = sourcesOutputDir
+        kaptTask.classesDir = classesOutputDir
         kaptTask.dependsOn(*(javaCompile.dependsOn.filter { it !== kotlinCompile }.toTypedArray()))
         kotlinCompile.dependsOn(kaptTask)
 

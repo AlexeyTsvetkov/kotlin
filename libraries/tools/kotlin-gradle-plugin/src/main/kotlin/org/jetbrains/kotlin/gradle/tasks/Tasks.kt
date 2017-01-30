@@ -172,6 +172,7 @@ open class KotlinCompile : AbstractKotlinCompile<K2JVMCompilerArguments>(), Kotl
     internal val pluginOptions = CompilerPluginOptions()
     internal var artifactDifferenceRegistryProvider: ArtifactDifferenceRegistryProvider? = null
     internal var artifactFile: File? = null
+    internal var kaptClassesOutputDir: File? = null
 
     override fun findKotlinCompilerJar(project: Project): File? =
             findKotlinJvmCompilerJar(project)
@@ -227,6 +228,14 @@ open class KotlinCompile : AbstractKotlinCompile<K2JVMCompilerArguments>(), Kotl
                         artifactFile, args)
             }
         }
+
+        if (!incremental) {
+            logger.kotlinDebug { "Removing all kotlin classes in $destinationDir" }
+            destinationDir.deleteRecursively()
+            destinationDir.mkdirs()
+        }
+
+        if (kapt)
 
         try {
             val exitCode = compilerRunner.runJvmCompiler(sourceRoots.kotlinSourceFiles, sourceRoots.javaSourceRoots, args, environment)
