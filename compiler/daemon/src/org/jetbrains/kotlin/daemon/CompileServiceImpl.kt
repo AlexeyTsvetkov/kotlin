@@ -53,6 +53,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 import java.rmi.NoSuchObjectException
+import java.rmi.RemoteException
 import java.rmi.registry.Registry
 import java.rmi.server.UnicastRemoteObject
 import java.util.*
@@ -62,6 +63,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlin.collections.HashSet
 import kotlin.concurrent.read
 import kotlin.concurrent.schedule
 import kotlin.concurrent.write
@@ -417,11 +419,15 @@ class CompileServiceImpl(
             if (mc.hasErrors()) {
                 daemonMessageReporter.report(ReportSeverity.ERROR, bytesOut.toString("UTF8"))
             }
-            parsedModule
+            if (parsedModule.modules.size != 1) {
+                throw RemoteException("Expected one module, got: ${parsedModule.modules.joinToString(transform = Module::getModuleName)}")
+            }
+            parsedModule.modules.first()
         }
-        val javaSourceRoots = parsedModule.modules.flatMapTo(HashSet()) { it.getJavaSourceRoots().map { File(it.path) } }
-        val allKotlinFiles = parsedModule.modules.flatMap { it.getSourceFiles().map(::File) }
-        k2jvmArgs.friendPaths = parsedModule.modules.flatMap(Module::getFriendPaths).toTypedArray()
+        val javaSourceRoots = parsedModule.getJavaSourceRoots().mapTo(HashSet()) { File(it.path) }
+        val allKotlinFiles = parsedModule.getSourceFiles().map(::File)
+        k2jvmArgs.friendPaths = parsedModule.getFriendPaths().toTypedArray()
+        k2jvmArgs.destination = parsedModule.getOutputDirectory()
 
         val changedFiles = if (incrementalCompilationOptions.areFileChangesKnown) {
             ChangedFiles.Known(incrementalCompilationOptions.modifiedFiles!!, incrementalCompilationOptions.deletedFiles!!)
