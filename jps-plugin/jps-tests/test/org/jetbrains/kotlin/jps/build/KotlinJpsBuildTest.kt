@@ -47,12 +47,14 @@ import org.jetbrains.jps.model.java.JpsJavaDependencyScope
 import org.jetbrains.jps.model.java.JpsJavaExtensionService
 import org.jetbrains.jps.model.module.JpsModule
 import org.jetbrains.jps.util.JpsPathUtil
+import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.codegen.AsmUtil
 import org.jetbrains.kotlin.codegen.JvmCodegenUtil
 import org.jetbrains.kotlin.config.KotlinCompilerVersion.TEST_IS_PRE_RELEASE_SYSTEM_PROPERTY
 import org.jetbrains.kotlin.incremental.CacheVersion
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.incremental.withIC
+import org.jetbrains.kotlin.jps.JpsKotlinCompilerSettings
 import org.jetbrains.kotlin.jps.build.KotlinJpsBuildTest.LibraryDependency.*
 import org.jetbrains.kotlin.load.kotlin.PackagePartClassUtils
 import org.jetbrains.kotlin.name.FqName
@@ -807,6 +809,20 @@ class KotlinJpsBuildTest : AbstractKotlinJpsBuildTestCase() {
         val storageRoot = BuildDataPathsImpl(myDataStorageRoot).dataStorageRoot
         assertTrue(File(storageRoot, "targets/java-production/kotlinProject/kotlin").exists())
         assertFalse(File(storageRoot, "targets/java-production/module2/kotlin").exists())
+    }
+
+    fun testK2JvmArguments() {
+        initProject(JVM_MOCK_RUNTIME)
+
+        val k2JvmArgs = K2JVMCompilerArguments()
+        k2JvmArgs.jvmTarget = "1.6"
+        JpsKotlinCompilerSettings.setK2JvmCompilerArguments(myProject, k2JvmArgs)
+        buildAllModules().assertSuccessful()
+        assertCompiled(KotlinBuilder.KOTLIN_BUILDER_NAME, "src/test1.kt")
+
+        k2JvmArgs.jvmTarget = "1.8"
+        buildAllModules().assertSuccessful()
+        assertCompiled(KotlinBuilder.KOTLIN_BUILDER_NAME, "src/test1.kt")
     }
 
     fun testKotlinProjectWithEmptyProductionOutputDir() {

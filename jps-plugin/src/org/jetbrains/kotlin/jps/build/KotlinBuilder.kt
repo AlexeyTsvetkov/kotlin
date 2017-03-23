@@ -41,16 +41,13 @@ import org.jetbrains.kotlin.build.GeneratedFile
 import org.jetbrains.kotlin.build.GeneratedJvmClass
 import org.jetbrains.kotlin.build.JvmBuildMetaInfo
 import org.jetbrains.kotlin.build.isModuleMappingFile
-import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
+import org.jetbrains.kotlin.cli.common.arguments.*
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.OutputMessageUtil
-import org.jetbrains.kotlin.compilerRunner.JpsCompilerEnvironment
-import org.jetbrains.kotlin.compilerRunner.JpsKotlinCompilerRunner
-import org.jetbrains.kotlin.compilerRunner.OutputItemsCollector
-import org.jetbrains.kotlin.compilerRunner.OutputItemsCollectorImpl
+import org.jetbrains.kotlin.compilerRunner.*
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.config.CompilerRunnerConstants.INTERNAL_ERROR_PREFIX
 import org.jetbrains.kotlin.daemon.common.isDaemonEnabled
@@ -69,6 +66,8 @@ import org.jetbrains.kotlin.utils.PathUtil
 import org.jetbrains.kotlin.utils.keysToMap
 import org.jetbrains.org.objectweb.asm.ClassReader
 import java.io.File
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
 import java.util.*
 
 class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
@@ -77,6 +76,7 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
 
         val LOG = Logger.getInstance("#org.jetbrains.kotlin.jps.build.KotlinBuilder")
         const val JVM_BUILD_META_INFO_FILE_NAME = "jvm-build-meta-info.txt"
+        const val JVM_ARGS_FILE_NAME = "jvm-args.txt"
         const val SKIP_CACHE_VERSION_CHECK_PROPERTY = "kotlin.jps.skip.cache.version.check"
     }
 
@@ -129,9 +129,33 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         val actions = allVersions.map { it.checkVersion() }.toMutableSet()
 
         if (!JpsUtils.isJsKotlinModule(chunk.representativeTarget())) {
-            val args = compilerArgumentsForChunk(chunk)
-            val currentBuildMetaInfo = JvmBuildMetaInfo(args)
+            val jvmArgs = chunk.jvmCompilerArguments()
+            for (target in chunk.targets) {
+                val oldJvmArgs = try {
+                    readJvmArgs(jvmArgsFile(target, dataManager))
+                }
+                catch (t: Throwable) {
+                    LOG.debug(t)
+                    null
+                }
 
+                if (oldJvmArgs == null) {
+                    LOG.debug("Could not read compiler arguments from the last build")
+                    continue
+                }
+
+                val differentArg = jvmArgs.firstDifferentArgument(oldJvmArgs)
+                if (differentArg != null) {
+                    if (LOG.isDebugEnabled) {
+                        LOG.debug("Old compiler arguments: ${ArgumentUtils.convertArgumentsToStringList(oldJvmArgs).joinToString()}")
+                        LOG.debug("New compiler arguments: ${ArgumentUtils.convertArgumentsToStringList(jvmArgs).joinToString()}")
+                        LOG.debug("Compiler arguments were changed: ${differentArg.name}, ...")
+                    }
+                    actions.add(CacheVersion.Action.REBUILD_CHUNK)
+                }
+            }
+
+            val currentBuildMetaInfo = JvmBuildMetaInfo(jvmArgs)
             for (target in chunk.targets) {
                 val file = jvmBuildMetaInfoFile(target, dataManager)
                 if (!file.exists()) continue
@@ -252,8 +276,8 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
             return ABORT
         }
 
-        val commonArguments = compilerArgumentsForChunk(chunk)
-        commonArguments.verbose = true // Make compiler report source to output files mapping
+        val compilerArgs = chunk.jvmCompilerArguments()
+        compilerArgs.verbose = true // Make compiler report source to output files mapping
 
         val allCompiledFiles = getAllCompiledFilesContainer(context)
         val filesToCompile = KotlinSourceFileCollector.getDirtySourceFiles(dirtyFilesHolder)
@@ -261,7 +285,7 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         LOG.debug("Compiling files: ${filesToCompile.values()}")
 
         val start = System.nanoTime()
-        val outputItemCollector = doCompileModuleChunk(allCompiledFiles, chunk, commonArguments, context, dirtyFilesHolder,
+        val outputItemCollector = doCompileModuleChunk(allCompiledFiles, chunk, compilerArgs, context, dirtyFilesHolder,
                                                        environment, filesToCompile, incrementalCaches, messageCollector, project)
 
         statisticsLogger.registerStatistic(chunk, System.nanoTime() - start)
@@ -282,7 +306,7 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         val generatedFiles = getGeneratedFiles(chunk, environment.outputItemsCollector)
 
         registerOutputItems(outputConsumer, generatedFiles)
-        saveVersions(context, chunk, commonArguments)
+        saveVersions(context, chunk, compilerArgs)
 
         if (targets.any { hasKotlin[it] == null }) {
             fsOperations.markChunk(recursively = false, kotlinOnly = true, excludeFiles = filesToCompile.values().toSet())
@@ -397,24 +421,24 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         }
     }
 
-    private fun saveVersions(context: CompileContext, chunk: ModuleChunk, commonArguments: CommonCompilerArguments) {
+    private fun saveVersions(context: CompileContext, chunk: ModuleChunk, compilerArgs: CommonCompilerArguments) {
         val dataManager = context.projectDescriptor.dataManager
         val targets = chunk.targets
         val cacheVersionsProvider = CacheVersionProvider(dataManager.dataPaths)
         cacheVersionsProvider.allVersions(targets).forEach { it.saveIfNeeded() }
 
         if (!JpsUtils.isJsKotlinModule(chunk.representativeTarget())) {
-            val jvmBuildMetaInfo = JvmBuildMetaInfo(commonArguments)
+            val jvmBuildMetaInfo = JvmBuildMetaInfo(compilerArgs)
             val serializedMetaInfo = JvmBuildMetaInfo.serializeToString(jvmBuildMetaInfo)
+            val argsList = ArgumentUtils.convertArgumentsToStringList(compilerArgs)
 
             for (target in chunk.targets) {
+                jvmArgsFile(target, dataManager).let { writeStrings(argsList, it) }
                 jvmBuildMetaInfoFile(target, dataManager).writeText(serializedMetaInfo)
             }
         }
     }
 
-    private fun compilerArgumentsForChunk(chunk: ModuleChunk): CommonCompilerArguments =
-            JpsKotlinCompilerSettings.getCommonCompilerArguments(chunk.representativeTarget().module)
 
     private fun doCompileModuleChunk(
             allCompiledFiles: MutableSet<File>, chunk: ModuleChunk, commonArguments: CommonCompilerArguments, context: CompileContext,
@@ -955,5 +979,34 @@ private fun hasKotlinDirtyOrRemovedFiles(
     return chunk.targets.any { KotlinSourceFileCollector.getRemovedKotlinFiles(dirtyFilesHolder, it).isNotEmpty() }
 }
 
+fun readJvmArgs(file: File): K2JVMCompilerArguments? {
+    if (!file.exists()) return null
+
+    val argsArray = file.readLines().toTypedArray()
+    return K2JVMCompilerArguments().also { args -> parseArguments(argsArray, args, ignoreInvalidArguments = true) }
+}
+
+fun writeStrings(args: List<String>, file: File) {
+    file.parentFile.mkdirs()
+
+    file.bufferedWriter().use { output ->
+        args.forEach {
+            output.write(it)
+            output.write("\n")
+        }
+    }
+}
+
+fun jvmArgsFile(target: ModuleBuildTarget, dataManager: BuildDataManager): File =
+        File(dataManager.dataPaths.getTargetDataRoot(target), KotlinBuilder.JVM_ARGS_FILE_NAME)
+
 fun jvmBuildMetaInfoFile(target: ModuleBuildTarget, dataManager: BuildDataManager): File =
         File(dataManager.dataPaths.getTargetDataRoot(target), KotlinBuilder.JVM_BUILD_META_INFO_FILE_NAME)
+
+private fun ModuleChunk.jvmCompilerArguments(): K2JVMCompilerArguments {
+    val representativeModule = representativeTarget().module
+    val commonArgs = JpsKotlinCompilerSettings.getCommonCompilerArguments(representativeModule)
+    val jvmArgs = JpsKotlinCompilerSettings.getK2JvmCompilerArguments(representativeModule)
+    return mergeBeans(commonArgs, jvmArgs)
+}
+

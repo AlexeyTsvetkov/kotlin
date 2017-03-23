@@ -16,11 +16,15 @@
 
 package org.jetbrains.kotlin.cli.common.arguments
 
-import com.intellij.util.xmlb.XmlSerializerUtil
 import org.jetbrains.kotlin.cli.common.parser.com.sampullara.cli.Args
+import org.jetbrains.kotlin.cli.common.parser.com.sampullara.cli.Argument
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.reflect.KClass
+import kotlin.reflect.KProperty1
+import kotlin.reflect.full.memberProperties
 
 @JvmOverloads fun <A : CommonCompilerArguments> parseArguments(args: Array<String>, arguments: A, ignoreInvalidArguments: Boolean = false) {
     val unparsedArgs = Args.parse(arguments, args, false)
@@ -105,3 +109,12 @@ fun collectFieldsToCopy(clazz: Class<*>, inheritedOnly: Boolean): List<Field> {
 
     return fromFields
 }
+
+inline fun <reified T : CommonCompilerArguments> T.firstDifferentArgument(other: T): KProperty1<T, *>? =
+        firstDifferentArgument(other, T::class)
+
+fun <T : CommonCompilerArguments> T.firstDifferentArgument(other: T, klass: KClass<T>): KProperty1<T, *>? =
+        klass.memberProperties
+                .firstOrNull { property ->
+                    property.annotations.any { it is Argument }
+                    && property.get(this) != property.get(other) }
