@@ -20,6 +20,8 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.logging.Logger
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.SourceTask
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.compile.AbstractCompile
@@ -158,8 +160,11 @@ abstract class AbstractKotlinCompile<T : CommonCompilerArguments>() : AbstractCo
 }
 
 open class KotlinCompile : AbstractKotlinCompile<K2JVMCompilerArguments>(), KotlinJvmCompile {
+    @get:Optional
+    @get:Nested
     internal var parentKotlinOptionsImpl: KotlinJvmOptionsImpl? = null
     private val kotlinOptionsImpl = KotlinJvmOptionsImpl()
+    @get:Nested
     override val kotlinOptions: KotlinJvmOptions
             get() = kotlinOptionsImpl
     internal val sourceRootsContainer = FilteringSourceRootsContainer()
@@ -317,6 +322,7 @@ open class KotlinCompile : AbstractKotlinCompile<K2JVMCompilerArguments>(), Kotl
 
 open class Kotlin2JsCompile() : AbstractKotlinCompile<K2JSCompilerArguments>(), KotlinJsCompile {
     private val kotlinOptionsImpl = KotlinJsOptionsImpl()
+    @get:Nested
     override val kotlinOptions: KotlinJsOptions
             get() = kotlinOptionsImpl
 

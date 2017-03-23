@@ -5,56 +5,68 @@ package org.jetbrains.kotlin.gradle.dsl
 internal abstract class KotlinJsOptionsBase : org.jetbrains.kotlin.gradle.dsl.KotlinJsOptions {
 
     private var apiVersionField: kotlin.String? = null
+    @get:org.gradle.api.tasks.Input
     override var apiVersion: kotlin.String
         get() = apiVersionField ?: "1.1"
         set(value) { apiVersionField = value }
 
     private var languageVersionField: kotlin.String? = null
+    @get:org.gradle.api.tasks.Input
     override var languageVersion: kotlin.String
         get() = languageVersionField ?: "1.1"
         set(value) { languageVersionField = value }
 
     private var suppressWarningsField: kotlin.Boolean? = null
+    @get:org.gradle.api.tasks.Input
     override var suppressWarnings: kotlin.Boolean
         get() = suppressWarningsField ?: false
         set(value) { suppressWarningsField = value }
 
     private var verboseField: kotlin.Boolean? = null
+    @get:org.gradle.api.tasks.Input
     override var verbose: kotlin.Boolean
         get() = verboseField ?: false
         set(value) { verboseField = value }
 
     private var mainField: kotlin.String? = null
+    @get:org.gradle.api.tasks.Input
     override var main: kotlin.String
         get() = mainField ?: "call"
         set(value) { mainField = value }
 
     private var metaInfoField: kotlin.Boolean? = null
+    @get:org.gradle.api.tasks.Input
     override var metaInfo: kotlin.Boolean
         get() = metaInfoField ?: true
         set(value) { metaInfoField = value }
 
     private var moduleKindField: kotlin.String? = null
+    @get:org.gradle.api.tasks.Input
     override var moduleKind: kotlin.String
         get() = moduleKindField ?: "plain"
         set(value) { moduleKindField = value }
 
     private var noStdlibField: kotlin.Boolean? = null
+    @get:org.gradle.api.tasks.Input
     override var noStdlib: kotlin.Boolean
         get() = noStdlibField ?: true
         set(value) { noStdlibField = value }
 
     private var outputFileField: kotlin.String?? = null
+    @get:org.gradle.api.tasks.Optional
+    @get:org.gradle.api.tasks.Input
     override var outputFile: kotlin.String?
         get() = outputFileField ?: null
         set(value) { outputFileField = value }
 
     private var sourceMapField: kotlin.Boolean? = null
+    @get:org.gradle.api.tasks.Input
     override var sourceMap: kotlin.Boolean
         get() = sourceMapField ?: false
         set(value) { sourceMapField = value }
 
     private var targetField: kotlin.String? = null
+    @get:org.gradle.api.tasks.Input
     override var target: kotlin.String
         get() = targetField ?: "v5"
         set(value) { targetField = value }

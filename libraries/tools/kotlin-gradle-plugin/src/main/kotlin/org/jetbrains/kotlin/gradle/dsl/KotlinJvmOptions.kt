@@ -8,18 +8,22 @@ interface KotlinJvmOptions  : org.jetbrains.kotlin.gradle.dsl.KotlinCommonOption
      * Include Kotlin runtime in to resulting .jar
      * Default value: false
      */
+    @get:org.gradle.api.tasks.Input
      var includeRuntime: kotlin.Boolean
 
     /**
      * Generate metadata for Java 1.8 reflection on method parameters
      * Default value: false
      */
+    @get:org.gradle.api.tasks.Input
      var javaParameters: kotlin.Boolean
 
     /**
      * Path to JDK home directory to include into classpath, if differs from default JAVA_HOME
      * Default value: null
      */
+    @get:org.gradle.api.tasks.Optional
+    @get:org.gradle.api.tasks.Input
      var jdkHome: kotlin.String?
 
     /**
@@ -27,23 +31,27 @@ interface KotlinJvmOptions  : org.jetbrains.kotlin.gradle.dsl.KotlinCommonOption
      * Possible values: "1.6", "1.8"
      * Default value: "1.6"
      */
+    @get:org.gradle.api.tasks.Input
      var jvmTarget: kotlin.String
 
     /**
      * Don't include Java runtime into classpath
      * Default value: false
      */
+    @get:org.gradle.api.tasks.Input
      var noJdk: kotlin.Boolean
 
     /**
      * Don't include Kotlin reflection implementation into classpath
      * Default value: true
      */
+    @get:org.gradle.api.tasks.Input
      var noReflect: kotlin.Boolean
 
     /**
      * Don't include Kotlin runtime into classpath
      * Default value: true
      */
+    @get:org.gradle.api.tasks.Input
      var noStdlib: kotlin.Boolean
 }
