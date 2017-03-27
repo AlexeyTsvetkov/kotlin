@@ -40,8 +40,13 @@ class CacheVersion(
 ) {
     private val isEnabled by lazy(isEnabled)
 
-    private val actualVersion: Int
-        get() = versionFile.readText().toInt()
+    private val actualVersion: Int?
+        get() = try {
+            versionFile.readText().toInt()
+        }
+        catch (e: Exception) {
+            null
+        }
 
     private val expectedVersion: Int
         get() {
