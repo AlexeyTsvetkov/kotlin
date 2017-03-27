@@ -29,7 +29,7 @@ import kotlin.reflect.declaredMemberProperties
 // Additional properties that should be included in interface
 @Suppress("unused")
 interface AdditionalGradleProperties {
-    @GradleOption(EmptyList::class, rebuildOnChange = false)
+    @GradleOption(EmptyList::class)
     @Argument(description = "A list of additional compiler arguments")
     var freeCompilerArgs: List<String>
 
@@ -194,12 +194,6 @@ private fun Printer.generateDeclaration(
 
 private fun Printer.generatePropertyDeclaration(property: KProperty1<*, *>, modifiers: String = "") {
     val returnType = property.gradleReturnType
-    if (property.findAnnotation<GradleOption>()?.rebuildOnChange == true) {
-        if (returnType.endsWith("?")) {
-            println("@get:org.gradle.api.tasks.Optional")
-        }
-        println("@get:org.gradle.api.tasks.Input")
-    }
     println("$modifiers var ${property.name}: $returnType")
 }
 

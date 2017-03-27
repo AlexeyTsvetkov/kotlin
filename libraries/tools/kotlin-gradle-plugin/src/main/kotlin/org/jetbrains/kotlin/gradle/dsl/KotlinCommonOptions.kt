@@ -9,7 +9,6 @@ interface KotlinCommonOptions {
      * Possible values: "1.0", "1.1"
      * Default value: "1.1"
      */
-    @get:org.gradle.api.tasks.Input
      var apiVersion: kotlin.String
 
     /**
@@ -17,21 +16,18 @@ interface KotlinCommonOptions {
      * Possible values: "1.0", "1.1"
      * Default value: "1.1"
      */
-    @get:org.gradle.api.tasks.Input
      var languageVersion: kotlin.String
 
     /**
      * Generate no warnings
      * Default value: false
      */
-    @get:org.gradle.api.tasks.Input
      var suppressWarnings: kotlin.Boolean
 
     /**
      * Enable verbose logging output
      * Default value: false
      */
-    @get:org.gradle.api.tasks.Input
      var verbose: kotlin.Boolean
 
     /**

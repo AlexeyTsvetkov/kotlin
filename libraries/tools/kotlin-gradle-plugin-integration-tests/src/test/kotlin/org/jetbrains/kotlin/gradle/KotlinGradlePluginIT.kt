@@ -17,20 +17,13 @@
 package org.jetbrains.kotlin.gradle
 
 import org.gradle.api.logging.LogLevel
-import org.gradle.api.tasks.Input
 import org.jetbrains.kotlin.com.intellij.openapi.util.io.FileUtil
-import org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptionsImpl
 import org.jetbrains.kotlin.gradle.tasks.USING_INCREMENTAL_COMPILATION_MESSAGE
 import org.jetbrains.kotlin.gradle.util.getFileByName
 import org.jetbrains.kotlin.gradle.util.getFilesByNames
 import org.jetbrains.kotlin.gradle.util.modify
 import org.junit.Test
 import java.io.File
-import kotlin.reflect.KMutableProperty0
-import kotlin.reflect.KMutableProperty1
-import kotlin.reflect.KProperty1
-import kotlin.reflect.full.memberProperties
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
@@ -485,58 +478,4 @@ class KotlinGradleIT: BaseGradleIT() {
             assertContains(":compileKotlin", ":compileTestKotlin")
         }
     }
-
-    @Test
-    fun testKotlinOptionsChanged() {
-        val project = Project("kotlinProject", "3.3")
-        project.setupWorkingDir()
-        val buildGradle = project.projectDir.getFileByName("build.gradle")
-        val oldScript = buildGradle.readText()
-        val kotlinOptions = KotlinJvmOptionsImpl()
-
-        val buildAndCheck = {
-            val newScript = """
-$oldScript
-
-compileKotlin {
-    kotlinOptions {
-        ${dump(kotlinOptions)}
-    }
-}
-"""
-
-            buildGradle.writeText(newScript)
-            project.build("assemble") {
-                assertSuccessful()
-                assertContains(":compileKotlin")
-                assertNotContains(":compileKotlin UP-TO-DATE")
-            }
-        }
-
-        buildAndCheck()
-
-        kotlinOptions::apiVersion.assertNotEqualsAndSet("1.0")
-        buildAndCheck()
-
-        kotlinOptions::languageVersion.assertNotEqualsAndSet("1.0")
-        buildAndCheck()
-
-        kotlinOptions::jvmTarget.assertNotEqualsAndSet("1.8")
-        buildAndCheck()
-    }
-
-    private fun <T> KMutableProperty0<T>.assertNotEqualsAndSet(newVal: T) {
-        assertNotEquals(get(), newVal, "$name value should not be equals to $newVal")
-        set(newVal)
-    }
-
-    private inline fun <reified T : KotlinCommonOptions> dump(options: T): String =
-            buildString {
-                for (prop in T::class.memberProperties) {
-                    val propValue = prop.get(options) ?: continue
-
-                    val propValueStr = if (propValue is String) "\'$propValue\'" else propValue.toString()
-                    appendln("${prop.name} = $propValueStr")
-                }
-            }
 }

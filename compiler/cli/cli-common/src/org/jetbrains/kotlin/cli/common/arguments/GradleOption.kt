@@ -19,7 +19,4 @@ package org.jetbrains.kotlin.cli.common.arguments
 import kotlin.reflect.KClass
 
 @Retention(AnnotationRetention.RUNTIME)
-annotation class GradleOption(
-        val value: KClass<out DefaultValues> = DefaultValues::class,
-        val rebuildOnChange: Boolean = true
-)
+annotation class GradleOption(val value: KClass<out DefaultValues> = DefaultValues::class)

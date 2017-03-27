@@ -9,14 +9,12 @@ interface KotlinJsOptions  : org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions
      * Possible values: "call", "noCall"
      * Default value: "call"
      */
-    @get:org.gradle.api.tasks.Input
      var main: kotlin.String
 
     /**
      * Generate .meta.js and .kjsm files with metadata. Use to create a library
      * Default value: true
      */
-    @get:org.gradle.api.tasks.Input
      var metaInfo: kotlin.Boolean
 
     /**
@@ -24,29 +22,24 @@ interface KotlinJsOptions  : org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions
      * Possible values: "plain", "amd", "commonjs", "umd"
      * Default value: "plain"
      */
-    @get:org.gradle.api.tasks.Input
      var moduleKind: kotlin.String
 
     /**
      * Don't use bundled Kotlin stdlib
      * Default value: true
      */
-    @get:org.gradle.api.tasks.Input
      var noStdlib: kotlin.Boolean
 
     /**
      * Output file path
      * Default value: null
      */
-    @get:org.gradle.api.tasks.Optional
-    @get:org.gradle.api.tasks.Input
      var outputFile: kotlin.String?
 
     /**
      * Generate source map
      * Default value: false
      */
-    @get:org.gradle.api.tasks.Input
      var sourceMap: kotlin.Boolean
 
     /**
@@ -54,7 +47,6 @@ interface KotlinJsOptions  : org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions
      * Possible values: "v5"
      * Default value: "v5"
      */
-    @get:org.gradle.api.tasks.Input
      var target: kotlin.String
 
     /**
