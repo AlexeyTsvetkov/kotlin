@@ -38,6 +38,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.cli.common.CLICompiler;
 import org.jetbrains.kotlin.cli.common.ExitCode;
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments;
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector;
 import org.jetbrains.kotlin.config.KotlinCompilerVersion;
 import org.jetbrains.kotlin.config.Services;
 
@@ -192,16 +193,43 @@ public abstract class KotlinCompileMojoBase<A extends CommonCompilerArguments> e
         A arguments = createCompilerArguments();
         CLICompiler<A> compiler = createCompiler();
 
+        List<File> sourceRoots = new ArrayList<File>();
+        for (File sourceDir : getSourceDirs()) {
+            if (sourceDir.exists()) {
+                sourceRoots.add(sourceDir);
+            }
+            else {
+                getLog().warn("Source root doesn't exist: " + sourceDir);
+            }
+        }
+        if (sourceRoots.isEmpty()) {
+            throw new MojoExecutionException("No source roots to compile");
+        }
+        getLog().info("Compiling Kotlin sources from " + sourceRoots);
+
         configureCompilerArguments(arguments, compiler);
         printCompilerArgumentsIfDebugEnabled(arguments, compiler);
 
         MavenPluginLogMessageCollector messageCollector = new MavenPluginLogMessageCollector(getLog());
 
-        ExitCode exitCode = compiler.exec(messageCollector, Services.EMPTY, arguments);
+        ExitCode exitCode = execCompiler(compiler, messageCollector, arguments, sourceRoots);
 
         if (exitCode != ExitCode.OK) {
             messageCollector.throwKotlinCompilerException();
         }
+    }
+
+    @NotNull
+    protected ExitCode execCompiler(
+            CLICompiler<A> compiler,
+            MessageCollector messageCollector,
+            A arguments,
+            List<File> sourceRoots
+    ) throws MojoExecutionException {
+        for (File sourceRoot : sourceRoots) {
+            arguments.freeArgs.add(sourceRoot.getPath());
+        }
+        return compiler.exec(messageCollector, Services.EMPTY, arguments);
     }
 
     private boolean hasKotlinFilesInSources() throws MojoExecutionException {
@@ -405,26 +433,10 @@ public abstract class KotlinCompileMojoBase<A extends CommonCompilerArguments> e
             arguments.verbose = true;
         }
 
-        List<String> sources = new ArrayList<String>();
-        for (File source : getSourceDirs()) {
-            if (source.exists()) {
-                sources.add(source.getPath());
-            }
-            else {
-                getLog().warn("Source root doesn't exist: " + source);
-            }
-        }
-
-        if (sources.isEmpty()) {
-            throw new MojoExecutionException("No source roots to compile");
-        }
-
         arguments.suppressWarnings = nowarn;
         arguments.languageVersion = languageVersion;
         arguments.apiVersion = apiVersion;
         arguments.multiPlatform = multiPlatform;
-
-        getLog().info("Compiling Kotlin sources from " + sources);
 
         configureSpecificCompilerArguments(arguments);
 
@@ -434,8 +446,6 @@ public abstract class KotlinCompileMojoBase<A extends CommonCompilerArguments> e
         catch (IllegalArgumentException e) {
             throw new MojoExecutionException(e.getMessage());
         }
-
-        arguments.freeArgs.addAll(sources);
 
         if (arguments.noInline) {
             getLog().info("Method inlining is turned off");
