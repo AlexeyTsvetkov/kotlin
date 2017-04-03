@@ -1,6 +1,7 @@
 package org.jetbrains.kotlin.maven;
 
 import com.intellij.openapi.util.io.FileUtil;
+import kotlin.io.TextStreamsKt;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -35,16 +36,11 @@ class MavenProject {
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
 
-        StringBuilder sb = new StringBuilder();
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            sb.append(line);
-            sb.append('\n');
-        }
-
+        String stdout = TextStreamsKt.readText(reader);
         int exitCode = process.waitFor();
-        return new MavenExecutionResult(sb.toString(), workingDir, exitCode);
+
+        return new MavenExecutionResult(stdout, workingDir, exitCode);
     }
 
     private void setUpEnvVars(Map<String, String> env) throws IOException {

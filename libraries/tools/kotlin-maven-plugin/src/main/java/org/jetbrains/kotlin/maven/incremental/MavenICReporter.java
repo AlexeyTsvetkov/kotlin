@@ -1,7 +1,5 @@
 package org.jetbrains.kotlin.maven.incremental;
 
-import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.util.Function;
 import kotlin.jvm.functions.Function0;
 import org.apache.maven.plugin.logging.Log;
 import org.jetbrains.annotations.NotNull;
@@ -9,8 +7,6 @@ import org.jetbrains.kotlin.cli.common.ExitCode;
 import org.jetbrains.kotlin.incremental.ICReporter;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -112,22 +108,13 @@ public class MavenICReporter implements ICReporter {
     @NotNull
     @Override
     public String pathsAsString(Iterable<? extends File> files) {
-        return StringUtil.join(files, new Function<File, String>() {
-            @Override
-            public String fun(File file) {
-                try {
-                    return file.getCanonicalPath();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }, ", ");
+        return ICReporter.DefaultImpls.pathsAsString(this, files);
     }
 
     @NotNull
     @Override
     public String pathsAsString(File... files) {
-        return pathsAsString(Arrays.asList(files));
+        return ICReporter.DefaultImpls.pathsAsString(this, files);
     }
 
     @NotNull
