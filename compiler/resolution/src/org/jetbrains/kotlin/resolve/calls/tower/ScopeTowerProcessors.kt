@@ -66,15 +66,23 @@ internal class ExplicitReceiverScopeTowerProcessor<D : CallableDescriptor, C: Ca
     }
 
     private fun resolveAsMember(): Collection<C> {
-        val members =
-                MemberScopeTowerLevel(scopeTower, explicitReceiver)
-                        .collectCandidates(null).filter { !it.requiresExtensionReceiver }
-        return members.map { candidateFactory.createCandidate(it, ExplicitReceiverKind.DISPATCH_RECEIVER, extensionReceiver = null) }
+        val members = mutableListOf<C>()
+        for (memberCandidate in MemberScopeTowerLevel(scopeTower, explicitReceiver).collectCandidates(null)) {
+            if (!memberCandidate.requiresExtensionReceiver) {
+                members.add(candidateFactory.createCandidate(memberCandidate, ExplicitReceiverKind.DISPATCH_RECEIVER, extensionReceiver = null))
+            }
+        }
+        return members
     }
 
     private fun resolveAsExtension(level: ScopeTowerLevel): Collection<C> {
-        val extensions = level.collectCandidates(explicitReceiver).filter { it.requiresExtensionReceiver }
-        return extensions.map { candidateFactory.createCandidate(it, ExplicitReceiverKind.EXTENSION_RECEIVER, extensionReceiver = explicitReceiver) }
+        val extensions = mutableListOf<C>()
+        for (extensionCandidate in level.collectCandidates(explicitReceiver)) {
+            if (extensionCandidate.requiresExtensionReceiver) {
+                extensions.add(candidateFactory.createCandidate(extensionCandidate, ExplicitReceiverKind.EXTENSION_RECEIVER, extensionReceiver = explicitReceiver))
+            }
+        }
+        return extensions
     }
 }
 
@@ -87,9 +95,12 @@ private class QualifierScopeTowerProcessor<D : CallableDescriptor, C: Candidate<
     override fun simpleProcess(data: TowerData): Collection<C> {
         if (data != TowerData.Empty) return emptyList()
 
-        val staticMembers = QualifierScopeTowerLevel(scopeTower, qualifier).collectCandidates(null)
-                .filter { !it.requiresExtensionReceiver }
-                .map { candidateFactory.createCandidate(it, ExplicitReceiverKind.NO_EXPLICIT_RECEIVER, extensionReceiver = null) }
+        val staticMembers = mutableListOf<C>()
+        for (towerCandidate in QualifierScopeTowerLevel(scopeTower, qualifier).collectCandidates(null)) {
+            if (!towerCandidate.requiresExtensionReceiver) {
+                staticMembers.add(candidateFactory.createCandidate(towerCandidate, ExplicitReceiverKind.NO_EXPLICIT_RECEIVER, extensionReceiver = null))
+            }
+        }
         return staticMembers
     }
 }
@@ -101,19 +112,21 @@ private class NoExplicitReceiverScopeTowerProcessor<D : CallableDescriptor, C: C
     override fun simpleProcess(data: TowerData): Collection<C>
             = when(data) {
                 is TowerData.TowerLevel -> {
-                    data.level.collectCandidates(null).filter { !it.requiresExtensionReceiver }.map {
-                        candidateFactory.createCandidate(it, ExplicitReceiverKind.NO_EXPLICIT_RECEIVER, extensionReceiver = null)
+                    val result = mutableListOf<C>()
+                    for (towerCandidate in data.level.collectCandidates(null)) {
+                        if (!towerCandidate.requiresExtensionReceiver) {
+                            result.add(candidateFactory.createCandidate(towerCandidate, ExplicitReceiverKind.NO_EXPLICIT_RECEIVER, extensionReceiver = null))
+                        }
                     }
+                    result
                 }
                 is TowerData.BothTowerLevelAndImplicitReceiver -> {
                     val result = mutableListOf<C>()
-
-                    data.level.collectCandidates(data.implicitReceiver).filter { it.requiresExtensionReceiver }.forEach {
-                        result.add(
-                            candidateFactory.createCandidate(
-                                    it, ExplicitReceiverKind.NO_EXPLICIT_RECEIVER, extensionReceiver = data.implicitReceiver))
+                    for (towerCandidate in data.level.collectCandidates(data.implicitReceiver)) {
+                        if (towerCandidate.requiresExtensionReceiver) {
+                            result.add(candidateFactory.createCandidate(towerCandidate, ExplicitReceiverKind.NO_EXPLICIT_RECEIVER, extensionReceiver = data.implicitReceiver))
+                        }
                     }
-
                     result
                 }
                 else -> emptyList()
