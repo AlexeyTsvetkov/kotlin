@@ -42,7 +42,7 @@ class JvmPackageScope(
     private val kotlinScopes by c.storageManager.createLazyValue {
         packageFragment.binaryClasses.values.mapNotNull { partClass ->
             c.components.deserializedDescriptorResolver.createKotlinPackagePartScope(packageFragment, partClass)
-        }.toList()
+        }
     }
 
     override fun getContributedClassifier(name: Name, location: LookupLocation): ClassifierDescriptor? {
