@@ -424,6 +424,20 @@
         </java>
     </target>
 
+    <target name="compiler-without-packing">
+        <cleandir dir="${output}/classes/compiler"/>
+
+        <javac2 destdir="${output}/classes/compiler" debug="true" debuglevel="lines,vars,source" includeAntRuntime="false"
+                source="${java.target}" target="${java.target}">
+            <withKotlin modulename="kotlin-compiler">
+                <compilerarg value="-version"/>
+            </withKotlin>
+            <skip pattern="kotlin/Metadata"/>
+            <src refid="compilerSources.path"/>
+            <classpath refid="classpath"/>
+        </javac2>
+    </target>
+
     <target name="compiler">
         <cleandir dir="${output}/classes/compiler"/>
 
@@ -436,7 +450,6 @@
             <src refid="compilerSources.path"/>
             <classpath refid="classpath"/>
         </javac2>
-        <!--
        <pack-compiler jarfile="${output}/kotlin-compiler-before-shrink.jar"/>
 
         <delete file="${kotlin-home}/lib/kotlin-compiler.jar" failonerror="false"/>
@@ -447,7 +460,7 @@
 
         <sequential if:true="${shrink}">
             <shrink configuration="${basedir}/compiler/compiler.pro"/>
-        </sequential>-->
+        </sequential>
 
         <pack-compiler-for-maven/>
     </target>
