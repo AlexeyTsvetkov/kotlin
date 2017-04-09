@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.resolve.calls.tasks.ExplicitReceiverKind
 import org.jetbrains.kotlin.resolve.scopes.receivers.DetailedReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.QualifierReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValueWithSmartCastInfo
-import org.jetbrains.kotlin.utils.SmartList
 
 
 class KnownResultProcessor<out C>(
@@ -67,7 +66,7 @@ internal class ExplicitReceiverScopeTowerProcessor<D : CallableDescriptor, C: Ca
     }
 
     private fun resolveAsMember(): Collection<C> {
-        val members = SmartList<C>()
+        val members = mutableListOf<C>()
         for (memberCandidate in MemberScopeTowerLevel(scopeTower, explicitReceiver).collectCandidates(null)) {
             if (!memberCandidate.requiresExtensionReceiver) {
                 members.add(candidateFactory.createCandidate(memberCandidate, ExplicitReceiverKind.DISPATCH_RECEIVER, extensionReceiver = null))
@@ -77,7 +76,7 @@ internal class ExplicitReceiverScopeTowerProcessor<D : CallableDescriptor, C: Ca
     }
 
     private fun resolveAsExtension(level: ScopeTowerLevel): Collection<C> {
-        val extensions = SmartList<C>()
+        val extensions = mutableListOf<C>()
         for (extensionCandidate in level.collectCandidates(explicitReceiver)) {
             if (extensionCandidate.requiresExtensionReceiver) {
                 extensions.add(candidateFactory.createCandidate(extensionCandidate, ExplicitReceiverKind.EXTENSION_RECEIVER, extensionReceiver = explicitReceiver))
@@ -96,7 +95,7 @@ private class QualifierScopeTowerProcessor<D : CallableDescriptor, C: Candidate<
     override fun simpleProcess(data: TowerData): Collection<C> {
         if (data != TowerData.Empty) return emptyList()
 
-        val staticMembers = SmartList<C>()
+        val staticMembers = mutableListOf<C>()
         for (towerCandidate in QualifierScopeTowerLevel(scopeTower, qualifier).collectCandidates(null)) {
             if (!towerCandidate.requiresExtensionReceiver) {
                 staticMembers.add(candidateFactory.createCandidate(towerCandidate, ExplicitReceiverKind.NO_EXPLICIT_RECEIVER, extensionReceiver = null))
@@ -113,7 +112,7 @@ private class NoExplicitReceiverScopeTowerProcessor<D : CallableDescriptor, C: C
     override fun simpleProcess(data: TowerData): Collection<C>
             = when(data) {
                 is TowerData.TowerLevel -> {
-                    val result = SmartList<C>()
+                    val result = mutableListOf<C>()
                     for (towerCandidate in data.level.collectCandidates(null)) {
                         if (!towerCandidate.requiresExtensionReceiver) {
                             result.add(candidateFactory.createCandidate(towerCandidate, ExplicitReceiverKind.NO_EXPLICIT_RECEIVER, extensionReceiver = null))
@@ -122,7 +121,7 @@ private class NoExplicitReceiverScopeTowerProcessor<D : CallableDescriptor, C: C
                     result
                 }
                 is TowerData.BothTowerLevelAndImplicitReceiver -> {
-                    val result = SmartList<C>()
+                    val result = mutableListOf<C>()
                     for (towerCandidate in data.level.collectCandidates(data.implicitReceiver)) {
                         if (towerCandidate.requiresExtensionReceiver) {
                             result.add(candidateFactory.createCandidate(towerCandidate, ExplicitReceiverKind.NO_EXPLICIT_RECEIVER, extensionReceiver = data.implicitReceiver))
