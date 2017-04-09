@@ -78,23 +78,27 @@ open class ConstraintSystemBuilderImpl(private val mode: Mode = ConstraintSystem
     ): TypeSubstitutor {
         if (typeParameters.isEmpty()) return storeSubstitutor(call, TypeSubstitutor.EMPTY)
 
-        val typeVariables = if (external) {
-            typeParameters.map {
-                TypeVariable(call, it, it, true)
+        val typeParametersSize = typeParameters.size
+        val typeVariables = ArrayList<TypeVariable>(typeParametersSize)
+
+        if (external) {
+            for (typeParam in typeParameters) {
+                typeVariables.add(TypeVariable(call, typeParam, typeParam, true))
             }
         }
         else {
-            val freshTypeParameters = ArrayList<TypeParameterDescriptor>(typeParameters.size)
+            val freshTypeParameters = ArrayList<TypeParameterDescriptor>(typeParametersSize)
             DescriptorSubstitutor.substituteTypeParameters(
                     typeParameters.toList(), TypeSubstitution.EMPTY, typeParameters.first().containingDeclaration, freshTypeParameters
             )
-            freshTypeParameters.zip(typeParameters).map {
-                val (fresh, original) = it
-                TypeVariable(call, fresh, original, external)
+            val typeParamIt = typeParameters.iterator()
+            for (i in 0..(typeParametersSize - 1)) {
+                typeVariables.add(TypeVariable(call, freshTypeParameters[i], typeParamIt.next(), external))
             }
         }
 
-        for ((_, typeVariable) in typeParameters.zip(typeVariables)) {
+        for (i in 0..(typeParametersSize - 1)) {
+            val typeVariable = typeVariables[i]
             allTypeParameterBounds.put(typeVariable, TypeBoundsImpl(typeVariable))
         }
 
