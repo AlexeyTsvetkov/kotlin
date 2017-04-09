@@ -436,8 +436,8 @@
             <src refid="compilerSources.path"/>
             <classpath refid="classpath"/>
         </javac2>
-
-        <pack-compiler jarfile="${output}/kotlin-compiler-before-shrink.jar"/>
+        <!--
+       <pack-compiler jarfile="${output}/kotlin-compiler-before-shrink.jar"/>
 
         <delete file="${kotlin-home}/lib/kotlin-compiler.jar" failonerror="false"/>
 
@@ -447,7 +447,7 @@
 
         <sequential if:true="${shrink}">
             <shrink configuration="${basedir}/compiler/compiler.pro"/>
-        </sequential>
+        </sequential>-->
 
         <pack-compiler-for-maven/>
     </target>
