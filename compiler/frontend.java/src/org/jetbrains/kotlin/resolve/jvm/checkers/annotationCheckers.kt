@@ -63,6 +63,7 @@ object FileClassAnnotationsChecker: AdditionalAnnotationChecker {
 
     override fun checkEntries(entries: List<KtAnnotationEntry>, actualTargets: List<KotlinTarget>, trace: BindingTrace) {
         val fileAnnotationsToCheck = arrayListOf<Pair<KtAnnotationEntry, ClassDescriptor>>()
+        var hasMultifileClass = false
         for (entry in entries) {
             if (entry.useSiteTarget?.getAnnotationUseSiteTarget() != AnnotationUseSiteTarget.FILE) continue
             val descriptor = trace.get(BindingContext.ANNOTATION, entry) ?: continue
@@ -71,9 +72,10 @@ object FileClassAnnotationsChecker: AdditionalAnnotationChecker {
             val applicableTargets = AnnotationChecker.applicableTargetSet(classDescriptor)
             if (applicableTargets == null || !applicableTargets.contains(KotlinTarget.FILE)) continue
             fileAnnotationsToCheck.add(Pair(entry, classDescriptor))
+            hasMultifileClass = hasMultifileClass || classDescriptor.classId?.asSingleFqName() == JvmFileClassUtil.JVM_MULTIFILE_CLASS
         }
 
-        if (!fileAnnotationsToCheck.any { it.second.classId?.asSingleFqName() == JvmFileClassUtil.JVM_MULTIFILE_CLASS }) return
+        if (!hasMultifileClass) return
 
         for ((entry, classDescriptor) in fileAnnotationsToCheck) {
             val classFqName = classDescriptor.classId!!.asSingleFqName()
