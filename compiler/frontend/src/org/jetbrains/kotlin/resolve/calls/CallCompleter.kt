@@ -120,11 +120,11 @@ class CallCompleter(
             results.resultingCalls
         }) as Collection<MutableResolvedCall<D>>
 
-        candidates.filterNot { resolvedCall -> resolvedCall.isCompleted }.forEach {
-            resolvedCall ->
-
-            val temporaryBindingTrace = TemporaryBindingTrace.create(context.trace, "Trace to complete a candidate that is not a resulting call")
-            completeResolvedCallAndArguments(resolvedCall, results, context.replaceBindingTrace(temporaryBindingTrace), TracingStrategy.EMPTY)
+        for (resolvedCall in candidates) {
+            if  (!resolvedCall.isCompleted) {
+                val temporaryBindingTrace = TemporaryBindingTrace.create(context.trace, "Trace to complete a candidate that is not a resulting call")
+                completeResolvedCallAndArguments(resolvedCall, results, context.replaceBindingTrace(temporaryBindingTrace), TracingStrategy.EMPTY)
+            }
         }
     }
 
