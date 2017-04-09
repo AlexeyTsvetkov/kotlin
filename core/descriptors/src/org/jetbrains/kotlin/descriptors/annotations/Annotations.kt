@@ -61,16 +61,12 @@ interface Annotations : Iterable<AnnotationDescriptor> {
         }
 
         fun findUseSiteTargetedAnnotation(annotations: Annotations, target: AnnotationUseSiteTarget, fqName: FqName): AnnotationDescriptor? {
-            return getUseSiteTargetedAnnotations(annotations, target).firstOrNull { checkAnnotationName(it, fqName) }
-        }
-
-        private fun getUseSiteTargetedAnnotations(annotations: Annotations, target: AnnotationUseSiteTarget): List<AnnotationDescriptor> {
-            return annotations.getUseSiteTargetedAnnotations().fold(arrayListOf<AnnotationDescriptor>()) { list, targeted ->
-                if (target == targeted.target) {
-                    list.add(targeted.annotation)
+            for ((annotation, annotationTarget) in annotations.getUseSiteTargetedAnnotations()) {
+                if (target == annotationTarget && checkAnnotationName(annotation, fqName)) {
+                    return annotation
                 }
-                list
             }
+            return null
         }
     }
 }
