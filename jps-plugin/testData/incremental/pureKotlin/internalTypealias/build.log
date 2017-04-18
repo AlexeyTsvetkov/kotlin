@@ -1,0 +1,10 @@
+================ Step #1 =================
+
+Cleaning output files:
+  out/production/module/META-INF/module.kotlin_module
+  out/production/module/foo/UseIntPredicateKt.class
+End of files
+Compiling files:
+  src/useIntPredicate.kt
+End of files
+Exit code: OK
