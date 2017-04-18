@@ -121,7 +121,6 @@ internal class KotlinGradleBuildServices private constructor(gradle: Gradle): Bu
             }
         }
 
-
         closeArtifactDifferenceRegistry()
         gradle.removeListener(this)
         instance = null
