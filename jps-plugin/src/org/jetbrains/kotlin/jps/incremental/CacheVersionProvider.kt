@@ -32,8 +32,6 @@ class CacheVersionProvider(private val paths: BuildDataPaths) {
 
     fun normalVersion(target: ModuleBuildTarget): CacheVersion = normalCacheVersion(target.dataRoot)
 
-    fun experimentalVersion(target: ModuleBuildTarget): CacheVersion = experimentalCacheVersion(target.dataRoot)
-
     fun dataContainerVersion(): CacheVersion = dataContainerCacheVersion(KotlinDataContainerTarget.dataRoot)
 
     fun allVersions(targets: Iterable<ModuleBuildTarget>): Iterable<CacheVersion> {

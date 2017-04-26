@@ -27,7 +27,3 @@ open class IncrementalRenameModuleTest : AbstractIncrementalJpsTest() {
         projectDescriptor.project.modules.forEach { it.name += "Renamed" }
     }
 }
-
-class ExperimentalIncrementalRenameModuleTest : IncrementalRenameModuleTest() {
-    override val enableExperimentalIncrementalCompilation = true
-}

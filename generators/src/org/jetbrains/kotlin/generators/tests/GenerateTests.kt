@@ -1098,44 +1098,22 @@ fun main(args: Array<String>) {
             model("incremental/pureKotlin", extension = null, recursive = false)
             model("incremental/withJava", extension = null, excludeParentDirs = true)
             model("incremental/inlineFunCallSite", extension = null, excludeParentDirs = true)
+            model("incremental/classHierarchyAffected", extension = null, excludeParentDirs = true)
+        }
+        testClass<AbstractIncrementalLazyCachesTest> {
+            model("incremental/lazyKotlinCaches", extension = null, excludeParentDirs = true)
+            model("incremental/changeIncrementalOption", extension = null, excludeParentDirs = true)
+        }
+        testClass<AbstractIncrementalCacheVersionChangedTest> {
+            model("incremental/cacheVersionChanged", extension = null, excludeParentDirs = true)
+        }
+        testClass<AbstractDataContainerVersionChangedTest> {
+            model("incremental/cacheVersionChanged", extension = null, excludeParentDirs = true)
         }
         testClass<AbstractLookupTrackerTest> {
             model("incremental/lookupTracker", extension = null, recursive = false)
         }
 
-        testClass(AbstractIncrementalLazyCachesTest::class.java) {
-            model("incremental/lazyKotlinCaches", extension = null, excludeParentDirs = true)
-        }
-
-        testClass(AbstractIncrementalCacheVersionChangedTest::class.java) {
-            model("incremental/cacheVersionChanged", extension = null, excludeParentDirs = true)
-        }
-    }
-
-    testGroup("jps-plugin/jps-tests/test", "jps-plugin/testData") {
-        testClass<AbstractExperimentalIncrementalJpsTest> {
-            model("incremental/multiModule", extension = null, excludeParentDirs = true)
-            model("incremental/pureKotlin", extension = null, recursive = false)
-            model("incremental/withJava", extension = null, excludeParentDirs = true)
-            model("incremental/inlineFunCallSite", extension = null, excludeParentDirs = true)
-            model("incremental/classHierarchyAffected", extension = null, excludeParentDirs = true)
-        }
-
-        testClass<AbstractExperimentalIncrementalLazyCachesTest> {
-            model("incremental/lazyKotlinCaches", extension = null, excludeParentDirs = true)
-        }
-
-        testClass<AbstractExperimentalIncrementalCacheVersionChangedTest> {
-            model("incremental/cacheVersionChanged", extension = null, excludeParentDirs = true)
-        }
-
-        testClass<AbstractDataContainerVersionChangedTest> {
-            model("incremental/cacheVersionChanged", extension = null, excludeParentDirs = true)
-        }
-
-        testClass<AbstractExperimentalChangeIncrementalOptionTest> {
-            model("incremental/changeIncrementalOption", extension = null, excludeParentDirs = true)
-        }
     }
 
     testGroup("jps-plugin/jps-tests/test", "jps-plugin/testData") {
