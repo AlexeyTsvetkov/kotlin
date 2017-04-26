@@ -386,15 +386,26 @@ open class IncrementalCacheImpl<Target>(
         fun process(kotlinClass: LocalFileKotlinClass, isPackage: Boolean): CompilationResult {
             val header = kotlinClass.classHeader
             val bytes = BitEncoding.decodeBytes(header.data!!)
-            return put(kotlinClass.className, bytes, header.strings!!, isPackage = isPackage)
+            return put(kotlinClass.className, bytes, header.strings!!, isPackage)
         }
 
-        fun storeModuleMapping(className: JvmClassName, data: ByteArray): CompilationResult {
-            return put(className, data, emptyArray(), isPackage = false, isModuleMapping = true)
+        // A module mapping (.kotlin_module file) is stored in a cache,
+        // because a corresponding file will be deleted on each round
+        // (it is reported as output for each [package part?] source file).
+        // If a mapping is not preserved, a resulting file will only contain data
+        // from files compiled during last round.
+        // However there is no need to compare old and new data in this case
+        // (also that would fail with exception).
+        fun storeModuleMapping(className: JvmClassName, bytes: ByteArray): CompilationResult {
+            storage[className.internalName] = ProtoMapValue(isPackageFacade = false, bytes = bytes, strings = emptyArray())
+            return CompilationResult(protoChanged = true)
         }
 
         private fun put(
-                className: JvmClassName, bytes: ByteArray, strings: Array<String>, isPackage: Boolean, isModuleMapping: Boolean = true
+                className: JvmClassName,
+                bytes: ByteArray,
+                strings: Array<String>,
+                isPackage: Boolean
         ): CompilationResult {
             val key = className.internalName
             val oldData = storage[key]
@@ -407,15 +418,6 @@ open class IncrementalCacheImpl<Target>(
             ) {
                 storage[key] = data
             }
-
-            // A module mapping (.kotlin_module file) is stored in a cache,
-            // because a corresponding file will be deleted on each round
-            // (it is reported as output for each [package part?] source file).
-            // If a mapping is not preserved, a resulting file will only contain data
-            // from files compiled during last round.
-            // However there is no need to compare old and new data in this case
-            // (also that would fail with exception).
-            if (isModuleMapping) return CompilationResult(protoChanged = true)
 
             if (oldData == null) {
                 val changes =
