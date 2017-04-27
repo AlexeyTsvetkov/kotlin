@@ -17,9 +17,11 @@
 package org.jetbrains.kotlin.jps.build
 
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.util.io.FileUtil
 import org.jetbrains.jps.ModuleChunk
 import org.jetbrains.jps.incremental.CompileContext
 import org.jetbrains.jps.incremental.FSOperations
+import org.jetbrains.jps.incremental.ModuleBuildTarget
 import org.jetbrains.jps.incremental.fs.CompilationRound
 import java.io.File
 
@@ -52,18 +54,57 @@ class FSOperationsHelper(
     }
 
     fun markFiles(files: Iterable<File>, excludeFiles: Set<File> = setOf()) {
-        val filesToMark = files.toMutableSet()
-        filesToMark.removeAll(excludeFiles)
+        val filesToMark = files.filterTo(HashSet()) {
+            it !in excludeFiles && it.exists()
+        }
+
+        removeFilesFromCompiledTargets(filesToMark)
+
+        if (filesToMark.isEmpty()) return
+
+        for (fileToMark in filesToMark) {
+            FSOperations.markDirty(compileContext, CompilationRound.NEXT, fileToMark)
+        }
 
         log.debug("Mark dirty: $filesToMark")
         buildLogger?.markedAsDirty(filesToMark)
+        hasMarkedDirty = true
+    }
 
-        for (file in filesToMark) {
-            if (!file.exists()) continue
+    // remove files from chunks preceding current chunk in a build
+    private fun removeFilesFromCompiledTargets(filesToMark: HashSet<File>) {
+        val targetToDirtyFiles = groupFilesByTargets(filesToMark)
 
-            FSOperations.markDirty(compileContext, CompilationRound.NEXT, file)
+        chunk.targets.forEach { targetToDirtyFiles.remove(it) }
+        if (targetToDirtyFiles.isEmpty()) {
+            // all dirty targets are from current chunk
+            return
         }
 
-        hasMarkedDirty = hasMarkedDirty || filesToMark.isNotEmpty()
+        val buildTargetIndex = compileContext.projectDescriptor.buildTargetIndex
+        val sortedTargetChunks = buildTargetIndex.getSortedTargetChunks(compileContext)
+
+        for (targetChunk in sortedTargetChunks) {
+            if (targetChunk.targets == chunk.targets) {
+                // found current chunk
+                return
+            }
+
+            for (compiledTarget in targetChunk.targets) {
+                val filesFromCompiledTarget = targetToDirtyFiles[compiledTarget] ?: continue
+                filesToMark.removeAll(filesFromCompiledTarget)
+            }
+        }
+    }
+
+    private fun groupFilesByTargets(filesToMark: MutableSet<File>): MutableMap<ModuleBuildTarget, out Collection<File>> {
+        val buildRootIndex = compileContext.projectDescriptor.buildRootIndex
+        val targetToDirtyFiles = HashMap<ModuleBuildTarget, MutableSet<File>>()
+        for (dirtyFile in filesToMark) {
+            val javaRoot = buildRootIndex.findJavaRootDescriptor(compileContext, dirtyFile) ?: continue
+            val dirtyFilesForTarget = targetToDirtyFiles.getOrPut(javaRoot.target) { HashSet() }
+            dirtyFilesForTarget.add(dirtyFile)
+        }
+        return targetToDirtyFiles
     }
 }
