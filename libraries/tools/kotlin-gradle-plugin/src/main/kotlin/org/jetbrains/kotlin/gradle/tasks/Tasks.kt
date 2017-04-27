@@ -83,7 +83,6 @@ abstract class AbstractKotlinCompile<T : CommonCompilerArguments>() : AbstractCo
             field = value
             logger.kotlinDebug { "Set $this.incremental=$value" }
             System.setProperty("kotlin.incremental.compilation", value.toString())
-            System.setProperty("kotlin.incremental.compilation.experimental", value.toString())
         }
 
     init {
