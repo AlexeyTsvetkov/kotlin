@@ -58,7 +58,6 @@ class InlineCodegenForDefaultBody(
         assert(InlineUtil.isInline(function)) {
             "InlineCodegen can inline only inline functions and array constructors: " + function
         }
-        InlineCodegen.reportIncrementalInfo(functionDescriptor, codegen.context.functionDescriptor.original, jvmSignature, state)
 
         //InlineCodegenForDefaultBody created just after visitCode call
         codegen.v.visitLabel(methodStartLabel)

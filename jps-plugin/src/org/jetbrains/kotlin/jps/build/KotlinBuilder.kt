@@ -310,7 +310,6 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         }
 
         changesInfo.processChangesUsingLookups(filesToCompile.values().toSet(), dataManager, fsOperations, incrementalCaches.values)
-        incrementalCaches.values.forEach { it.cleanDirtyInlineFunctions() }
 
         return OK
     }

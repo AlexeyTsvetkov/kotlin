@@ -140,7 +140,6 @@ public class InlineCodegen extends CallGenerator {
         sourceMapper = codegen.getParentCodegen().getOrCreateSourceMapper();
 
         if (!(functionDescriptor instanceof FictitiousArrayConstructor)) {
-            reportIncrementalInfo(functionDescriptor, codegen.getContext().getFunctionDescriptor().getOriginal(), jvmSignature, state);
             String functionOrAccessorName = typeMapper.mapAsmMethod(function).getName();
             //track changes for property accessor and @JvmName inline functions/property accessors
             if(!functionOrAccessorName.equals(functionDescriptor.getName().asString())) {
@@ -1030,20 +1029,6 @@ public class InlineCodegen extends CallGenerator {
     @NotNull
     public static SourceMapper createNestedSourceMapper(@NotNull SMAPAndMethodNode nodeAndSmap, @NotNull SourceMapper parent) {
         return new NestedSourceMapper(parent, nodeAndSmap.getSortedRanges(), nodeAndSmap.getClassSMAP().getSourceInfo());
-    }
-
-    static void reportIncrementalInfo(
-            @NotNull FunctionDescriptor sourceDescriptor,
-            @NotNull FunctionDescriptor targetDescriptor,
-            @NotNull JvmMethodSignature jvmSignature,
-            @NotNull GenerationState state
-    ) {
-        IncrementalCache incrementalCache = state.getIncrementalCacheForThisTarget();
-        if (incrementalCache == null) return;
-        String classFilePath = InlineCodegenUtilsKt.getClassFilePath(sourceDescriptor, state.getTypeMapper(), incrementalCache);
-        String sourceFilePath = InlineCodegenUtilsKt.getSourceFilePath(targetDescriptor);
-        Method method = jvmSignature.getAsmMethod();
-        incrementalCache.registerInline(classFilePath, method.getName() + method.getDescriptor(), sourceFilePath);
     }
 
     @Override
