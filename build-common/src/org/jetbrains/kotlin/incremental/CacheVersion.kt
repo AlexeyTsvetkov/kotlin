@@ -92,7 +92,6 @@ class CacheVersion(
         REBUILD_ALL_KOTLIN,
         REBUILD_CHUNK,
         CLEAN_NORMAL_CACHES,
-        CLEAN_EXPERIMENTAL_CACHES,
         CLEAN_DATA_CONTAINER,
         DO_NOTHING
     }
@@ -104,14 +103,6 @@ fun normalCacheVersion(dataRoot: File): CacheVersion =
                      whenVersionChanged = CacheVersion.Action.REBUILD_CHUNK,
                      whenTurnedOn = CacheVersion.Action.REBUILD_CHUNK,
                      whenTurnedOff = CacheVersion.Action.CLEAN_NORMAL_CACHES,
-                     isEnabled = { IncrementalCompilation.isEnabled() })
-
-fun experimentalCacheVersion(dataRoot: File): CacheVersion =
-        CacheVersion(ownVersion = EXPERIMENTAL_VERSION,
-                     versionFile = File(dataRoot, EXPERIMENTAL_VERSION_FILE_NAME),
-                     whenVersionChanged = CacheVersion.Action.REBUILD_CHUNK,
-                     whenTurnedOn = CacheVersion.Action.REBUILD_CHUNK,
-                     whenTurnedOff = CacheVersion.Action.CLEAN_EXPERIMENTAL_CACHES,
                      isEnabled = { IncrementalCompilation.isEnabled() })
 
 fun dataContainerCacheVersion(dataRoot: File): CacheVersion =
