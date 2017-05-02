@@ -20,8 +20,6 @@ import org.jetbrains.jps.incremental.ModuleBuildTarget
 import org.jetbrains.kotlin.incremental.testingUtils.BuildLogFinder
 import org.jetbrains.kotlin.jps.incremental.CacheVersionProvider
 
-abstract class AbstractExperimentalIncrementalJpsTest : AbstractIncrementalJpsTest()
-
 abstract class AbstractExperimentalIncrementalCacheVersionChangedTest : AbstractIncrementalCacheVersionChangedTest() {
 }
 
