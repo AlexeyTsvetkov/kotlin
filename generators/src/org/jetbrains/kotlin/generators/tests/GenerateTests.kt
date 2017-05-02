@@ -1133,12 +1133,6 @@ fun main(args: Array<String>) {
         testClass(AbstractIncrementalCacheVersionChangedTest::class.java) {
             model("incremental/cacheVersionChanged", extension = null, excludeParentDirs = true)
         }
-    }
-
-    testGroup("jps-plugin/jps-tests/test", "jps-plugin/testData") {
-        testClass<AbstractExperimentalIncrementalCacheVersionChangedTest> {
-            model("incremental/cacheVersionChanged", extension = null, excludeParentDirs = true)
-        }
 
         testClass<AbstractDataContainerVersionChangedTest> {
             model("incremental/cacheVersionChanged", extension = null, excludeParentDirs = true)
