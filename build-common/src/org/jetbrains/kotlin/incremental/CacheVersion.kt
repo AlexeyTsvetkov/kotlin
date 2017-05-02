@@ -23,7 +23,7 @@ import org.jetbrains.kotlin.load.kotlin.JvmMetadataVersion
 import java.io.File
 import java.io.IOException
 
-private val NORMAL_VERSION = 8
+private val NORMAL_VERSION = 9
 private val EXPERIMENTAL_VERSION = 4
 private val DATA_CONTAINER_VERSION = 2
 
