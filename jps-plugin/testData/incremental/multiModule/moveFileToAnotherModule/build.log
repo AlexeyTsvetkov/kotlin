@@ -5,7 +5,6 @@ Compiling files:
   module1/src/b.kt
 End of files
 Marked as dirty by Kotlin:
-  module2/src/b.kt
   module2/src/useClassB.kt
   module2/src/useFunB.kt
 Exit code: ADDITIONAL_PASS_REQUIRED
