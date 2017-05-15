@@ -235,8 +235,10 @@ private class DifferenceCalculatorForClass(oldData: ProtoMapValue, newData: Prot
                     isClassAffected = true
                     areSubclassesAffected = true
                 }
-                ProtoBufClassKind.CLASS_MODULE_NAME -> {
-                    // TODO
+                ProtoBufClassKind.JVM_EXT_CLASS_MODULE_NAME,
+                ProtoBufClassKind.JS_EXT_CLASS_ANNOTATION_LIST,
+                ProtoBufClassKind.JS_EXT_CLASS_CONTAINING_FILE_ID -> {
+                   // TODO
                 }
             }
         }
@@ -276,7 +278,8 @@ private class DifferenceCalculatorForPackageFacade(oldData: ProtoMapValue, newDa
                     names.addAll(calcDifferenceForNonPrivateMembers(ProtoBuf.Package::getTypeAliasList))
                 ProtoBufPackageKind.TYPE_TABLE,
                 ProtoBufPackageKind.SINCE_KOTLIN_INFO_TABLE,
-                ProtoBufPackageKind.PACKAGE_MODULE_NAME -> {
+                ProtoBufPackageKind.JVM_EXT_PACKAGE_MODULE_NAME,
+                ProtoBufPackageKind.JS_EXT_PACKAGE_FQ_NAME-> {
                     // TODO
                 }
                 else -> throw IllegalArgumentException("Unsupported kind: $kind")
