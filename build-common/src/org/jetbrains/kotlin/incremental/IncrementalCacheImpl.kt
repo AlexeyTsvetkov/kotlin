@@ -422,7 +422,7 @@ open class IncrementalCacheImpl<Target>(
         }
 
         override fun dumpValue(value: ProtoMapValue): String {
-            return (if (value.isPackageFacade) "1" else "0") + java.lang.Long.toHexString(value.bytes.md5())
+            return (if (value.isPackageFacade) "1" else "0") + value.bytes.md5String()
         }
     }
 
@@ -751,7 +751,10 @@ data class CompilationResult(
             CompilationResult(changes + other.changes)
 }
 
-fun ByteArray.md5(): Long {
+internal fun ByteArray.md5String(): String =
+        java.lang.Long.toHexString(md5())
+
+private fun ByteArray.md5(): Long {
     val d = MessageDigest.getInstance("MD5").digest(this)!!
     return ((d[0].toLong() and 0xFFL)
             or ((d[1].toLong() and 0xFFL) shl 8)
@@ -760,8 +763,7 @@ fun ByteArray.md5(): Long {
             or ((d[4].toLong() and 0xFFL) shl 32)
             or ((d[5].toLong() and 0xFFL) shl 40)
             or ((d[6].toLong() and 0xFFL) shl 48)
-            or ((d[7].toLong() and 0xFFL) shl 56)
-           )
+            or ((d[7].toLong() and 0xFFL) shl 56))
 }
 
 @TestOnly
