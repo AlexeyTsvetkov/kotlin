@@ -22,24 +22,17 @@ import java.io.DataInput
 import java.io.DataOutput
 import java.io.File
 
-val KOTLIN_JS_CACHE_DIRECTORY_NAME = "kotlin-js"
-
-open class JsIncrementalCache<Target>(
-        private val targetDataRoot: File,
-        targetOutputDir: File?,
-        target: Target
+open class JsIncrementalCache(
+        private val cachesDir: File
 ) : BasicMapsOwner() {
     companion object {
         private val TRANSLATION_RESULT_MAP = "translation-result"
     }
 
-    private val baseDir = File(targetDataRoot, KOTLIN_JS_CACHE_DIRECTORY_NAME)
-
     protected val String.storageFile: File
-        get() = File(baseDir, this + "." + CACHE_EXTENSION)
+        get() = File(cachesDir, this + "." + CACHE_EXTENSION)
 
     private val translationResults = registerMap(TranslationResultMap(TRANSLATION_RESULT_MAP.storageFile))
-    private val outputDir by lazy(LazyThreadSafetyMode.NONE) { requireNotNull(targetOutputDir) { "Target is expected to have output directory: $target" } }
 
     fun registerDirtySourceFiles(dirtySourceFiles: List<File>) {
         dirtySourceFiles.forEach { translationResults.remove(it) }
