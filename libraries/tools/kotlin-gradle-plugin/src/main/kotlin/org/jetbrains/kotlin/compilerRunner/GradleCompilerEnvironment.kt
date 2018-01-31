@@ -11,19 +11,16 @@ import org.jetbrains.kotlin.incremental.multiproject.ArtifactDifferenceRegistryP
 import java.io.File
 import java.net.URL
 
-internal open class GradleCompilerEnvironment(
-        val compilerClasspath: List<File>,
+open class GradleCompilerEnvironment(
+        private val compilerClasspathWithoutTools: List<File>,
         messageCollector: GradleMessageCollector,
         outputItemsCollector: OutputItemsCollector,
         val compilerArgs: CommonCompilerArguments
 ) : CompilerEnvironment(Services.EMPTY, messageCollector, outputItemsCollector) {
     val toolsJar: File? by lazy { findToolsJar() }
 
-    val compilerFullClasspath: List<File>
-            get() = (compilerClasspath + toolsJar).filterNotNull()
-
-    val compilerClasspathURLs: List<URL>
-        get() = compilerFullClasspath.map { it.toURI().toURL() }
+    val compilerClasspath: List<File>
+        get() = (compilerClasspathWithoutTools + toolsJar).filterNotNull()
 }
 
 internal class GradleIncrementalCompilerEnvironment(

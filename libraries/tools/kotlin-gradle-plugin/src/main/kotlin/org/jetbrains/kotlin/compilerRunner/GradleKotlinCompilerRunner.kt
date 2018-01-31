@@ -28,6 +28,10 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.MessageRenderer
 import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.vfs.impl.ZipHandler
+import com.intellij.openapi.vfs.impl.jar.CoreJarFileSystem
+import org.gradle.api.logging.Logger
+import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.config.Services
 import org.jetbrains.kotlin.daemon.client.CompileServiceSession
 import org.jetbrains.kotlin.daemon.common.*
@@ -50,8 +54,8 @@ const val EXISTING_SESSION_FILE_PREFIX = "Existing session-is-alive flag file: "
 const val DELETED_SESSION_FILE_PREFIX = "Deleted session-is-alive flag file: "
 const val COULD_NOT_CONNECT_TO_DAEMON_MESSAGE = "Could not connect to Kotlin compile daemon"
 
-internal class GradleCompilerRunner(private val project: Project) : KotlinCompilerRunner<GradleCompilerEnvironment>() {
-    override val log = GradleKotlinLogger(project.logger)
+class GradleCompilerRunner(private val project: Project) : KotlinCompilerRunner<GradleCompilerEnvironment>() {
+    override val log: KotlinLogger = GradleKotlinLogger(project.logger)
 
     // used only for process launching so far, but implements unused proper contract
     private val loggingMessageCollector: MessageCollector by lazy {
@@ -147,7 +151,7 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
         val argsArray = ArgumentUtils.convertArgumentsToStringList(compilerArgs).toTypedArray()
         with (project.logger) {
             kotlinDebug { "Kotlin compiler class: $compilerClassName" }
-            kotlinDebug { "Kotlin compiler classpath: ${environment.compilerFullClasspath.map { it.canonicalPath }.joinToString()}" }
+            kotlinDebug { "Kotlin compiler classpath: ${environment.compilerClasspath.map { it.canonicalPath }.joinToString()}" }
             kotlinDebug { "Kotlin compiler args: ${argsArray.joinToString(" ")}" }
         }
 
@@ -299,7 +303,7 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
             compilerClassName: String,
             environment: GradleCompilerEnvironment
     ): ExitCode {
-        return runToolInSeparateProcess(argsArray, compilerClassName, environment.compilerFullClasspath, log, loggingMessageCollector)
+        return runToolInSeparateProcess(argsArray, compilerClassName, environment.compilerClasspath, log, loggingMessageCollector)
     }
 
     private fun compileInProcess(
@@ -309,8 +313,7 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
     ): ExitCode {
         val stream = ByteArrayOutputStream()
         val out = PrintStream(stream)
-        // todo: cache classloader?
-        val classLoader = URLClassLoader(environment.compilerClasspathURLs.toTypedArray())
+        val classLoader = getOrCreateClassloader(environment, project.logger)
         val servicesClass = Class.forName(Services::class.java.canonicalName, true, classLoader)
         val emptyServices = servicesClass.getField("EMPTY").get(servicesClass)
         val compiler = Class.forName(compilerClassName, true, classLoader)
@@ -332,7 +335,7 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
     private fun logFinish(strategy: String) = log.logFinish(strategy)
 
     override fun getDaemonConnection(environment: GradleCompilerEnvironment): CompileServiceSession? {
-        val compilerId = CompilerId.makeCompilerId(environment.compilerFullClasspath)
+        val compilerId = CompilerId.makeCompilerId(environment.compilerClasspath)
         val clientIsAliveFlagFile = getOrCreateClientFlagFile(project)
         val sessionIsAliveFlagFile = getOrCreateSessionFlagFile(project)
         return newDaemonConnection(compilerId, clientIsAliveFlagFile, sessionIsAliveFlagFile, environment)
@@ -387,5 +390,64 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
 
         internal fun sessionsDir(project: Project): File =
                 File(File(project.rootProject.buildDir, "kotlin"), "sessions")
+
+        @Volatile
+        private var classloaderClasspathHashes: Map<File, Long>? = null
+
+        @Volatile
+        private var classloader: ClassLoader? = null
+
+        @Synchronized
+        private fun getOrCreateClassloader(environment: GradleCompilerEnvironment, log: Logger): ClassLoader {
+            val newClasspath = environment.compilerClasspath
+            val newClasspathHashes = newClasspath.associate { it to it.lastModified() + it.length() }
+            if (classloader == null || newClasspathHashes != classloaderClasspathHashes) {
+                log.kotlinDebug {
+                    "Creating new classloader:\n" +
+                            "Previous compiler classpath: $classloaderClasspathHashes\n" +
+                            "New compiler classpath: $newClasspathHashes"
+                }
+                classloader = URLClassLoader(newClasspath.map { it.toURI().toURL() }.toTypedArray())
+                classloaderClasspathHashes = newClasspathHashes
+            }
+
+            return classloader!!
+        }
+
+        @Synchronized
+        fun clearJarCache(log: Logger) {
+            fun fail(reason: String) {
+                log.warn("w: Could not clear jar cache: $reason. Dropping existing Kotlin compiler classloader.")
+                classloader = null
+                classloaderClasspathHashes = null
+            }
+
+            val classloader = classloader ?: return
+
+            log.kotlinDebug { "Clearing jar cache after in-process compilation" }
+
+            val kotlinCoreEnvironmentFqName = "org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment"
+            val kotlinCoreEnv =
+                try {
+                    classloader.loadClass(kotlinCoreEnvironmentFqName)
+                } catch (e: Exception) {
+                    fail("Could not find class '$kotlinCoreEnvironmentFqName'")
+                    log.kotlinDebug { e.toString() }
+                    return
+                }
+
+            val clearJarCacheMethodName = "clearJarCache"
+            try {
+                kotlinCoreEnv.getMethod(clearJarCacheMethodName).invoke(null)
+            } catch (e: Exception) {
+                fail("Could not call '$kotlinCoreEnvironmentFqName#$clearJarCacheMethodName'")
+                log.kotlinDebug { e.toString() }
+                return
+            }
+
+            log.kotlinDebug { jarClearSuccessMessage }
+        }
+
+        const val jarClearSuccessMessage = "Successfully cleared jar cache"
     }
 }
