@@ -147,7 +147,8 @@ abstract class BaseGradleIT {
             val kotlinVersion: String = KOTLIN_VERSION,
             val kotlinDaemonDebugPort: Int? = null,
             val usePreciseJavaTracking: Boolean? = null,
-            val withBuildCache: Boolean = false
+            val withBuildCache: Boolean = false,
+            val executionStrategy: String? = null
     )
 
     open inner class Project(
@@ -456,6 +457,9 @@ abstract class BaseGradleIT {
                 }
                 if (options.withBuildCache) {
                     add("--build-cache")
+                }
+                options.executionStrategy?.let {
+                    add("-Dkotlin.compiler.execution.strategy=$it")
                 }
                 addAll(options.freeCommandLineArgs)
             }
