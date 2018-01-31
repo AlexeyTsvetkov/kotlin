@@ -1,70 +1,75 @@
 package org.jetbrains.kotlin.gradle
 
+import org.jetbrains.kotlin.compilerRunner.GradleCompilerRunner
 import org.jetbrains.kotlin.gradle.util.getFileByName
 import org.jetbrains.kotlin.gradle.util.modify
 import org.junit.Test
 import java.io.File
 
-class ExecutionStrategyJsIT : ExecutionStrategyIT() {
-    override fun setupProject(project: Project) {
-        super.setupProject(project)
-        val buildGradle = File(project.projectDir, "app/build.gradle")
-        buildGradle.modify { it.replace("apply plugin: \"kotlin\"", "apply plugin: \"kotlin2js\"") +
-                "\ncompileKotlin2Js.kotlinOptions.outputFile = \"web/js/out.js\"" }
-    }
+class DaemonExecutionStrategyIT : BaseExecutionStrategyIT() {
+    override val executionStrategy: String = "daemon"
+}
 
-    override fun CompiledProject.checkOutput() {
-        assertFileExists("web/js/out.js")
+class InProcessExecutionStrategyIT : BaseExecutionStrategyIT() {
+    override val executionStrategy: String = "in-process"
+
+    override fun checkExecutionStrategy(compiledProject: CompiledProject) {
+        super.checkExecutionStrategy(compiledProject)
+        compiledProject.assertContains(GradleCompilerRunner.jarClearSuccessMessage)
     }
 }
 
-open class ExecutionStrategyIT : BaseGradleIT() {
-    @Test
-    fun testDaemon() {
-        doTestExecutionStrategy("daemon")
+class OutOfProcessStrategyIT : BaseExecutionStrategyIT() {
+    override val executionStrategy: String = "out-of-process"
+}
+
+abstract class BaseExecutionStrategyIT : BaseGradleIT() {
+    abstract val executionStrategy: String
+
+    override fun defaultBuildOptions(): BuildOptions {
+        return super.defaultBuildOptions().copy(executionStrategy = executionStrategy)
     }
 
     @Test
-    fun testInProcess() {
-        doTestExecutionStrategy("in-process")
+    fun testJvmCompile() {
+        doTestCompile(checkOutput = {
+            assertFileExists(kotlinClassesDir(subproject = "app") + "/foo/MainKt.class")
+        })
     }
 
     @Test
-    fun testOutOfProcess() {
-        doTestExecutionStrategy("out-of-process")
+    fun testJsCompile() {
+        doTestCompile(checkOutput = {
+            assertFileExists(kotlinClassesDir(subproject = "app") + "/app.js")
+        }, setupProject = { project ->
+            val buildGradle = File(project.projectDir, "app/build.gradle")
+            buildGradle.modify { it.replace("apply plugin: \"kotlin\"", "apply plugin: \"kotlin2js\"") }
+        })
     }
 
-    private fun doTestExecutionStrategy(executionStrategy: String) {
-        val project = Project("kotlinBuiltins")
+    private fun doTestCompile(checkOutput: CompiledProject.() -> Unit, setupProject: (Project) -> Unit = {}) {
+        val project = Project("kotlinBuiltins", GradleVersionRequired.None)
+        project.setupWorkingDir()
         setupProject(project)
 
-        val strategyCLIArg = "-Dkotlin.compiler.execution.strategy=$executionStrategy"
-        val finishMessage = "Finished executing kotlin compiler using $executionStrategy strategy"
-
-        project.build("build", strategyCLIArg) {
+        project.build("build") {
             assertSuccessful()
-            assertContains(finishMessage)
-            checkOutput()
+            checkExecutionStrategy(this)
             assertNoWarnings()
+            checkOutput()
         }
 
         val fKt = project.projectDir.getFileByName("f.kt")
         fKt.delete()
-        project.build("build", strategyCLIArg) {
+        project.build("build") {
             assertFailed()
-            assertContains(finishMessage)
             assert(output.contains("Unresolved reference: f", ignoreCase = true))
+            checkExecutionStrategy(this)
         }
     }
 
-    protected open fun setupProject(project: Project) {
-        project.setupWorkingDir()
-        File(project.projectDir, "app/build.gradle").appendText(
-                "\ntasks.withType(org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile).all { kotlinOptions.allWarningsAsErrors = true }"
-        )
-    }
-
-    protected open fun CompiledProject.checkOutput() {
-        assertFileExists(kotlinClassesDir(subproject = "app") + "foo/MainKt.class")
+    protected open fun checkExecutionStrategy(compiledProject: CompiledProject) {
+        val finishMessage = "Finished executing kotlin compiler using $executionStrategy strategy"
+        compiledProject.assertContains(finishMessage)
     }
 }

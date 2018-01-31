@@ -43,6 +43,7 @@ import com.intellij.openapi.util.io.FileUtilRt
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.*
 import com.intellij.openapi.vfs.impl.ZipHandler
+import com.intellij.openapi.vfs.impl.jar.CoreJarFileSystem
 import com.intellij.psi.FileContextProvider
 import com.intellij.psi.JavaModuleSystem
 import com.intellij.psi.PsiElementFinder
@@ -574,6 +575,12 @@ class KotlinCoreEnvironment private constructor(
                     registerService(ScriptReportSink::class.java, CliScriptReportSink(messageCollector))
                 }
             }
+        }
+
+        @JvmStatic
+        fun clearJarCache() {
+            ZipHandler.clearFileAccessorCache()
+            (KotlinCoreEnvironment.applicationEnvironment?.jarFileSystem as? CoreJarFileSystem)?.clearHandlersCache()
         }
 
         private fun registerProjectServicesForCLI(@Suppress("UNUSED_PARAMETER") projectEnvironment: JavaCoreProjectEnvironment) {

@@ -20,9 +20,6 @@ import org.gradle.BuildAdapter
 import org.gradle.BuildResult
 import org.gradle.api.invocation.Gradle
 import org.gradle.api.logging.Logging
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
-import com.intellij.openapi.vfs.impl.ZipHandler
-import com.intellij.openapi.vfs.impl.jar.CoreJarFileSystem
 import org.jetbrains.kotlin.compilerRunner.DELETED_SESSION_FILE_PREFIX
 import org.jetbrains.kotlin.compilerRunner.GradleCompilerRunner
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
@@ -70,7 +67,6 @@ internal class KotlinGradleBuildServices private constructor(gradle: Gradle): Bu
     }
 
     private val log = Logging.getLogger(this.javaClass)
-    private val cleanup = CompilerServicesCleanup()
     private var startMemory: Long? = null
     internal val workingDir: File by lazy { File(gradle.rootProject.buildDir, "kotlin-build").apply { mkdirs() } }
     private val buildCacheStorage: BuildCacheStorage by lazy { BuildCacheStorage(workingDir) }
@@ -87,18 +83,7 @@ internal class KotlinGradleBuildServices private constructor(gradle: Gradle): Bu
 
     override fun buildFinished(result: BuildResult) {
         val gradle = result.gradle!!
-        val kotlinCompilerCalled = gradle.rootProject
-                .allprojects
-                .flatMap { it.tasks }
-                .any { it is AbstractKotlinCompile<*> && it.compilerCalled }
-
-        if (kotlinCompilerCalled) {
-            log.kotlinDebug("Cleanup after kotlin")
-            cleanup(gradle.gradleVersion)
-        }
-        else {
-            log.kotlinDebug("Skipping kotlin cleanup since compiler wasn't called")
-        }
+        GradleCompilerRunner.clearJarCache(log)
 
         val rootProject = gradle.rootProject
         val sessionsDir = GradleCompilerRunner.sessionsDir(rootProject)
@@ -178,28 +163,4 @@ internal class KotlinGradleBuildServices private constructor(gradle: Gradle): Bu
 
     private fun getGcCount(): Long =
             ManagementFactory.getGarbageCollectorMXBeans().sumByLong { Math.max(0, it.collectionCount) }
-}
-
-
-internal class CompilerServicesCleanup() {
-    private val log = Logging.getLogger(this.javaClass)
-
-    operator fun invoke(gradleVersion: String) {
-        log.kotlinDebug("compiler services cleanup")
-
-        // clearing jar cache to avoid problems like KT-9440 (unable to clean/rebuild a project due to locked jar file)
-        // problem is known to happen only on windows - the reason (seems) related to http://bugs.java.com/view_bug.do?bug_id=6357433
-        // clean cache only when running on windows
-        if (isWindows) {
-            cleanJarCache()
-        }
-
-        (KotlinCoreEnvironment.applicationEnvironment?.jarFileSystem as? CoreJarFileSystem)?.clearHandlersCache()
-    }
-
-    private fun cleanJarCache() {
-        log.kotlinDebug("Clean JAR cache")
-        ZipHandler.clearFileAccessorCache()
-        log.kotlinDebug("JAR cache cleared")
-    }
 }

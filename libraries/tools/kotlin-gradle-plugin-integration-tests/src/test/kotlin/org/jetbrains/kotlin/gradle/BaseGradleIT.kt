@@ -172,7 +172,8 @@ abstract class BaseGradleIT {
             val kotlinVersion: String = KOTLIN_VERSION,
             val kotlinDaemonDebugPort: Int? = null,
             val usePreciseJavaTracking: Boolean? = null,
-            val withBuildCache: Boolean = false
+            val withBuildCache: Boolean = false,
+            val executionStrategy: String? = null
     )
 
     open inner class Project(
@@ -501,6 +502,9 @@ abstract class BaseGradleIT {
                 } else {
                     // Override possibly enabled system-wide caching:
                     add("-Dorg.gradle.caching=false")
+                }
+                options.executionStrategy?.let {
+                    add("-Dkotlin.compiler.execution.strategy=$it")
                 }
 
                 // Workaround: override a console type set in the user machine gradle.properties (since Gradle 4.3):

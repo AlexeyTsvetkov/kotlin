@@ -971,8 +971,7 @@ class CompileServiceImpl(
     }
 
     override fun clearJarCache() {
-        ZipHandler.clearFileAccessorCache()
-        (KotlinCoreEnvironment.applicationEnvironment?.jarFileSystem as? CoreJarFileSystem)?.clearHandlersCache()
+        KotlinCoreEnvironment.clearJarCache()
     }
 
     private inline fun<R> ifAlive(minAliveness: Aliveness = Aliveness.LastSession, body: () -> CompileService.CallResult<R>): CompileService.CallResult<R> = rwlock.read {

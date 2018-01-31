@@ -548,7 +548,7 @@ private fun Task.getGradleVersion(): ParsedGradleVersion? {
     return result
 }
 
-internal class GradleMessageCollector(val logger: Logger) : MessageCollector {
+class GradleMessageCollector(val logger: Logger) : MessageCollector {
     private var hasErrors = false
 
     override fun hasErrors() = hasErrors
