@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.compilerRunner.toGeneratedFile
 import org.jetbrains.kotlin.config.Services
 import org.jetbrains.kotlin.incremental.components.ExpectActualTracker
 import org.jetbrains.kotlin.incremental.components.LookupTracker
-import org.jetbrains.kotlin.incremental.multiproject.ArtifactChangesProvider
 import org.jetbrains.kotlin.incremental.multiproject.ChangesRegistry
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
@@ -42,7 +41,6 @@ abstract class IncrementalCompilerRunner<
         cacheDirName: String,
         protected val cacheVersions: List<CacheVersion>,
         protected val reporter: ICReporter,
-        protected val artifactChangesProvider: ArtifactChangesProvider?,
         protected val changesRegistry: ChangesRegistry?
 ) {
 

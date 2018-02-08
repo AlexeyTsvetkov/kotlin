@@ -60,8 +60,7 @@ class IncrementalCompilationOptions(
         reportSeverity: Int,
         /** @See [CompilationResultCategory]] */
         requestedCompilationResults: Array<Int>,
-        val resultDifferenceFile: File? = null,
-        val friendDifferenceFile: File? = null,
+        val buildHistoryFile: File,
         val usePreciseJavaTracking: Boolean
 ) : CompilationOptions(compilerMode, targetPlatform, reportCategories, reportSeverity, requestedCompilationResults) {
     companion object {
@@ -77,8 +76,7 @@ class IncrementalCompilationOptions(
                "workingDir=$workingDir, " +
                "customCacheVersionFileName='$customCacheVersionFileName', " +
                "customCacheVersion=$customCacheVersion, " +
-               "resultDifferenceFile=$resultDifferenceFile, " +
-               "friendDifferenceFile=$friendDifferenceFile, " +
+               "buildHistoryFile=$buildHistoryFile, " +
                "usePreciseJavaTracking=$usePreciseJavaTracking" +
                ")"
     }

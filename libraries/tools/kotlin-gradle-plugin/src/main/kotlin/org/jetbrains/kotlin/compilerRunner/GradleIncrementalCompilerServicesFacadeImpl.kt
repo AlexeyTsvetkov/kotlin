@@ -67,32 +67,4 @@ internal class GradleIncrementalCompilerServicesFacadeImpl(
     override fun revert() {
         environment.kaptAnnotationsFileUpdater!!.revert()
     }
-
-    override fun getChanges(artifact: File, sinceTS: Long): Iterable<SimpleDirtyData>? {
-        val artifactChanges = environment.artifactDifferenceRegistryProvider?.withRegistry(environment.reporter) { registry ->
-            registry[artifact]
-        } ?: return null
-
-        val (beforeLastBuild, afterLastBuild) = artifactChanges.partition { it.buildTS < sinceTS }
-        if (beforeLastBuild.isEmpty()) return null
-
-        return afterLastBuild.map { it.dirtyData.toSimpleDirtyData() }
-    }
-
-    override fun registerChanges(timestamp: Long, dirtyData: SimpleDirtyData) {
-        val artifactFile = environment.artifactFile ?: return
-
-        environment.artifactDifferenceRegistryProvider?.withRegistry(environment.reporter) { registry ->
-            registry.add(artifactFile, ArtifactDifference(timestamp, dirtyData.toDirtyData()))
-        }
-    }
-
-    override fun unknownChanges(timestamp: Long) {
-        val artifactFile = environment.artifactFile ?: return
-
-        environment.artifactDifferenceRegistryProvider?.withRegistry(environment.reporter) { registry ->
-            registry.remove(artifactFile)
-            registry.add(artifactFile, ArtifactDifference(timestamp, DirtyData()))
-        }
-    }
 }
