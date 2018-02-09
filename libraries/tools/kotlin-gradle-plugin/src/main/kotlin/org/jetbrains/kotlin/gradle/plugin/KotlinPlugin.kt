@@ -29,7 +29,6 @@ import org.jetbrains.kotlin.gradle.internal.*
 import org.jetbrains.kotlin.gradle.internal.Kapt3GradleSubplugin.Companion.getKaptGeneratedClassesDir
 import org.jetbrains.kotlin.gradle.tasks.*
 import org.jetbrains.kotlin.gradle.utils.*
-import org.jetbrains.kotlin.incremental.configureMultiProjectIncrementalCompilation
 import java.io.File
 import java.net.URL
 import java.util.*
@@ -188,11 +187,6 @@ internal class Kotlin2JvmSourceSetProcessor(
                     syncOutputTask = createSyncOutputTask(project, kotlinTask, javaTask, kotlinAfterJavaTask, sourceSetName)
                 }
 
-                val artifactFile = project.tryGetSingleArtifact()
-                configureMultiProjectIncrementalCompilation(project, kotlinTask, javaTask, kotlinAfterJavaTask,
-                        kotlinGradleBuildServices.artifactDifferenceRegistryProvider,
-                        artifactFile)
-
                 if (project.pluginManager.hasPlugin("java-library") && sourceSetName == SourceSet.MAIN_SOURCE_SET_NAME) {
                     val (classesProviderTask, classesDirectory) = when {
                         isSeparateClassesDirSupported -> (kotlinAfterJavaTask ?: kotlinTask).let { it to it.destinationDir }
@@ -201,27 +195,8 @@ internal class Kotlin2JvmSourceSetProcessor(
 
                     registerKotlinOutputForJavaLibrary(classesDirectory, classesProviderTask)
                 }
-
-                // To make Gradle read this location from the task's @LocalState property and clean it on cache hit:
-                kotlinTask.buildServicesWorkingDir = Callable { kotlinGradleBuildServices.workingDir }
             }
         }
-    }
-
-    private fun Project.tryGetSingleArtifact(): File? {
-        val log = logger
-        log.kotlinDebug { "Trying to determine single artifact for project $path" }
-
-        val archives = configurations.findByName("archives")
-        if (archives == null) {
-            log.kotlinDebug { "Could not find 'archives' configuration for project $path" }
-            return null
-        }
-
-        val artifacts = archives.artifacts.files.files
-        log.kotlinDebug { "All artifacts for project $path: [${artifacts.joinToString()}]" }
-
-        return if (artifacts.size == 1) artifacts.first() else null
     }
 
     private fun registerKotlinOutputForJavaLibrary(outputDir: File, taskDependency: Task): Boolean {
@@ -499,10 +474,6 @@ class KotlinConfigurationTools internal constructor(val kotlinSourceSetProvider:
  * @see [LegacyAndroidAndroidProjectHandler] that is implemented with the old internal API and [AndroidGradle25VariantProcessor] that works
  *       with the new public API */
 abstract class AbstractAndroidProjectHandler<V>(private val kotlinConfigurationTools: KotlinConfigurationTools) {
-
-    protected val artifactDifferenceRegistryProvider get() =
-            kotlinConfigurationTools.kotlinGradleBuildServices.artifactDifferenceRegistryProvider
-
     protected val logger = Logging.getLogger(this.javaClass)
 
     abstract fun forEachVariant(project: Project, action: (V) -> Unit): Unit
@@ -524,12 +495,6 @@ abstract class AbstractAndroidProjectHandler<V>(private val kotlinConfigurationT
                                            javaTask: AbstractCompile,
                                            kotlinTask: KotlinCompile,
                                            kotlinAfterJavaTask: KotlinCompile?): Unit
-
-    protected abstract fun configureMultiProjectIc(project: Project,
-                                                   variantData: V,
-                                                   javaTask: AbstractCompile,
-                                                   kotlinTask: KotlinCompile,
-                                                   kotlinAfterJavaTask: KotlinCompile?)
 
     protected abstract fun wrapVariantDataForKapt(variantData: V): KaptVariantData<V>
 
@@ -647,8 +612,6 @@ abstract class AbstractAndroidProjectHandler<V>(private val kotlinConfigurationT
 
         wireKotlinTasks(project, androidPlugin, androidExt, variantData, javaTask,
                 kotlinTask, kotlinAfterJavaTask)
-
-        configureMultiProjectIc(project, variantData, javaTask, kotlinTask, kotlinAfterJavaTask)
 
         val appliedPlugins = subpluginEnvironment.addSubpluginOptions(
                 project, kotlinTask, javaTask, wrapVariantDataForKapt(variantData), this, null)

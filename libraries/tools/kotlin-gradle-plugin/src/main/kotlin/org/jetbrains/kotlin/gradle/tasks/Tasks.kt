@@ -359,16 +359,12 @@ open class KotlinCompile : AbstractKotlinCompile<K2JVMCompilerArguments>(), Kotl
                 GradleCompilerEnvironment(computedCompilerClasspath, messageCollector, outputItemCollector, args)
             else -> {
                 logger.info(USING_INCREMENTAL_COMPILATION_MESSAGE)
-                val friendTask = friendTaskName?.let { project.tasks.findByName(it) as? KotlinCompile }
                 GradleIncrementalCompilerEnvironment(
                         computedCompilerClasspath,
                         if (hasFilesInTaskBuildDirectory()) changedFiles else ChangedFiles.Unknown(),
-                        reporter, taskBuildDirectory,
+                        taskBuildDirectory,
                         messageCollector, outputItemCollector, args, kaptAnnotationsFileUpdater,
-                        artifactDifferenceRegistryProvider,
-                        artifactFile = artifactFile,
                         buildHistoryFile = buildHistoryFile,
-                        friendBuildHistoryFile = friendTask?.buildHistoryFile,
                         usePreciseJavaTracking = usePreciseJavaTracking
                 )
             }
@@ -526,7 +522,7 @@ open class Kotlin2JsCompile() : AbstractKotlinCompile<K2JSCompilerArguments>(), 
                 GradleIncrementalCompilerEnvironment(
                         computedCompilerClasspath,
                         if (hasFilesInTaskBuildDirectory()) changedFiles else ChangedFiles.Unknown(),
-                        reporter, taskBuildDirectory,
+                        taskBuildDirectory,
                         messageCollector, outputItemCollector, args)
             }
             else -> {

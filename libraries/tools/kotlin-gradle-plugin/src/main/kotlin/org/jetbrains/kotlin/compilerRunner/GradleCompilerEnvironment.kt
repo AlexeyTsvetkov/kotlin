@@ -26,15 +26,11 @@ open class GradleCompilerEnvironment(
 internal class GradleIncrementalCompilerEnvironment(
         compilerClasspath: List<File>,
         val changedFiles: ChangedFiles,
-        val reporter: ICReporter,
         val workingDir: File,
         messageCollector: GradleMessageCollector,
         outputItemsCollector: OutputItemsCollector,
         compilerArgs: CommonCompilerArguments,
         val kaptAnnotationsFileUpdater: AnnotationFileUpdater? = null,
-        val artifactDifferenceRegistryProvider: ArtifactDifferenceRegistryProvider? = null,
-        val artifactFile: File? = null,
         val buildHistoryFile: File? = null,
-        val friendBuildHistoryFile: File? = null,
         val usePreciseJavaTracking: Boolean = false
 ) : GradleCompilerEnvironment(compilerClasspath, messageCollector, outputItemsCollector, compilerArgs)

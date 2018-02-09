@@ -271,9 +271,8 @@ class GradleCompilerRunner(private val project: Project) : KotlinCompilerRunner<
                 requestedCompilationResults = arrayOf(CompilationResultCategory.IC_COMPILE_ITERATION.code),
                 compilerMode = CompilerMode.INCREMENTAL_COMPILER,
                 targetPlatform = targetPlatform,
-                resultDifferenceFile = environment.buildHistoryFile,
-                friendDifferenceFile = environment.friendBuildHistoryFile,
-                usePreciseJavaTracking = environment.usePreciseJavaTracking
+                usePreciseJavaTracking = environment.usePreciseJavaTracking,
+                buildHistoryFile = environment.buildHistoryFile!!
         )
 
         log.info("Options for KOTLIN DAEMON: $compilationOptions")
