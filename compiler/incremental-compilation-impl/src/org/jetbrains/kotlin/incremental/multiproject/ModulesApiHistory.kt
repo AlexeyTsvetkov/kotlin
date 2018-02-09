@@ -5,7 +5,12 @@
 
 package org.jetbrains.kotlin.incremental.multiproject
 
+import org.jetbrains.kotlin.incremental.GradleModule
+import org.jetbrains.kotlin.incremental.GradleModulesInfo
 import java.io.File
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.util.zip.ZipFile
 
 interface ModulesApiHistory {
     fun historyFileForArtifact(file: File): File?
@@ -13,4 +18,71 @@ interface ModulesApiHistory {
 
 object EmptyModulesApiHistory : ModulesApiHistory {
     override fun historyFileForArtifact(file: File): File? = null
+}
+
+class GradleModulesApiHistory(private val modulesInfo: GradleModulesInfo) : ModulesApiHistory {
+    private val projectRootPath = Paths.get(modulesInfo.projectRoot.absolutePath)
+    private val dirToHistoryFileCache = HashMap<File, File?>()
+
+    override fun historyFileForArtifact(file: File): File? {
+        when (file.extension.toLowerCase()) {
+            "jar" -> {
+                val jarPath = Paths.get(file.absolutePath)
+                val modules = getPossibleModuleNamesFromJar(jarPath)
+                    .flatMapTo(HashSet<GradleModule>()) { modulesInfo.nameToModules[it] ?: emptySet() }
+                for (module in modules) {
+                    if (Paths.get(module.buildDir.absolutePath).isParentOf(jarPath)) {
+                        return module.buildHistoryFile
+                    }
+                }
+            }
+            else -> {
+                return getBuildHistoryForDir(file.parentFile)
+            }
+        }
+
+        return null
+    }
+
+    private fun getBuildHistoryForDir(file: File): File? =
+        dirToHistoryFileCache.getOrPut(file) {
+            val module = modulesInfo.dirToModule[file]
+            val parent = file.parentFile
+
+            when {
+                module != null ->
+                    module.buildDir
+                parent != null && projectRootPath.isParentOf(parent) ->
+                    getBuildHistoryForDir(parent)
+                else ->
+                    null
+            }
+        }
+
+    private fun getPossibleModuleNamesFromJar(path: Path): Collection<String> {
+        // do not try to traverse jar not from project
+        if (!projectRootPath.isParentOf(path)) return emptyList()
+
+        val result = HashSet<String>()
+
+        try {
+            ZipFile(path.toFile()).use { zip ->
+                val entries = zip.entries()
+                while (entries.hasMoreElements()) {
+                    val entry = entries.nextElement()
+                    val name = entry.name
+                    if (name.endsWith(".kotlin_module", ignoreCase = true)) {
+                        result.add(File(name).nameWithoutExtension)
+                    }
+                }
+            }
+        } catch (t: Throwable) {
+            return emptyList()
+        }
+
+        return result
+    }
+
+    private fun Path.isParentOf(path: Path) = path.startsWith(this)
+    private fun Path.isParentOf(file: File) = Paths.get(file.absolutePath).isParentOf(this)
 }

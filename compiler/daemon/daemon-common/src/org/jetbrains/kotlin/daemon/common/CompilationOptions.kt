@@ -61,7 +61,8 @@ class IncrementalCompilationOptions(
         /** @See [CompilationResultCategory]] */
         requestedCompilationResults: Array<Int>,
         val buildHistoryFile: File,
-        val usePreciseJavaTracking: Boolean
+        val usePreciseJavaTracking: Boolean,
+        val modulesInfo: GradleModulesInfo? = null
 ) : CompilationOptions(compilerMode, targetPlatform, reportCategories, reportSeverity, requestedCompilationResults) {
     companion object {
         const val serialVersionUID: Long = 0

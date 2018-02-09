@@ -22,14 +22,15 @@ import org.gradle.api.invocation.Gradle
 import org.gradle.api.logging.Logging
 import org.jetbrains.kotlin.compilerRunner.DELETED_SESSION_FILE_PREFIX
 import org.jetbrains.kotlin.compilerRunner.GradleCompilerRunner
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.daemon.common.GradleModule
+import org.jetbrains.kotlin.daemon.common.GradleModulesInfo
 import org.jetbrains.kotlin.incremental.relativeToRoot
 import org.jetbrains.kotlin.utils.addToStdlib.sumByLong
 import java.io.File
 import java.lang.management.ManagementFactory
 
-
-
-internal class KotlinGradleBuildServices private constructor(gradle: Gradle): BuildAdapter() {
+internal class KotlinGradleBuildServices private constructor(gradle: Gradle) : BuildAdapter() {
     companion object {
         private val CLASS_NAME = KotlinGradleBuildServices::class.java.simpleName
         const val FORCE_SYSTEM_GC_MESSAGE = "Forcing System.gc()"
@@ -63,7 +64,6 @@ internal class KotlinGradleBuildServices private constructor(gradle: Gradle): Bu
 
     private val log = Logging.getLogger(this.javaClass)
     private var startMemory: Long? = null
-    internal val workingDir: File by lazy { File(gradle.rootProject.buildDir, "kotlin-build").apply { mkdirs() } }
     private val shouldReportMemoryUsage = System.getProperty(SHOULD_REPORT_MEMORY_USAGE_PROPERTY) != null
 
     // There is function with the same name in BuildAdapter,
@@ -75,6 +75,7 @@ internal class KotlinGradleBuildServices private constructor(gradle: Gradle): Bu
     override fun buildFinished(result: BuildResult) {
         val gradle = result.gradle!!
         GradleCompilerRunner.clearJarCache(log)
+        GradleCompilerRunner.clearBuildModulesInfo()
 
         val rootProject = gradle.rootProject
         val sessionsDir = GradleCompilerRunner.sessionsDir(rootProject)

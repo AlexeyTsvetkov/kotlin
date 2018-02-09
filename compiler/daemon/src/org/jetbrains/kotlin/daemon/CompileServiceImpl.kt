@@ -48,6 +48,7 @@ import org.jetbrains.kotlin.daemon.report.RemoteICReporter
 import org.jetbrains.kotlin.incremental.*
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.incremental.multiproject.EmptyModulesApiHistory
+import org.jetbrains.kotlin.incremental.multiproject.GradleModulesApiHistory
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
 import org.jetbrains.kotlin.modules.Module
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
@@ -520,7 +521,7 @@ class CompileServiceImpl(
             reporter, annotationFileUpdater,
             buildHistoryFile = incrementalCompilationOptions.buildHistoryFile,
             usePreciseJavaTracking = incrementalCompilationOptions.usePreciseJavaTracking,
-            modulesApiHistory = EmptyModulesApiHistory
+            modulesApiHistory = incrementalCompilationOptions.modulesInfo?.let { GradleModulesApiHistory(it) } ?: EmptyModulesApiHistory
         )
         return compiler.compile(allKotlinFiles, k2jvmArgs, compilerMessageCollector, changedFiles)
     }
