@@ -365,7 +365,7 @@ class GradleCompilerRunner(private val project: Project) : KotlinCompilerRunner<
                 }
             }
 
-            return GradleModulesInfo(dirToModule, nameToModules)
+            return GradleModulesInfo(gradle.rootProject.projectDir, dirToModule, nameToModules)
                 .also {
                     cachedGradle = WeakReference(gradle)
                     cachedModulesInfo = it

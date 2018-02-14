@@ -20,6 +20,7 @@ data class GradleModule(
 }
 
 class GradleModulesInfo(
+    val projectRoot: File,
     val dirToModule: Map<File, GradleModule>,
     val nameToModules: Map<String, Set<GradleModule>>
 ) : Serializable {

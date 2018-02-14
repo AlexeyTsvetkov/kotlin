@@ -5,8 +5,8 @@
 
 package org.jetbrains.kotlin.incremental.multiproject
 
-import org.jetbrains.kotlin.incremental.GradleModule
-import org.jetbrains.kotlin.incremental.GradleModulesInfo
+import org.jetbrains.kotlin.daemon.common.GradleModule
+import org.jetbrains.kotlin.daemon.common.GradleModulesInfo
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
