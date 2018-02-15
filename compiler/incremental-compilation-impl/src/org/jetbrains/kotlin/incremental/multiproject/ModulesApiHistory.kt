@@ -51,7 +51,7 @@ class GradleModulesApiHistory(private val modulesInfo: GradleModulesInfo) : Modu
 
             when {
                 module != null ->
-                    module.buildDir
+                    module.buildHistoryFile
                 parent != null && projectRootPath.isParentOf(parent) ->
                     getBuildHistoryForDir(parent)
                 else ->
@@ -84,5 +84,5 @@ class GradleModulesApiHistory(private val modulesInfo: GradleModulesInfo) : Modu
     }
 
     private fun Path.isParentOf(path: Path) = path.startsWith(this)
-    private fun Path.isParentOf(file: File) = Paths.get(file.absolutePath).isParentOf(this)
+    private fun Path.isParentOf(file: File) = this.isParentOf(Paths.get(file.absolutePath))
 }
