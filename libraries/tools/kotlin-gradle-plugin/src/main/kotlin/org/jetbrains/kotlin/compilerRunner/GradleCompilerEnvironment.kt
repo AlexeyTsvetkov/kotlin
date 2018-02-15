@@ -6,10 +6,7 @@ import org.jetbrains.kotlin.config.Services
 import org.jetbrains.kotlin.gradle.tasks.GradleMessageCollector
 import org.jetbrains.kotlin.gradle.tasks.findToolsJar
 import org.jetbrains.kotlin.incremental.ChangedFiles
-import org.jetbrains.kotlin.incremental.ICReporter
-import org.jetbrains.kotlin.incremental.multiproject.ArtifactDifferenceRegistryProvider
 import java.io.File
-import java.net.URL
 
 open class GradleCompilerEnvironment(
         private val compilerClasspathWithoutTools: List<File>,

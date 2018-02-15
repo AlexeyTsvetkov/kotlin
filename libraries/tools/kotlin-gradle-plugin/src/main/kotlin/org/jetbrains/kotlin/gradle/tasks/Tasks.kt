@@ -41,12 +41,9 @@ import org.jetbrains.kotlin.gradle.internal.prepareCompilerArguments
 import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.utils.ParsedGradleVersion
 import org.jetbrains.kotlin.incremental.*
-import org.jetbrains.kotlin.incremental.multiproject.ArtifactDifferenceRegistry
-import org.jetbrains.kotlin.incremental.multiproject.ArtifactDifferenceRegistryProvider
 import org.jetbrains.kotlin.utils.LibraryUtils
 import java.io.File
 import java.util.*
-import java.util.concurrent.Callable
 import kotlin.properties.Delegates
 
 const val ANNOTATIONS_PLUGIN_NAME = "org.jetbrains.kotlin.kapt"
@@ -276,21 +273,12 @@ open class KotlinCompile : AbstractKotlinCompile<K2JVMCompilerArguments>(), Kotl
     @get:Optional
     var javaPackagePrefix: String? = null
 
-    @get:Internal
-    internal var artifactDifferenceRegistryProvider: ArtifactDifferenceRegistryProvider? = null
-
-    @get:Internal
-    internal var artifactFile: File? = null
-
     @get:Input
     var usePreciseJavaTracking: Boolean = true
         set(value) {
             field = value
             logger.kotlinDebug { "Set $this.usePreciseJavaTracking=$value" }
         }
-
-    @get:LocalState @get:Optional
-    internal var buildServicesWorkingDir: Callable<File>? = null
 
     init {
         incremental = true
@@ -352,7 +340,6 @@ open class KotlinCompile : AbstractKotlinCompile<K2JVMCompilerArguments>(), Kotl
         val messageCollector = GradleMessageCollector(logger)
         val outputItemCollector = OutputItemsCollectorImpl()
         val compilerRunner = GradleCompilerRunner(project)
-        val reporter = GradleICReporter(project.rootProject.projectDir)
 
         val environment = when {
             !incremental ->
@@ -383,17 +370,10 @@ open class KotlinCompile : AbstractKotlinCompile<K2JVMCompilerArguments>(), Kotl
                     environment)
 
             processCompilerExitCode(exitCode)
-            artifactDifferenceRegistryProvider?.withRegistry(reporter) {
-                it.flush(true)
-            }
         }
         catch (e: Throwable) {
             cleanupOnError()
-            artifactDifferenceRegistryProvider?.clean()
             throw e
-        }
-        finally {
-            artifactDifferenceRegistryProvider?.withRegistry(reporter, ArtifactDifferenceRegistry::close)
         }
         anyClassesCompiled = true
     }
