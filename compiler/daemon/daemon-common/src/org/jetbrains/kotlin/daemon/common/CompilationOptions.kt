@@ -60,9 +60,9 @@ class IncrementalCompilationOptions(
         reportSeverity: Int,
         /** @See [CompilationResultCategory]] */
         requestedCompilationResults: Array<Int>,
-        val resultDifferenceFile: File? = null,
-        val friendDifferenceFile: File? = null,
-        val usePreciseJavaTracking: Boolean
+        val buildHistoryFile: File,
+        val usePreciseJavaTracking: Boolean,
+        val modulesInfo: GradleModulesInfo? = null
 ) : CompilationOptions(compilerMode, targetPlatform, reportCategories, reportSeverity, requestedCompilationResults) {
     companion object {
         const val serialVersionUID: Long = 0
@@ -77,8 +77,7 @@ class IncrementalCompilationOptions(
                "workingDir=$workingDir, " +
                "customCacheVersionFileName='$customCacheVersionFileName', " +
                "customCacheVersion=$customCacheVersion, " +
-               "resultDifferenceFile=$resultDifferenceFile, " +
-               "friendDifferenceFile=$friendDifferenceFile, " +
+               "buildHistoryFile=$buildHistoryFile, " +
                "usePreciseJavaTracking=$usePreciseJavaTracking" +
                ")"
     }
