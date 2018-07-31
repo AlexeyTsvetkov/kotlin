@@ -23,10 +23,7 @@ import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.internal.ConventionTask
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.compile.AbstractCompile
-import org.jetbrains.kotlin.gradle.plugin.JetBrainsSubpluginArtifact
-import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
-import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
-import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.jetbrains.kotlin.gradle.plugin.*
 
 class NoArgGradleSubplugin : Plugin<Project> {
     companion object {
@@ -39,10 +36,11 @@ class NoArgGradleSubplugin : Plugin<Project> {
 
     override fun apply(project: Project) {
         project.extensions.create("noArg", NoArgExtension::class.java)
+        addSubplugin(project, NoArgKotlinGradleSubplugin())
     }
 }
 
-class NoArgKotlinGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
+class NoArgKotlinGradleSubplugin : KotlinGradleSubplugin {
     companion object {
         const val NOARG_ARTIFACT_NAME = "kotlin-noarg"
 
@@ -51,7 +49,7 @@ class NoArgKotlinGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         private val INVOKE_INITIALIZERS_ARG_NAME = "invokeInitializers"
     }
 
-    override fun isApplicable(project: Project, task: AbstractCompile) = NoArgGradleSubplugin.isEnabled(project)
+    override fun isApplicable(project: Project, task: AbstractCompile) = true
 
     override fun apply(
             project: Project,

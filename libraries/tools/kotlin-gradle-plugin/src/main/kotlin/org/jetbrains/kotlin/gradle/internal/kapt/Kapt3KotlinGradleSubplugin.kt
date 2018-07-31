@@ -53,13 +53,14 @@ class Kapt3GradleSubplugin : Plugin<Project> {
     override fun apply(project: Project) {
         project.extensions.create("kapt", KaptExtension::class.java)
 
-        Kapt3KotlinGradleSubplugin().run {
-            project.configurations.create(KAPT_WORKER_DEPENDENCIES_CONFIGURATION_NAME).apply {
-                project.getKotlinPluginVersion()?.let { kotlinPluginVersion ->
-                    val kaptDependency = getPluginArtifact().run { "$groupId:$artifactId:$kotlinPluginVersion" }
-                    dependencies.add(project.dependencies.create(kaptDependency))
-                } ?: project.logger.error("Kotlin plugin should be enabled before 'kotlin-kapt'")
-            }
+        val subplugin = Kapt3KotlinGradleSubplugin()
+        addSubplugin(project, subplugin)
+
+        project.configurations.create(KAPT_WORKER_DEPENDENCIES_CONFIGURATION_NAME).apply {
+            project.getKotlinPluginVersion()?.let { kotlinPluginVersion ->
+                val kaptDependency = subplugin.getPluginArtifact().run { "$groupId:$artifactId:$kotlinPluginVersion" }
+                dependencies.add(project.dependencies.create(kaptDependency))
+            } ?: project.logger.error("Kotlin plugin should be enabled before 'kotlin-kapt'")
         }
     }
 }
@@ -79,7 +80,7 @@ abstract class KaptVariantData<T>(val variantData: T) {
 }
 
 // Subplugin for the Kotlin Gradle plugin
-class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
+class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin {
     companion object {
         private val VERBOSE_OPTION_NAME = "kapt.verbose"
         private val USE_WORKER_API = "kapt.use.worker.api"
@@ -139,7 +140,8 @@ class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
 
     private val kotlinToKaptGenerateStubsTasksMap = mutableMapOf<KotlinCompile, KaptGenerateStubsTask>()
 
-    override fun isApplicable(project: Project, task: AbstractCompile) = task is KotlinCompile && Kapt3GradleSubplugin.isEnabled(project)
+    override fun isApplicable(project: Project, task: AbstractCompile) =
+        task is KotlinCompile
 
     private fun Kapt3SubpluginContext.getKaptStubsDir() = createAndReturnTemporaryKaptDirectory("stubs")
 
@@ -168,13 +170,14 @@ class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
 
     override fun apply(
             project: Project,
-            kotlinCompile: KotlinCompile,
+            kotlinCompile: AbstractCompile,
             javaCompile: AbstractCompile,
             variantData: Any?,
             androidProjectHandler: Any?,
             javaSourceSet: SourceSet?
     ): List<SubpluginOption> {
         assert((variantData != null) xor (javaSourceSet != null))
+        kotlinCompile as KotlinCompile // checked in is applicable
 
         val buildDependencies = arrayListOf<TaskDependency>()
         val kaptConfigurations = arrayListOf<Configuration>()
@@ -226,7 +229,7 @@ class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
         return emptyList()
     }
 
-    override fun getSubpluginKotlinTasks(project: Project, kotlinCompile: KotlinCompile): List<AbstractCompile> {
+    override fun getSubpluginKotlinTasks(project: Project, kotlinCompile: AbstractCompile): List<AbstractCompile> {
         val kaptGenerateStubsTask = kotlinToKaptGenerateStubsTasksMap[kotlinCompile]
         return if (kaptGenerateStubsTask == null) emptyList() else listOf(kaptGenerateStubsTask)
     }

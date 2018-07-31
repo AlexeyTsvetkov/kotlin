@@ -44,6 +44,8 @@ class AndroidExtensionsSubpluginIndicator : Plugin<Project> {
                 addAndroidExtensionsRuntimeIfNeeded(project)
             }
         }
+
+        addSubplugin(project, AndroidSubplugin())
     }
 
     private fun addAndroidExtensionsRuntimeIfNeeded(project: Project) {
@@ -70,7 +72,7 @@ class AndroidExtensionsSubpluginIndicator : Plugin<Project> {
     }
 }
 
-class AndroidSubplugin : KotlinGradleSubplugin<KotlinCompile> {
+class AndroidSubplugin : KotlinGradleSubplugin {
     override fun isApplicable(project: Project, task: AbstractCompile): Boolean {
         if (task !is KotlinCompile) return false
         try {
@@ -78,20 +80,19 @@ class AndroidSubplugin : KotlinGradleSubplugin<KotlinCompile> {
         } catch (e: UnknownDomainObjectException) {
             return false
         }
-        if (project.plugins.findPlugin(AndroidExtensionsSubpluginIndicator::class.java) == null) {
-            return false
-        }
         return true
     }
 
     override fun apply(
             project: Project,
-            kotlinCompile: KotlinCompile,
+            kotlinCompile: AbstractCompile,
             javaCompile: AbstractCompile,
             variantData: Any?,
             androidProjectHandler: Any?,
             javaSourceSet: SourceSet?
     ): List<SubpluginOption> {
+        kotlinCompile as KotlinCompile // checked in isApplicable
+
         val androidExtension = project.extensions.getByName("android") as? BaseExtension ?: return emptyList()
         val androidExtensionsExtension = project.extensions.getByType(AndroidExtensionsExtension::class.java)
 

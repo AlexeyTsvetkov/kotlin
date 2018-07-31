@@ -48,12 +48,12 @@ enum class FilesOptionKind {
 /** Defines a subplugin option that should be excluded from Gradle input/output checks */
 open class InternalSubpluginOption(key: String, value: String) : SubpluginOption(key, value)
 
-interface KotlinGradleSubplugin<in KotlinCompile : AbstractCompile> {
+interface KotlinGradleSubplugin {
     fun isApplicable(project: Project, task: AbstractCompile): Boolean
 
     fun apply(
             project: Project,
-            kotlinCompile: KotlinCompile,
+            kotlinCompile: AbstractCompile,
             javaCompile: AbstractCompile,
             variantData: Any?,
             androidProjectHandler: Any?,
@@ -61,13 +61,37 @@ interface KotlinGradleSubplugin<in KotlinCompile : AbstractCompile> {
     ): List<SubpluginOption>
 
     fun getSubpluginKotlinTasks(
-            project: Project,
-            kotlinCompile: KotlinCompile
+        project: Project,
+        kotlinCompile: AbstractCompile
     ): List<AbstractCompile> = emptyList()
 
     fun getCompilerPluginId(): String
 
     fun getPluginArtifact(): SubpluginArtifact
+}
+
+private open class KotlinSubpluginExtensionContainer {
+    private val mySubplugins = arrayListOf<KotlinGradleSubplugin>()
+
+    val subplugins: List<KotlinGradleSubplugin>
+        get() = mySubplugins
+
+    fun add(subplugin: KotlinGradleSubplugin) {
+        mySubplugins.add(subplugin)
+    }
+}
+
+fun addedSubplugins(project: Project) =
+    project.extensions
+        .findByType(KotlinSubpluginExtensionContainer::class.java)
+        ?.subplugins
+        ?: emptyList()
+
+fun addSubplugin(project: Project, subplugin: KotlinGradleSubplugin) {
+    val extensions = project.extensions
+    val klass = KotlinSubpluginExtensionContainer::class.java
+    val subplugins = extensions.findByType(klass) ?: extensions.create("kotlinSubplugins", klass)
+    subplugins.add(subplugin)
 }
 
 open class SubpluginArtifact(val groupId: String, val artifactId: String, val version: String? = null)

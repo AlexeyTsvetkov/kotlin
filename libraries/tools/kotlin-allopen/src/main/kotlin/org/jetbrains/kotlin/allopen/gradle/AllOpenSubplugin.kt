@@ -22,15 +22,10 @@ import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.internal.AbstractTask
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.compile.AbstractCompile
-import org.jetbrains.kotlin.gradle.plugin.JetBrainsSubpluginArtifact
-import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
-import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
-import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.jetbrains.kotlin.gradle.plugin.*
 
 class AllOpenGradleSubplugin : Plugin<Project> {
     companion object {
-        fun isEnabled(project: Project) = project.plugins.findPlugin(AllOpenGradleSubplugin::class.java) != null
-
         fun getAllOpenExtension(project: Project): AllOpenExtension {
             return project.extensions.getByType(AllOpenExtension::class.java)
         }
@@ -38,10 +33,11 @@ class AllOpenGradleSubplugin : Plugin<Project> {
 
     override fun apply(project: Project) {
         project.extensions.create("allOpen", AllOpenExtension::class.java)
+        addSubplugin(project, AllOpenKotlinGradleSubplugin())
     }
 }
 
-class AllOpenKotlinGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
+class AllOpenKotlinGradleSubplugin : KotlinGradleSubplugin {
     companion object {
         const val ALLOPEN_ARTIFACT_NAME = "kotlin-allopen"
 
@@ -49,7 +45,7 @@ class AllOpenKotlinGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         private val PRESET_ARG_NAME = "preset"
     }
 
-    override fun isApplicable(project: Project, task: AbstractCompile) = AllOpenGradleSubplugin.isEnabled(project)
+    override fun isApplicable(project: Project, task: AbstractCompile) = true
 
     override fun apply(
             project: Project,
@@ -59,8 +55,6 @@ class AllOpenKotlinGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
             androidProjectHandler: Any?,
             javaSourceSet: SourceSet?
     ): List<SubpluginOption> {
-        if (!AllOpenGradleSubplugin.isEnabled(project)) return emptyList()
-
         val allOpenExtension = project.extensions.findByType(AllOpenExtension::class.java) ?: return emptyList()
 
         val options = mutableListOf<SubpluginOption>()

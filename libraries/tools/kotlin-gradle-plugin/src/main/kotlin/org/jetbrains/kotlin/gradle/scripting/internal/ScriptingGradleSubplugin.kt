@@ -9,21 +9,16 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.compile.AbstractCompile
-import org.jetbrains.kotlin.gradle.plugin.JetBrainsSubpluginArtifact
-import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
-import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
-import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.scripting.ScriptingExtension
 
 class ScriptingGradleSubplugin : Plugin<Project> {
-    companion object {
-        fun isEnabled(project: Project) = project.plugins.findPlugin(ScriptingGradleSubplugin::class.java) != null
+    override fun apply(project: Project) {
+        addSubplugin(project, ScriptingKotlinGradleSubplugin())
     }
-
-    override fun apply(project: Project) {}
 }
 
-class ScriptingKotlinGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
+class ScriptingKotlinGradleSubplugin : KotlinGradleSubplugin {
     companion object {
         const val SCRIPTING_ARTIFACT_NAME = "kotlin-scripting-compiler-embeddable"
 
@@ -33,8 +28,7 @@ class ScriptingKotlinGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         val LEGACY_SCRIPT_RESOLVER_ENVIRONMENT_OPTION = "script-resolver-environment"
     }
 
-    override fun isApplicable(project: Project, task: AbstractCompile) =
-        ScriptingGradleSubplugin.isEnabled(project)
+    override fun isApplicable(project: Project, task: AbstractCompile) = true
 
     override fun apply(
         project: Project,
@@ -44,8 +38,6 @@ class ScriptingKotlinGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
         androidProjectHandler: Any?,
         javaSourceSet: SourceSet?
     ): List<SubpluginOption> {
-        if (!ScriptingGradleSubplugin.isEnabled(project)) return emptyList()
-
         val scriptingExtension = project.extensions.findByType(ScriptingExtension::class.java)
                 ?: project.extensions.create("kotlinScripting", ScriptingExtension::class.java)
 

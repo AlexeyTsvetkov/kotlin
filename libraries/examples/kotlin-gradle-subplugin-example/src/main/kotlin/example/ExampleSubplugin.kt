@@ -16,16 +16,19 @@
 
 package example
 
-import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
+import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.compile.AbstractCompile
-import org.jetbrains.kotlin.gradle.plugin.JetBrainsSubpluginArtifact
-import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
-import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.jetbrains.kotlin.gradle.plugin.*
 
-class ExampleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
+open class ExamplePlugin : Plugin<Project> {
+    override fun apply(project: Project) {
+        addSubplugin(project, ExampleSubplugin())
+    }
+}
 
+class ExampleSubplugin : KotlinGradleSubplugin {
     override fun isApplicable(project: Project, task: AbstractCompile): Boolean {
         return true
     }

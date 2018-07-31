@@ -23,22 +23,16 @@ import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.internal.ConventionTask
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.compile.AbstractCompile
-import org.jetbrains.kotlin.gradle.plugin.JetBrainsSubpluginArtifact
-import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
-import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
-import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.jetbrains.kotlin.gradle.plugin.*
 
 class SamWithReceiverGradleSubplugin : Plugin<Project> {
-    companion object {
-        fun isEnabled(project: Project) = project.plugins.findPlugin(SamWithReceiverGradleSubplugin::class.java) != null
-    }
-
     override fun apply(project: Project) {
         project.extensions.create("samWithReceiver", SamWithReceiverExtension::class.java)
+        addSubplugin(project, SamWithReceiverKotlinGradleSubplugin())
     }
 }
 
-class SamWithReceiverKotlinGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
+class SamWithReceiverKotlinGradleSubplugin : KotlinGradleSubplugin {
     companion object {
         const val SAM_WITH_RECEIVER_ARTIFACT_NAME = "kotlin-sam-with-receiver"
 
@@ -46,7 +40,7 @@ class SamWithReceiverKotlinGradleSubplugin : KotlinGradleSubplugin<AbstractCompi
         private val PRESET_ARG_NAME = "preset"
     }
 
-    override fun isApplicable(project: Project, task: AbstractCompile) = SamWithReceiverGradleSubplugin.isEnabled(project)
+    override fun isApplicable(project: Project, task: AbstractCompile) = true
 
     override fun apply(
             project: Project,
@@ -56,8 +50,6 @@ class SamWithReceiverKotlinGradleSubplugin : KotlinGradleSubplugin<AbstractCompi
             androidProjectHandler: Any?,
             javaSourceSet: SourceSet?
     ): List<SubpluginOption> {
-        if (!SamWithReceiverGradleSubplugin.isEnabled(project)) return emptyList()
-
         val samWithReceiverExtension = project.extensions.findByType(SamWithReceiverExtension::class.java) ?: return emptyList()
 
         val options = mutableListOf<SubpluginOption>()
