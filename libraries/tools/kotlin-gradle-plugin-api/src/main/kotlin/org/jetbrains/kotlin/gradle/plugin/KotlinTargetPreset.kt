@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.gradle.plugin
 
 import org.gradle.api.Named
 
+// Seems like a KotlinTargetFactory?
 interface KotlinTargetPreset<T: KotlinTarget> : Named {
     fun createTarget(name: String): T
 }

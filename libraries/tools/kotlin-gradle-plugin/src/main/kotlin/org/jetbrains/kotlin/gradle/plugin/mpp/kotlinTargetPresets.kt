@@ -14,10 +14,16 @@ import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.tasks.AndroidTasksProvider
 import org.jetbrains.kotlin.gradle.tasks.KotlinTasksProvider
 
+// should they be open?
+
+// may be a good idea to scope presets into one object/class
 abstract class KotlinOnlyTargetPreset<T : KotlinCompilation>(
     protected val project: Project,
+    // internal api, does not seem to be used
     private val instantiator: Instantiator,
+    // internal api, does not seem to be used
     private val fileResolver: FileResolver,
+    // internal api
     private val buildOutputCleanupRegistry: BuildOutputCleanupRegistry,
     protected val kotlinPluginVersion: String
 ) : KotlinTargetPreset<KotlinOnlyTarget<T>> {

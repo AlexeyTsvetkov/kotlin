@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.gradle.plugin.source.KotlinSourceSet
 interface KotlinCompilation: Named, HasAttributes, HasKotlinDependencies {
     val target: KotlinTarget
 
+    // seems redundant
     val compilationName: String
 
     val kotlinSourceSets: Set<KotlinSourceSet>
