@@ -64,9 +64,9 @@ class KotlinChunk internal constructor(val context: KotlinCompileContext, val ta
                 return true
             }
 
-            if (target.initialLocalCacheAttributesDiff.status == CacheStatus.INVALID) {
-                context.testingLogger?.invalidOrUnusedCache(this, null, target.initialLocalCacheAttributesDiff)
-                KotlinBuilder.LOG.info("$target cache is invalid ${target.initialLocalCacheAttributesDiff}, rebuilding $this")
+            if (target.localCacheVersionManager.status == CacheStatus.INVALID) {
+                //context.testingLogger?.invalidOrUnusedCache(this, null, target.initialLocalCacheAttributesDiff)
+                //KotlinBuilder.LOG.info("$target cache is invalid ${target.initialLocalCacheAttributesDiff}, rebuilding $this")
                 return true
             }
         }
@@ -84,7 +84,7 @@ class KotlinChunk internal constructor(val context: KotlinCompileContext, val ta
         context.ensureLookupsCacheAttributesSaved()
 
         targets.forEach {
-            it.initialLocalCacheAttributesDiff.saveExpectedIfNeeded()
+            it.localCacheVersionManager.saveExpectedIfNeeded()
         }
 
         val serializedMetaInfo = representativeTarget.buildMetaInfoFactory.serializeToString(compilerArguments)

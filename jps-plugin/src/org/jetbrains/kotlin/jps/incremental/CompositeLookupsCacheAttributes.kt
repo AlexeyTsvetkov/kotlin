@@ -5,9 +5,9 @@
 
 package org.jetbrains.kotlin.jps.incremental
 
-import org.jetbrains.annotations.TestOnly
 import org.jetbrains.kotlin.incremental.storage.version.CacheAttributesManager
 import org.jetbrains.kotlin.incremental.storage.version.CacheVersion
+import org.jetbrains.kotlin.incremental.storage.version.CacheVersionManager
 import org.jetbrains.kotlin.incremental.storage.version.lookupsCacheVersionManager
 import java.io.File
 import java.io.IOException
@@ -18,38 +18,23 @@ import java.io.IOException
  *
  * TODO(1.2.80): got rid of shared lookup cache, replace with individual lookup cache for each compiler
  */
-class CompositeLookupsCacheAttributesManager(
-    rootPath: File,
-    expectedComponents: Set<String>
-) : CacheAttributesManager<CompositeLookupsCacheAttributes> {
-    @get:TestOnly
-    val versionManager = lookupsCacheVersionManager(
-        rootPath,
-        expectedComponents.isNotEmpty()
-    )
-
-    @get:TestOnly
-    val actualComponentsFile = File(rootPath, "components.txt")
-
-    override val expected: CompositeLookupsCacheAttributes? =
-        if (expectedComponents.isEmpty()) null
-        else CompositeLookupsCacheAttributes(versionManager.expected!!.version, expectedComponents)
-
-    override fun loadActual(): CompositeLookupsCacheAttributes? {
-        val version = versionManager.loadActual() ?: return null
-
-        if (!actualComponentsFile.exists()) return null
-
-        val components = try {
-            actualComponentsFile.readLines().toSet()
-        } catch (e: IOException) {
-            return null
-        }
-
-        return CompositeLookupsCacheAttributes(version.version, components)
-    }
+class CompositeLookupsCacheAttributesManager private constructor(
+    private val actualComponentsFile: File,
+    expectedComponents: Set<String>,
+    val versionManager: CacheVersionManager
+) : CacheAttributesManager<CompositeLookupsCacheAttributes>(
+    expected = loadExpected(expectedComponents, versionManager),
+    actual = loadActual(actualComponentsFile, versionManager)
+) {
+    constructor(rootPath: File, expectedComponents: Set<String>) :
+            this(
+                File(rootPath, "components.txt"),
+                expectedComponents,
+                lookupsCacheVersionManager(rootPath, expectedComponents.isNotEmpty())
+            )
 
     override fun writeActualVersion(values: CompositeLookupsCacheAttributes?) {
+        super.writeActualVersion(values)
         if (values == null) {
             versionManager.writeActualVersion(null)
             actualComponentsFile.delete()
@@ -65,6 +50,31 @@ class CompositeLookupsCacheAttributesManager(
         // cache can be reused when all required (expected) components are present
         // (components that are not required anymore are not not interfere)
         return actual.version == expected.version && actual.components.containsAll(expected.components)
+    }
+
+    companion object {
+        private fun loadExpected(
+            expectedComponents: Set<String>,
+            versionManager: CacheVersionManager
+        ): CompositeLookupsCacheAttributes? {
+            if (expectedComponents.isEmpty()) return null
+
+            return CompositeLookupsCacheAttributes(versionManager.expected!!.version, expectedComponents)
+        }
+
+        private fun loadActual(actualComponentsFile: File, versionManager: CacheVersionManager): CompositeLookupsCacheAttributes? {
+            val version = versionManager.actual ?: return null
+
+            if (!actualComponentsFile.exists()) return null
+
+            val components = try {
+                actualComponentsFile.readLines().toSet()
+            } catch (e: IOException) {
+                return null
+            }
+
+            return CompositeLookupsCacheAttributes(version.version, components)
+        }
     }
 }
 

@@ -11,9 +11,7 @@ import org.jetbrains.jps.incremental.FSOperations
 import org.jetbrains.jps.incremental.GlobalContextKey
 import org.jetbrains.jps.incremental.fs.CompilationRound
 import org.jetbrains.kotlin.incremental.LookupSymbol
-import org.jetbrains.kotlin.incremental.storage.version.CacheAttributesDiff
 import org.jetbrains.kotlin.incremental.storage.version.CacheStatus
-import org.jetbrains.kotlin.incremental.storage.version.loadDiff
 import org.jetbrains.kotlin.jps.incremental.*
 import org.jetbrains.kotlin.jps.targets.KotlinTargetsIndex
 import org.jetbrains.kotlin.jps.targets.KotlinTargetsIndexBuilder
@@ -61,8 +59,6 @@ class KotlinCompileContext(val jpsContext: CompileContext) {
 
     val lookupsCacheAttributesManager: CompositeLookupsCacheAttributesManager = makeLookupsCacheAttributesManager()
 
-    val initialLookupsCacheStateDiff: CacheAttributesDiff<*> = loadLookupsCacheStateDiff()
-
     val shouldCheckCacheVersions = System.getProperty(KotlinBuilder.SKIP_CACHE_VERSION_CHECK_PROPERTY) == null
 
     val hasKotlinMarker = HasKotlinMarker(dataManager)
@@ -75,6 +71,22 @@ class KotlinCompileContext(val jpsContext: CompileContext) {
     val rebuildAfterCacheVersionChanged = RebuildAfterCacheVersionChangeMarker(dataManager)
 
     var rebuildingAllKotlin = false
+
+    init {
+        if (lookupsCacheAttributesManager.status == CacheStatus.VALID) {
+            // try to perform a lookup
+            // request rebuild if storage is corrupted
+            try {
+                dataManager.withLookupStorage {
+                    it.get(LookupSymbol("<#NAME#>", "<#SCOPE#>"))
+                }
+            } catch (e: Exception) {
+                jpsReportInternalBuilderError(jpsContext, Error("Lookup storage is corrupted, probe failed: ${e.message}", e))
+                markAllKotlinForRebuild("Lookup storage is corrupted")
+                lookupsCacheAttributesManager.writeActualVersion(null)
+            }
+        }
+    }
 
     private fun makeLookupsCacheAttributesManager(): CompositeLookupsCacheAttributesManager {
         val expectedLookupsCacheComponents = mutableSetOf<String>()
@@ -91,26 +103,6 @@ class KotlinCompileContext(val jpsContext: CompileContext) {
         return CompositeLookupsCacheAttributesManager(lookupsCacheRootPath, expectedLookupsCacheComponents)
     }
 
-    private fun loadLookupsCacheStateDiff(): CacheAttributesDiff<CompositeLookupsCacheAttributes> {
-        val diff = lookupsCacheAttributesManager.loadDiff()
-
-        if (diff.status == CacheStatus.VALID) {
-            // try to perform a lookup
-            // request rebuild if storage is corrupted
-            try {
-                dataManager.withLookupStorage {
-                    it.get(LookupSymbol("<#NAME#>", "<#SCOPE#>"))
-                }
-            } catch (e: Exception) {
-                jpsReportInternalBuilderError(jpsContext, Error("Lookup storage is corrupted, probe failed: ${e.message}", e))
-                markAllKotlinForRebuild("Lookup storage is corrupted")
-                return diff.copy(actual = null)
-            }
-        }
-
-        return diff
-    }
-
     fun hasKotlin() = targetsIndex.chunks.any { chunk ->
         chunk.targets.any { target ->
             hasKotlinMarker[target] == true
@@ -118,13 +110,13 @@ class KotlinCompileContext(val jpsContext: CompileContext) {
     }
 
     fun checkCacheVersions() {
-        when (initialLookupsCacheStateDiff.status) {
+        when (lookupsCacheAttributesManager.status) {
             CacheStatus.INVALID -> {
                 // global cache needs to be rebuilt
 
-                testingLogger?.invalidOrUnusedCache(null, null, initialLookupsCacheStateDiff)
+                //TODO testingLogger?.invalidOrUnusedCache(null, null, initialLookupsCacheStateDiff)
 
-                if (initialLookupsCacheStateDiff.actual != null) {
+                if (lookupsCacheAttributesManager.actual != null) {
                     markAllKotlinForRebuild("Kotlin incremental cache settings or format was changed")
                     clearLookupCache()
                 } else {
@@ -133,8 +125,8 @@ class KotlinCompileContext(val jpsContext: CompileContext) {
             }
             CacheStatus.VALID -> Unit
             CacheStatus.SHOULD_BE_CLEARED -> {
-                jpsContext.testingContext?.buildLogger?.invalidOrUnusedCache(null, null, initialLookupsCacheStateDiff)
-                KotlinBuilder.LOG.info("Removing global cache as it is not required anymore: $initialLookupsCacheStateDiff")
+                // TODO jpsContext.testingContext?.buildLogger?.invalidOrUnusedCache(null, null, initialLookupsCacheStateDiff)
+                // TODO KotlinBuilder.LOG.info("Removing global cache as it is not required anymore: $initialLookupsCacheStateDiff")
 
                 clearAllCaches()
             }
@@ -149,7 +141,7 @@ class KotlinCompileContext(val jpsContext: CompileContext) {
      */
     fun ensureLookupsCacheAttributesSaved() {
         if (lookupAttributesSaved.compareAndSet(false, true)) {
-            initialLookupsCacheStateDiff.saveExpectedIfNeeded()
+            lookupsCacheAttributesManager.saveExpectedIfNeeded()
         }
     }
 
@@ -207,7 +199,7 @@ class KotlinCompileContext(val jpsContext: CompileContext) {
     private fun clearLookupCache() {
         KotlinBuilder.LOG.info("Clearing lookup cache")
         dataManager.cleanLookupStorage(KotlinBuilder.LOG)
-        initialLookupsCacheStateDiff.saveExpectedIfNeeded()
+        lookupsCacheAttributesManager.saveExpectedIfNeeded()
     }
 
     fun cleanupCaches() {
@@ -215,11 +207,11 @@ class KotlinCompileContext(val jpsContext: CompileContext) {
 
         targetsIndex.chunks.forEach { chunk ->
             chunk.targets.forEach { target ->
-                if (target.initialLocalCacheAttributesDiff.status == CacheStatus.SHOULD_BE_CLEARED) {
-                    KotlinBuilder.LOG.info(
-                        "$target caches is cleared as not required anymore: ${target.initialLocalCacheAttributesDiff}"
+                if (target.localCacheVersionManager.status == CacheStatus.SHOULD_BE_CLEARED) {
+                    KotlinBuilder.LOG.info(""
+                        // todo "$target caches is cleared as not required anymore: ${target.initialLocalCacheAttributesDiff}"
                     )
-                    testingLogger?.invalidOrUnusedCache(null, target, target.initialLocalCacheAttributesDiff)
+                    testingLogger?.invalidOrUnusedCache(null, target)
                     dataManager.getKotlinCache(target)?.clean()
                 }
             }

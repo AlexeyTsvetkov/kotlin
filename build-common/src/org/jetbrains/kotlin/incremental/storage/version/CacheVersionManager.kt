@@ -21,36 +21,44 @@ class CacheVersionManager(
     @get:TestOnly
     val versionFile: File,
     expectedOwnVersion: Int?
-) : CacheAttributesManager<CacheVersion> {
-    override val expected: CacheVersion? =
-        if (expectedOwnVersion == null) null
-        else {
-            val metadata = JvmMetadataVersion.INSTANCE
-            val bytecode = JvmBytecodeBinaryVersion.INSTANCE
-
-            CacheVersion(
-                expectedOwnVersion * 1000000 +
-                        bytecode.major * 10000 + bytecode.minor * 100 +
-                        metadata.major * 1000 + metadata.minor
-            )
-        }
-
-    override fun loadActual(): CacheVersion? =
-        if (!versionFile.exists()) null
-        else try {
-            CacheVersion(versionFile.readText().toInt())
-        } catch (e: NumberFormatException) {
-            null
-        } catch (e: IOException) {
-            null
-        }
+) : CacheAttributesManager<CacheVersion>(
+    expected = loadExpected(ownVersion = expectedOwnVersion),
+    actual = loadActual(versionFile)
+) {
+    override fun isCompatible(actual: CacheVersion, expected: CacheVersion): Boolean =
+        actual == expected
 
     override fun writeActualVersion(values: CacheVersion?) {
+        super.writeActualVersion(values)
         if (values == null) versionFile.delete()
         else {
             versionFile.parentFile.mkdirs()
             versionFile.writeText(values.version.toString())
         }
+    }
+
+    companion object {
+        private fun loadExpected(ownVersion: Int?): CacheVersion? =
+            ownVersion?.let { ownVersion ->
+                val metadata = JvmMetadataVersion.INSTANCE
+                val bytecode = JvmBytecodeBinaryVersion.INSTANCE
+
+                CacheVersion(
+                    ownVersion * 1000000 +
+                            bytecode.major * 10000 + bytecode.minor * 100 +
+                            metadata.major * 1000 + metadata.minor
+                )
+            }
+
+        private fun loadActual(versionFile: File): CacheVersion? =
+            if (!versionFile.exists()) null
+            else try {
+                CacheVersion(versionFile.readText().toInt())
+            } catch (e: NumberFormatException) {
+                null
+            } catch (e: IOException) {
+                null
+            }
     }
 }
 

@@ -29,7 +29,6 @@ import org.jetbrains.kotlin.incremental.components.ExpectActualTracker
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.incremental.parsing.classesFqNames
 import org.jetbrains.kotlin.incremental.storage.version.CacheVersionManager
-import org.jetbrains.kotlin.incremental.storage.version.saveIfNeeded
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
 import java.io.File
@@ -270,7 +269,7 @@ abstract class IncrementalCompilerRunner<
         processChangesAfterBuild(compilationMode, currentBuildInfo, dirtyData)
 
         if (exitCode == ExitCode.OK) {
-            cachesVersionManagers.forEach { it.saveIfNeeded() }
+            cachesVersionManagers.forEach { it.saveExpectedIfNeeded() }
         }
 
         return exitCode
