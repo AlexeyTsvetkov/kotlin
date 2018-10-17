@@ -20,6 +20,7 @@ import org.gradle.api.Project
 import org.gradle.api.invocation.Gradle
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.jvm.tasks.Jar
+import org.gradle.workers.WorkerExecutor
 import org.jetbrains.kotlin.build.JvmSourceRoot
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
@@ -60,7 +61,7 @@ const val EXISTING_SESSION_FILE_PREFIX = "Existing session-is-alive flag file: "
 const val DELETED_SESSION_FILE_PREFIX = "Deleted session-is-alive flag file: "
 const val COULD_NOT_CONNECT_TO_DAEMON_MESSAGE = "Could not connect to Kotlin compile daemon"
 
-internal class GradleCompilerRunner(private val project: Project) : KotlinCompilerRunner<GradleCompilerEnvironment>() {
+internal open class GradleCompilerRunner(private val project: Project) : KotlinCompilerRunner<GradleCompilerEnvironment>() {
     override val log = GradleKotlinLogger(project.logger)
 
     // used only for process launching so far, but implements unused proper contract
@@ -456,4 +457,63 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
         internal fun sessionsDir(project: Project): File =
             File(File(project.rootProject.buildDir, "kotlin"), "sessions")
     }
+}
+
+internal class GradleCompilerRunnerWithWorkers(
+    project: Project, private val workersExecutor: WorkerExecutor
+) : GradleCompilerRunner(project) {
+    fun foo() {
+        workersExecutor.submit()
+    }
+}
+
+private class CompileWithDaemon() : Runnable {
+    override fun run() {
+        val connection =
+            try {
+                getDaemonConnection(environment)
+            } catch (e: Throwable) {
+                log.warn("Caught an exception trying to connect to Kotlin Daemon")
+                e.printStackTrace()
+                null
+            }
+        if (connection == null) {
+            if (environment is GradleIncrementalCompilerEnvironment) {
+                log.warn("Could not perform incremental compilation: $COULD_NOT_CONNECT_TO_DAEMON_MESSAGE")
+            } else {
+                log.warn(COULD_NOT_CONNECT_TO_DAEMON_MESSAGE)
+            }
+            return null
+        }
+
+        val (daemon, sessionId) = connection
+        val targetPlatform = when (compilerClassName) {
+            K2JVM_COMPILER -> CompileService.TargetPlatform.JVM
+            K2JS_COMPILER -> CompileService.TargetPlatform.JS
+            K2METADATA_COMPILER -> CompileService.TargetPlatform.METADATA
+            else -> throw IllegalArgumentException("Unknown compiler type $compilerClassName")
+        }
+        val exitCode = try {
+            val res = if (environment is GradleIncrementalCompilerEnvironment) {
+                incrementalCompilationWithDaemon(daemon, sessionId, targetPlatform, environment)
+            } else {
+                nonIncrementalCompilationWithDaemon(daemon, sessionId, targetPlatform, environment)
+            }
+            exitCodeFromProcessExitCode(res.get())
+        } catch (e: Throwable) {
+            log.warn("Compilation with Kotlin compile daemon was not successful")
+            e.printStackTrace()
+            null
+        }
+        // todo: can we clear cache on the end of session?
+        // often source of the NoSuchObjectException and UnmarshalException, probably caused by the failed/crashed/exited daemon
+        // TODO: implement a proper logic to avoid remote calls in such cases
+        try {
+            daemon.clearJarCache()
+        } catch (e: RemoteException) {
+            log.warn("Unable to clear jar cache after compilation, maybe daemon is already down: $e")
+        }
+        logFinish(DAEMON_EXECUTION_STRATEGY)
+    }
+
 }
