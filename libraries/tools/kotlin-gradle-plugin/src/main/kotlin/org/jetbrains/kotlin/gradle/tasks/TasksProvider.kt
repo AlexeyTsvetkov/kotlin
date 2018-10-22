@@ -23,22 +23,26 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.defaultSourceSetName
 import org.jetbrains.kotlin.gradle.plugin.sources.applyLanguageSettingsToKotlinTask
 
 internal open class KotlinTasksProvider(val targetName: String) {
+    protected open val jvmTaskClass: Class<out KotlinCompile> get() = KotlinCompile::class.java
+    protected open val jsTaskClass: Class<out Kotlin2JsCompile> get() = Kotlin2JsCompile::class.java
+    protected open val commonTaskClass: Class<out KotlinCompileCommon> get() = KotlinCompileCommon::class.java
+
     open fun createKotlinJVMTask(
         project: Project,
         name: String,
         compilation: KotlinCompilation
     ): KotlinCompile =
-        project.tasks.create(name, KotlinCompile::class.java).apply {
+        project.tasks.create(name, jvmTaskClass).apply {
             configure(this, project, compilation)
         }
 
     fun createKotlinJSTask(project: Project, name: String, compilation: KotlinCompilation): Kotlin2JsCompile =
-        project.tasks.create(name, Kotlin2JsCompile::class.java).apply {
+        project.tasks.create(name, jsTaskClass).apply {
             configure(this, project, compilation)
         }
 
     fun createKotlinCommonTask(project: Project, name: String, compilation: KotlinCompilation): KotlinCompileCommon =
-        project.tasks.create(name, KotlinCompileCommon::class.java).apply {
+        project.tasks.create(name, commonTaskClass).apply {
             configure(this, project, compilation)
         }
 
@@ -62,6 +66,12 @@ internal open class KotlinTasksProvider(val targetName: String) {
 
     protected open val taskToFriendTaskMapper: TaskToFriendTaskMapper =
         RegexTaskToFriendTaskMapper.Default(targetName)
+}
+
+internal class MppTaskProvider(targetName: String) : KotlinTasksProvider(targetName) {
+    override val jvmTaskClass get() = KotlinCompileWithWorkers::class.java
+    override val jsTaskClass get() = Kotlin2JsCompileWithWorkers::class.java
+    override val commonTaskClass get() = KotlinCompileCommonWithWorkers::class.java
 }
 
 internal class AndroidTasksProvider(targetName: String) : KotlinTasksProvider(targetName) {

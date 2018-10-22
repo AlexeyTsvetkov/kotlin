@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.plugin.sources.applyLanguageSettingsToKotlinTask
 import org.jetbrains.kotlin.gradle.tasks.AndroidTasksProvider
 import org.jetbrains.kotlin.gradle.tasks.KotlinTasksProvider
+import org.jetbrains.kotlin.gradle.tasks.MppTaskProvider
 import org.jetbrains.kotlin.gradle.utils.NativeCompilerDownloader
 import org.jetbrains.kotlin.konan.KonanVersion
 import org.jetbrains.kotlin.konan.target.HostManager
@@ -86,7 +87,7 @@ class KotlinMetadataTargetPreset(
         KotlinCommonSourceSetProcessor(
             project,
             compilation,
-            KotlinTasksProvider(compilation.target.targetName),
+            MppTaskProvider(compilation.target.targetName),
             kotlinPluginVersion
         )
 
@@ -132,7 +133,7 @@ class KotlinJvmTargetPreset(
         get() = KotlinPlatformType.jvm
 
     override fun buildCompilationProcessor(compilation: KotlinJvmCompilation): KotlinSourceSetProcessor<*> =
-        Kotlin2JvmSourceSetProcessor(project, KotlinTasksProvider(compilation.target.targetName), compilation, kotlinPluginVersion)
+        Kotlin2JvmSourceSetProcessor(project, MppTaskProvider(compilation.target.targetName), compilation, kotlinPluginVersion)
 
     companion object {
         const val PRESET_NAME = "jvm"
@@ -159,7 +160,7 @@ class KotlinJsTargetPreset(
         get() = KotlinPlatformType.js
 
     override fun buildCompilationProcessor(compilation: KotlinJsCompilation): KotlinSourceSetProcessor<*> =
-        Kotlin2JsSourceSetProcessor(project, KotlinTasksProvider(compilation.target.targetName), compilation, kotlinPluginVersion)
+        Kotlin2JsSourceSetProcessor(project, MppTaskProvider(compilation.target.targetName), compilation, kotlinPluginVersion)
 
     companion object {
         const val PRESET_NAME = "js"
@@ -206,7 +207,7 @@ class KotlinJvmWithJavaTargetPreset(
         }
 
         AbstractKotlinPlugin.configureTarget(target) { compilation ->
-            Kotlin2JvmSourceSetProcessor(project, KotlinTasksProvider(name), compilation, kotlinPluginVersion)
+            Kotlin2JvmSourceSetProcessor(project, MppTaskProvider(name), compilation, kotlinPluginVersion)
         }
 
         target.compilations.all { compilation ->

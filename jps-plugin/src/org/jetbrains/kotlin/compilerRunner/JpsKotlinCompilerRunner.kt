@@ -105,7 +105,7 @@ class JpsKotlinCompilerRunner : KotlinCompilerRunner<JpsCompilerEnvironment>() {
         arguments.destination = arguments.destination ?: destination
 
         withCompilerSettings(compilerSettings) {
-            runCompiler(K2METADATA_COMPILER, arguments, environment)
+            runCompiler(KotlinCompilerClass.K2METADATA_COMPILER, arguments, environment)
         }
     }
 
@@ -119,7 +119,7 @@ class JpsKotlinCompilerRunner : KotlinCompilerRunner<JpsCompilerEnvironment>() {
         val arguments = mergeBeans(commonArguments, XmlSerializerUtil.createCopy(k2jvmArguments))
         setupK2JvmArguments(moduleFile, arguments)
         withCompilerSettings(compilerSettings) {
-            runCompiler(K2JVM_COMPILER, arguments, environment)
+            runCompiler(KotlinCompilerClass.K2JVM_COMPILER, arguments, environment)
         }
     }
 
@@ -149,7 +149,7 @@ class JpsKotlinCompilerRunner : KotlinCompilerRunner<JpsCompilerEnvironment>() {
         log.debug("K2JS: arguments after setup" + ArgumentUtils.convertArgumentsToStringList(arguments))
 
         withCompilerSettings(compilerSettings) {
-            runCompiler(K2JS_COMPILER, arguments, environment)
+            runCompiler(KotlinCompilerClass.K2JS_COMPILER, arguments, environment)
         }
     }
 
@@ -172,9 +172,9 @@ class JpsKotlinCompilerRunner : KotlinCompilerRunner<JpsCompilerEnvironment>() {
         environment: JpsCompilerEnvironment
     ): ExitCode? {
         val targetPlatform = when (compilerClassName) {
-            K2JVM_COMPILER -> CompileService.TargetPlatform.JVM
-            K2JS_COMPILER -> CompileService.TargetPlatform.JS
-            K2METADATA_COMPILER -> CompileService.TargetPlatform.METADATA
+            KotlinCompilerClass.K2JVM_COMPILER -> CompileService.TargetPlatform.JVM
+            KotlinCompilerClass.K2JS_COMPILER -> CompileService.TargetPlatform.JS
+            KotlinCompilerClass.K2METADATA_COMPILER -> CompileService.TargetPlatform.METADATA
             else -> throw IllegalArgumentException("Unknown compiler type $compilerClassName")
         }
         val compilerMode = CompilerMode.JPS_COMPILER

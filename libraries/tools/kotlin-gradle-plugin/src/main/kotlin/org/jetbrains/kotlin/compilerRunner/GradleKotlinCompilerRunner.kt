@@ -20,6 +20,8 @@ import org.gradle.api.Project
 import org.gradle.api.invocation.Gradle
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.jvm.tasks.Jar
+import org.gradle.workers.IsolationMode
+import org.gradle.workers.WorkerExecutor
 import org.jetbrains.kotlin.build.JvmSourceRoot
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
@@ -32,6 +34,9 @@ import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.MessageRenderer
 import org.jetbrains.kotlin.config.Services
 import org.jetbrains.kotlin.daemon.client.CompileServiceSession
+import org.jetbrains.kotlin.daemon.client.DaemonReportMessage
+import org.jetbrains.kotlin.daemon.client.DaemonReportingTargets
+import org.jetbrains.kotlin.daemon.client.KotlinCompilerClient
 import org.jetbrains.kotlin.daemon.common.*
 import org.jetbrains.kotlin.gradle.incremental.GRADLE_CACHE_VERSION
 import org.jetbrains.kotlin.gradle.incremental.GRADLE_CACHE_VERSION_FILE_NAME
@@ -48,6 +53,10 @@ import java.io.PrintStream
 import java.lang.ref.WeakReference
 import java.net.URLClassLoader
 import java.rmi.RemoteException
+import java.util.ArrayList
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import kotlin.concurrent.thread
 
 internal const val KOTLIN_COMPILER_EXECUTION_STRATEGY_PROPERTY = "kotlin.compiler.execution.strategy"
 internal const val DAEMON_EXECUTION_STRATEGY = "daemon"
@@ -60,7 +69,7 @@ const val EXISTING_SESSION_FILE_PREFIX = "Existing session-is-alive flag file: "
 const val DELETED_SESSION_FILE_PREFIX = "Deleted session-is-alive flag file: "
 const val COULD_NOT_CONNECT_TO_DAEMON_MESSAGE = "Could not connect to Kotlin compile daemon"
 
-internal class GradleCompilerRunner(private val project: Project) : KotlinCompilerRunner<GradleCompilerEnvironment>() {
+internal open class GradleCompilerRunner(private val project: Project) : KotlinCompilerRunner<GradleCompilerEnvironment>() {
     override val log = GradleKotlinLogger(project.logger)
 
     // used only for process launching so far, but implements unused proper contract
@@ -91,7 +100,7 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
         }
     }
 
-    fun runJvmCompiler(
+    open fun runJvmCompiler(
         sourcesToCompile: List<File>,
         commonSources: List<File>,
         javaSourceRoots: Iterable<File>,
@@ -116,7 +125,7 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
         }
 
         try {
-            return runCompiler(K2JVM_COMPILER, args, environment)
+            return runCompiler(KotlinCompilerClass.K2JVM_COMPILER, args, environment)
         } finally {
             if (System.getProperty(DELETE_MODULE_FILE_PROPERTY) != "false") {
                 buildFile.delete()
@@ -124,7 +133,7 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
         }
     }
 
-    fun runJsCompiler(
+    open fun runJsCompiler(
         kotlinSources: List<File>,
         kotlinCommonSources: List<File>,
         args: K2JSCompilerArguments,
@@ -132,16 +141,16 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
     ): ExitCode {
         args.freeArgs += kotlinSources.map { it.absolutePath }
         args.commonSources = kotlinCommonSources.map { it.absolutePath }.toTypedArray()
-        return runCompiler(K2JS_COMPILER, args, environment)
+        return runCompiler(KotlinCompilerClass.K2JS_COMPILER, args, environment)
     }
 
-    fun runMetadataCompiler(
+    open fun runMetadataCompiler(
         kotlinSources: List<File>,
         args: K2MetadataCompilerArguments,
         environment: GradleCompilerEnvironment
     ): ExitCode {
         args.freeArgs += kotlinSources.map { it.absolutePath }
-        return runCompiler(K2METADATA_COMPILER, args, environment)
+        return runCompiler(KotlinCompilerClass.K2METADATA_COMPILER, args, environment)
     }
 
     override fun compileWithDaemonOrFallback(
@@ -209,9 +218,9 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
 
         val (daemon, sessionId) = connection
         val targetPlatform = when (compilerClassName) {
-            K2JVM_COMPILER -> CompileService.TargetPlatform.JVM
-            K2JS_COMPILER -> CompileService.TargetPlatform.JS
-            K2METADATA_COMPILER -> CompileService.TargetPlatform.METADATA
+            KotlinCompilerClass.K2JVM_COMPILER -> CompileService.TargetPlatform.JVM
+            KotlinCompilerClass.K2JS_COMPILER -> CompileService.TargetPlatform.JS
+            KotlinCompilerClass.K2METADATA_COMPILER -> CompileService.TargetPlatform.METADATA
             else -> throw IllegalArgumentException("Unknown compiler type $compilerClassName")
         }
         val exitCode = try {
@@ -351,6 +360,73 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
     }
 
     companion object {
+        internal fun doGetDaemonConnection(
+            clientIsAliveFlagFile: File,
+            sessionIsAliveFlagFile: File,
+            compilerFullClasspath: List<File>
+        ): CompileServiceSession? {
+            synchronized(this) {
+                val compilerId = CompilerId.makeCompilerId(compilerFullClasspath)
+                return newDaemonConnection(compilerId, clientIsAliveFlagFile, sessionIsAliveFlagFile)
+            }
+        }
+
+        @Synchronized
+        protected fun newDaemonConnection(
+            compilerId: CompilerId,
+            clientAliveFlagFile: File,
+            sessionAliveFlagFile: File,
+            daemonOptions: DaemonOptions = configureDaemonOptions(),
+            additionalJvmParams: Array<String> = arrayOf()
+        ): CompileServiceSession? {
+            val daemonJVMOptions = configureDaemonJVMOptions(
+                additionalParams = *additionalJvmParams,
+                inheritMemoryLimits = true,
+                inheritOtherJvmOptions = false,
+                inheritAdditionalProperties = true
+            )
+
+            val daemonReportMessages = ArrayList<DaemonReportMessage>()
+            val daemonReportingTargets = DaemonReportingTargets(messages = daemonReportMessages)
+
+            val profiler = if (daemonOptions.reportPerf) WallAndThreadAndMemoryTotalProfiler(withGC = false) else DummyProfiler()
+
+            val connection = profiler.withMeasure(null) {
+                KotlinCompilerClient.connectAndLease(compilerId,
+                                                     clientAliveFlagFile,
+                                                     daemonJVMOptions,
+                                                     daemonOptions,
+                                                     daemonReportingTargets,
+                                                     autostart = true,
+                                                     leaseSession = true,
+                                                     sessionAliveFlagFile = sessionAliveFlagFile)
+            }
+
+            if (connection == null
+                //|| log.isDebugEnabled
+            ) {
+                for (message in daemonReportMessages) {
+                    val severity = when(message.category) {
+                        DaemonReportCategory.DEBUG -> CompilerMessageSeverity.INFO
+                        DaemonReportCategory.INFO -> CompilerMessageSeverity.INFO
+                        DaemonReportCategory.EXCEPTION -> CompilerMessageSeverity.EXCEPTION
+                    }
+                    //environment.messageCollector.report(severity, message.message)
+                }
+            }
+
+            fun reportTotalAndThreadPerf(message: String, daemonOptions: DaemonOptions, messageCollector: MessageCollector, profiler: Profiler) {
+                if (daemonOptions.reportPerf) {
+                    fun Long.ms() = TimeUnit.NANOSECONDS.toMillis(this)
+                    val counters = profiler.getTotalCounters()
+                    messageCollector.report(CompilerMessageSeverity.INFO, "PERF: $message ${counters.time.ms()} ms, thread ${counters.threadTime.ms()}")
+                }
+            }
+
+            reportTotalAndThreadPerf("Daemon connect", daemonOptions, MessageCollector.NONE, profiler)
+            return connection
+        }
+
         @Volatile
         private var cachedGradle = WeakReference<Gradle>(null)
         @Volatile
@@ -456,4 +532,122 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
         internal fun sessionsDir(project: Project): File =
             File(File(project.rootProject.buildDir, "kotlin"), "sessions")
     }
+}
+
+internal class GradleCompilerRunnerWithWorkers(
+    project: Project, private val workersExecutor: WorkerExecutor
+) : GradleCompilerRunner(project) {
+    override fun runJvmCompiler(
+        sourcesToCompile: List<File>,
+        commonSources: List<File>,
+        javaSourceRoots: Iterable<File>,
+        javaPackagePrefix: String?,
+        args: K2JVMCompilerArguments,
+        environment: GradleCompilerEnvironment
+    ): ExitCode {
+        workersExecutor.submit(CompileWithDaemon::class.java) { config ->
+            config.isolationMode = IsolationMode.NONE
+        }
+        //workersExecutor.await()
+        return ExitCode.OK
+    }
+
+    override fun runJsCompiler(
+        kotlinSources: List<File>,
+        kotlinCommonSources: List<File>,
+        args: K2JSCompilerArguments,
+        environment: GradleCompilerEnvironment
+    ): ExitCode {
+        workersExecutor.submit(CompileWithDaemon::class.java) { config ->
+            config.isolationMode = IsolationMode.NONE
+        }
+        //workersExecutor.await()
+        return ExitCode.OK
+    }
+
+    override fun runMetadataCompiler(
+        kotlinSources: List<File>,
+        args: K2MetadataCompilerArguments,
+        environment: GradleCompilerEnvironment
+    ): ExitCode {
+        workersExecutor.submit(CompileWithDaemon::class.java) { config ->
+            config.isolationMode = IsolationMode.NONE
+        }
+        //workersExecutor.await()
+        return ExitCode.OK
+    }
+}
+
+private class CompileWithDaemon @Inject constructor(
+   /* private val clientIsAliveFlagFile: File,
+    private val sessionFlagFile: File,
+    private val compilerClassName: String,
+    private val compilerArgs: Array<String>,
+    private val isVerbose: Boolean*/
+) : Runnable {
+    override fun run() {
+        val x = (1..80000000).asSequence().sum()
+        println("Finished $x")
+        /*thread {
+            println((1..10000000).asSequence().sum())
+
+        }.run()*/
+        /*val connection =
+            try {
+                GradleCompilerRunner.doGetDaemonConnection(clientIsAliveFlagFile, sessionFlagFile)
+            } catch (e: Throwable) {
+                //log.warn("Caught an exception trying to connect to Kotlin Daemon")
+                e.printStackTrace()
+                null
+            }
+        if (connection == null) {
+            //log.warn(COULD_NOT_CONNECT_TO_DAEMON_MESSAGE)
+            return
+        }
+
+        val (daemon, sessionId) = connection
+        val targetPlatform = when (compilerClassName) {
+            KotlinCompilerClass.K2JVM_COMPILER -> CompileService.TargetPlatform.JVM
+            KotlinCompilerClass.K2JS_COMPILER -> CompileService.TargetPlatform.JS
+            KotlinCompilerClass.K2METADATA_COMPILER -> CompileService.TargetPlatform.METADATA
+            else -> throw IllegalArgumentException("Unknown compiler type $compilerClassName")
+        }
+        val exitCode = try {
+            val res = nonIncrementalCompilationWithDaemon(daemon, sessionId, targetPlatform)
+            exitCodeFromProcessExitCode(res.get())
+        } catch (e: Throwable) {
+            //log.warn("Compilation with Kotlin compile daemon was not successful")
+            //e.printStackTrace()
+            null
+        }
+        // todo: can we clear cache on the end of session?
+        // often source of the NoSuchObjectException and UnmarshalException, probably caused by the failed/crashed/exited daemon
+        // TODO: implement a proper logic to avoid remote calls in such cases
+        try {
+            daemon.clearJarCache()
+        } catch (e: RemoteException) {
+            //log.warn("Unable to clear jar cache after compilation, maybe daemon is already down: $e")
+        }*/
+        //logFinish(DAEMON_EXECUTION_STRATEGY)
+    }
+
+    /*private fun nonIncrementalCompilationWithDaemon(
+        daemon: CompileService,
+        sessionId: Int,
+        targetPlatform: CompileService.TargetPlatform
+    ): CompileService.CallResult<Int> {
+        val verbose = isVerbose
+        val compilationOptions = CompilationOptions(
+            compilerMode = CompilerMode.NON_INCREMENTAL_COMPILER,
+            targetPlatform = targetPlatform,
+            reportCategories = reportCategories(verbose),
+            reportSeverity = reportSeverity(verbose),
+            requestedCompilationResults = emptyArray()
+        )
+        val servicesFacade = GradleWorkerCompilerServicesFacadeImpl(MessageCollector.NONE)
+        val argsArray = ArgumentUtils.convertArgumentsToStringList(compilerArgs).toTypedArray()
+        return daemon.compile(sessionId, argsArray, compilationOptions, servicesFacade, compilationResults = null)
+    }*/
+
+
 }

@@ -42,10 +42,14 @@ interface KotlinLogger {
     val isDebugEnabled: Boolean
 }
 
+
+object KotlinCompilerClass {
+    const val K2JVM_COMPILER = "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler"
+    const val K2JS_COMPILER = "org.jetbrains.kotlin.cli.js.K2JSCompiler"
+    const val K2METADATA_COMPILER = "org.jetbrains.kotlin.cli.metadata.K2MetadataCompiler"
+}
+
 abstract class KotlinCompilerRunner<in Env : CompilerEnvironment> {
-    protected val K2JVM_COMPILER = "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler"
-    protected val K2JS_COMPILER = "org.jetbrains.kotlin.cli.js.K2JSCompiler"
-    protected val K2METADATA_COMPILER = "org.jetbrains.kotlin.cli.metadata.K2MetadataCompiler"
     protected val INTERNAL_ERROR = ExitCode.INTERNAL_ERROR.toString()
 
     protected abstract val log: KotlinLogger
@@ -57,7 +61,7 @@ abstract class KotlinCompilerRunner<in Env : CompilerEnvironment> {
             compilerId: CompilerId,
             clientAliveFlagFile: File,
             sessionAliveFlagFile: File,
-            environment: Env,
+            environment: Env?,
             daemonOptions: DaemonOptions = configureDaemonOptions(),
             additionalJvmParams: Array<String> = arrayOf()
     ): CompileServiceSession? {
@@ -91,7 +95,7 @@ abstract class KotlinCompilerRunner<in Env : CompilerEnvironment> {
                     DaemonReportCategory.INFO -> CompilerMessageSeverity.INFO
                     DaemonReportCategory.EXCEPTION -> CompilerMessageSeverity.EXCEPTION
                 }
-                environment.messageCollector.report(severity, message.message)
+                //environment.messageCollector.report(severity, message.message)
             }
         }
 
@@ -103,7 +107,7 @@ abstract class KotlinCompilerRunner<in Env : CompilerEnvironment> {
             }
         }
 
-        reportTotalAndThreadPerf("Daemon connect", daemonOptions, environment.messageCollector, profiler)
+        reportTotalAndThreadPerf("Daemon connect", daemonOptions, MessageCollector.NONE, profiler)
         return connection
     }
 

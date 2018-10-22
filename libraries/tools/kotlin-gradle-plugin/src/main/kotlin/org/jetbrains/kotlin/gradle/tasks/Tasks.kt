@@ -15,6 +15,8 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
+import org.gradle.workers.WorkerExecutor
+import org.gradle.workers.internal.DefaultWorkerExecutor
 import org.jetbrains.kotlin.build.DEFAULT_KOTLIN_SOURCE_FILES_EXTENSIONS
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
@@ -41,6 +43,7 @@ import org.jetbrains.kotlin.incremental.destinationAsFile
 import org.jetbrains.kotlin.utils.LibraryUtils
 import java.io.File
 import java.util.*
+import javax.inject.Inject
 import kotlin.properties.Delegates
 
 const val KOTLIN_BUILD_DIR_NAME = "kotlin"
@@ -248,6 +251,9 @@ abstract class AbstractKotlinCompile<T : CommonCompilerArguments>() : AbstractKo
         }
     }
 
+    internal open fun compilerRunner(): GradleCompilerRunner =
+        GradleCompilerRunner(project)
+
     override fun compile() {
         assert(false, { "unexpected call to compile()" })
     }
@@ -381,7 +387,7 @@ open class KotlinCompile : AbstractKotlinCompile<K2JVMCompilerArguments>(), Kotl
 
         val messageCollector = GradleMessageCollector(logger)
         val outputItemCollector = OutputItemsCollectorImpl()
-        val compilerRunner = GradleCompilerRunner(project)
+        val compilerRunner = compilerRunner()
 
         val environment = when {
             !incremental ->
@@ -469,6 +475,27 @@ open class KotlinCompile : AbstractKotlinCompile<K2JVMCompilerArguments>(), Kotl
 }
 
 @CacheableTask
+internal open class KotlinCompileWithWorkers @Inject constructor(
+    @Suppress("UnstableApiUsage") private val workerExecutor: WorkerExecutor
+) : KotlinCompile() {
+    override fun compilerRunner() = GradleCompilerRunnerWithWorkers(project, workerExecutor)
+}
+
+@CacheableTask
+internal open class Kotlin2JsCompileWithWorkers @Inject constructor(
+    @Suppress("UnstableApiUsage") private val workerExecutor: WorkerExecutor
+) : Kotlin2JsCompile() {
+    override fun compilerRunner() = GradleCompilerRunnerWithWorkers(project, workerExecutor)
+}
+
+@CacheableTask
+internal open class KotlinCompileCommonWithWorkers @Inject constructor(
+    @Suppress("UnstableApiUsage") private val workerExecutor: WorkerExecutor
+) : KotlinCompileCommon() {
+    override fun compilerRunner() = GradleCompilerRunnerWithWorkers(project, workerExecutor)
+}
+
+@CacheableTask
 open class Kotlin2JsCompile() : AbstractKotlinCompile<K2JSCompilerArguments>(), KotlinJsCompile {
     private val kotlinOptionsImpl = KotlinJsOptionsImpl()
 
@@ -538,7 +565,7 @@ open class Kotlin2JsCompile() : AbstractKotlinCompile<K2JSCompilerArguments>(), 
 
         val messageCollector = GradleMessageCollector(logger)
         val outputItemCollector = OutputItemsCollectorImpl()
-        val compilerRunner = GradleCompilerRunner(project)
+        val compilerRunner = compilerRunner()
 
         val environment = when {
             incremental -> {
