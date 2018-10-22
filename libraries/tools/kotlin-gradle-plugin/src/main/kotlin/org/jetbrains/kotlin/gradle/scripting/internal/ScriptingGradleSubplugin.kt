@@ -47,7 +47,7 @@ class ScriptingGradleSubplugin : Plugin<Project> {
                 project.tasks.withType(KotlinCompile::class.java) { task ->
                     if (task !is KaptGenerateStubsTask) {
                         val configuration = project.configurations.findByName(getConfigurationName(task.sourceSetName))
-                        if (configuration?.isEmpty == false) {
+                        if (configuration?.dependencies?.isEmpty() == false) {
                             javaPluginConvention.sourceSets.findByName(task.sourceSetName)?.let { sourceSet ->
                                 val extensionsTask =
                                     project.tasks.create(

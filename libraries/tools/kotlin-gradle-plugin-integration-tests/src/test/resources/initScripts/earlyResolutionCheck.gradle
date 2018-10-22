@@ -1,0 +1,15 @@
+def configured = false
+
+gradle.taskGraph.whenReady {
+    configured = true
+}
+
+allprojects {
+    configurations.all { conf ->
+        conf.incoming.beforeResolve {
+            if (!configured) {
+                throw new Exception("Configuration $conf is being resolved at configuration time.")
+            }
+        }
+    }
+}

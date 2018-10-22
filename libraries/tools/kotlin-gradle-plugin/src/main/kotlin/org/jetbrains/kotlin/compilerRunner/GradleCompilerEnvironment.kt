@@ -15,7 +15,7 @@ import java.io.File
 import java.net.URL
 
 internal open class GradleCompilerEnvironment(
-    val compilerClasspath: List<File>,
+    val compilerClasspath: Iterable<File>,
     messageCollector: GradleMessageCollector,
     outputItemsCollector: OutputItemsCollector,
     val compilerArgs: CommonCompilerArguments
@@ -30,7 +30,7 @@ internal open class GradleCompilerEnvironment(
 }
 
 internal class GradleIncrementalCompilerEnvironment(
-    compilerClasspath: List<File>,
+    compilerClasspath: Iterable<File>,
     val changedFiles: ChangedFiles,
     val workingDir: File,
     messageCollector: GradleMessageCollector,

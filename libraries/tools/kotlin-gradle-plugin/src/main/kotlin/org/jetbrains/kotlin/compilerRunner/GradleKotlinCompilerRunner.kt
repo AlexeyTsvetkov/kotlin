@@ -151,7 +151,7 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
     ): ExitCode {
         if (compilerArgs.version) {
             project.logger.lifecycle(
-                "Kotlin version " + loadCompilerVersion(environment.compilerClasspath) +
+                "Kotlin version " + loadCompilerVersion(environment.compilerClasspath.toList()) +
                         " (JRE " + System.getProperty("java.runtime.version") + ")"
             )
             compilerArgs.version = false

@@ -76,7 +76,7 @@ open class KotlinJsDce : AbstractKotlinCompileTool<K2JSDceArguments>(), KotlinJs
         val log = GradleKotlinLogger(project.logger)
         val allArgs = argsArray + outputDirArgs + inputFiles
         val exitCode = runToolInSeparateProcess(
-            allArgs, K2JSDce::class.java.name, computedCompilerClasspath,
+            allArgs, K2JSDce::class.java.name, computedCompilerClasspath.toList(),
             log, createLoggingMessageCollector(log)
         )
         throwGradleExceptionIfError(exitCode)

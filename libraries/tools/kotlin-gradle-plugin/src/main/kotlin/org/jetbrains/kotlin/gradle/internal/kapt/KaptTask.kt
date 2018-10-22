@@ -36,7 +36,7 @@ abstract class KaptTask : ConventionTask() {
 
     @get:Classpath
     @get:InputFiles
-    val compilerClasspath: List<File>
+    val compilerClasspath: FileCollection
         get() = kotlinCompileTask.computedCompilerClasspath
 
     @get:Internal
