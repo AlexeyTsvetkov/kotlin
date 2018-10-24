@@ -20,6 +20,8 @@ import org.gradle.api.Project
 import org.gradle.api.invocation.Gradle
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.jvm.tasks.Jar
+import org.gradle.workers.IsolationMode
+import org.gradle.workers.WorkerExecutor
 import org.jetbrains.kotlin.build.JvmSourceRoot
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
@@ -37,6 +39,7 @@ import org.jetbrains.kotlin.gradle.plugin.kotlinDebug
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.InspectClassesForMultiModuleIC
 import org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile
+import org.jetbrains.kotlin.gradle.tasks.throwGradleExceptionIfError
 import org.jetbrains.kotlin.gradle.utils.newTmpFile
 import org.jetbrains.kotlin.gradle.utils.relativeToRoot
 import org.jetbrains.kotlin.incremental.*
@@ -46,6 +49,9 @@ import java.io.PrintStream
 import java.lang.ref.WeakReference
 import java.net.URLClassLoader
 import java.rmi.RemoteException
+import javax.inject.Inject
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 internal const val KOTLIN_COMPILER_EXECUTION_STRATEGY_PROPERTY = "kotlin.compiler.execution.strategy"
 internal const val DAEMON_EXECUTION_STRATEGY = "daemon"
@@ -58,7 +64,7 @@ const val EXISTING_SESSION_FILE_PREFIX = "Existing session-is-alive flag file: "
 const val DELETED_SESSION_FILE_PREFIX = "Deleted session-is-alive flag file: "
 const val COULD_NOT_CONNECT_TO_DAEMON_MESSAGE = "Could not connect to Kotlin compile daemon"
 
-internal class GradleCompilerRunner(private val project: Project) : KotlinCompilerRunner<GradleCompilerEnvironment>() {
+internal open class GradleCompilerRunner(private val project: Project) : KotlinCompilerRunner<GradleCompilerEnvironment>() {
     override val log = GradleKotlinLogger(project.logger)
 
     // used only for process launching so far, but implements unused proper contract
@@ -96,7 +102,7 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
         javaPackagePrefix: String?,
         args: K2JVMCompilerArguments,
         environment: GradleCompilerEnvironment
-    ): ExitCode {
+    ) {
         val buildFile = makeModuleFile(
             args.moduleName!!,
             isTest = false,
@@ -114,7 +120,7 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
         }
 
         try {
-            return runCompiler(K2JVM_COMPILER, args, environment)
+            runCompiler(KotlinCompilerClass.JVM, args, environment)
         } finally {
             if (System.getProperty(DELETE_MODULE_FILE_PROPERTY) != "false") {
                 buildFile.delete()
@@ -127,26 +133,26 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
         kotlinCommonSources: List<File>,
         args: K2JSCompilerArguments,
         environment: GradleCompilerEnvironment
-    ): ExitCode {
+    ) {
         args.freeArgs += kotlinSources.map { it.absolutePath }
         args.commonSources = kotlinCommonSources.map { it.absolutePath }.toTypedArray()
-        return runCompiler(K2JS_COMPILER, args, environment)
+        runCompiler(KotlinCompilerClass.JS, args, environment)
     }
 
     fun runMetadataCompiler(
         kotlinSources: List<File>,
         args: K2MetadataCompilerArguments,
         environment: GradleCompilerEnvironment
-    ): ExitCode {
+    ) {
         args.freeArgs += kotlinSources.map { it.absolutePath }
-        return runCompiler(K2METADATA_COMPILER, args, environment)
+        return runCompiler(KotlinCompilerClass.METADATA, args, environment)
     }
 
-    override fun compileWithDaemonOrFallback(
+    override fun runCompiler(
         compilerClassName: String,
         compilerArgs: CommonCompilerArguments,
         environment: GradleCompilerEnvironment
-    ): ExitCode {
+    ) {
         if (compilerArgs.version) {
             project.logger.lifecycle(
                 "Kotlin version " + loadCompilerVersion(environment.compilerClasspath) +
@@ -154,6 +160,24 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
             )
             compilerArgs.version = false
         }
+        super.runCompiler(compilerClassName, compilerArgs, environment)
+    }
+
+    override fun compileWithDaemonOrFallback(
+        compilerClassName: String,
+        compilerArgs: CommonCompilerArguments,
+        environment: GradleCompilerEnvironment
+    ) {
+        val exitCode = compileWithDaemonOrFallbackImpl(compilerClassName, compilerArgs, environment)
+        throwGradleExceptionIfError(exitCode)
+    }
+
+    private fun compileWithDaemonOrFallbackImpl(
+        compilerClassName: String,
+        compilerArgs: CommonCompilerArguments,
+        environment: GradleCompilerEnvironment
+    ): ExitCode {
+
         val argsArray = ArgumentUtils.convertArgumentsToStringList(compilerArgs).toTypedArray()
         with(project.logger) {
             kotlinDebug { "Kotlin compiler class: $compilerClassName" }
@@ -183,7 +207,7 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
     private val kotlinCompilerExecutionStrategy: String
         get() = System.getProperty(KOTLIN_COMPILER_EXECUTION_STRATEGY_PROPERTY) ?: DAEMON_EXECUTION_STRATEGY
 
-    override fun compileWithDaemon(
+    private fun compileWithDaemon(
         compilerClassName: String,
         compilerArgs: CommonCompilerArguments,
         environment: GradleCompilerEnvironment
@@ -207,9 +231,9 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
 
         val (daemon, sessionId) = connection
         val targetPlatform = when (compilerClassName) {
-            K2JVM_COMPILER -> CompileService.TargetPlatform.JVM
-            K2JS_COMPILER -> CompileService.TargetPlatform.JS
-            K2METADATA_COMPILER -> CompileService.TargetPlatform.METADATA
+            KotlinCompilerClass.JVM -> CompileService.TargetPlatform.JVM
+            KotlinCompilerClass.JS -> CompileService.TargetPlatform.JS
+            KotlinCompilerClass.METADATA -> CompileService.TargetPlatform.METADATA
             else -> throw IllegalArgumentException("Unknown compiler type $compilerClassName")
         }
         val exitCode = try {
@@ -338,15 +362,34 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
     private fun logFinish(strategy: String) = log.logFinish(strategy)
 
     override fun getDaemonConnection(environment: GradleCompilerEnvironment): CompileServiceSession? {
-        synchronized(this.javaClass) {
-            val compilerId = CompilerId.makeCompilerId(environment.compilerFullClasspath)
-            val clientIsAliveFlagFile = getOrCreateClientFlagFile(project)
-            val sessionIsAliveFlagFile = getOrCreateSessionFlagFile(project)
-            return newDaemonConnection(compilerId, clientIsAliveFlagFile, sessionIsAliveFlagFile, environment)
-        }
+        val clientIsAliveFlagFile = getOrCreateClientFlagFile(project)
+        val sessionIsAliveFlagFile = getOrCreateSessionFlagFile(project)
+        return getDaemonConnectionImpl(
+            clientIsAliveFlagFile,
+            sessionIsAliveFlagFile,
+            environment.compilerFullClasspath,
+            environment.messageCollector,
+            log.isDebugEnabled
+        )
     }
 
     companion object {
+        @Synchronized
+        internal fun getDaemonConnectionImpl(
+            clientIsAliveFlagFile: File,
+            sessionIsAliveFlagFile: File,
+            compilerFullClasspath: List<File>,
+            messageCollector: MessageCollector,
+            isDebugEnabled: Boolean
+        ): CompileServiceSession? {
+            val compilerId = CompilerId.makeCompilerId(compilerFullClasspath)
+            return newDaemonConnection(
+                compilerId, clientIsAliveFlagFile, sessionIsAliveFlagFile,
+                messageCollector = messageCollector,
+                isDebugEnabled = isDebugEnabled
+            )
+        }
+
         @Volatile
         private var cachedGradle = WeakReference<Gradle>(null)
         @Volatile
@@ -452,4 +495,198 @@ internal class GradleCompilerRunner(private val project: Project) : KotlinCompil
         internal fun sessionsDir(project: Project): File =
             File(File(project.rootProject.buildDir, "kotlin"), "sessions")
     }
+}
+
+internal class GradleCompilerRunnerWithWorkers(
+    project: Project, private val workersExecutor: WorkerExecutor
+) : GradleCompilerRunner(project) {
+
+}
+
+private class KotlinCompilerRunnable @Inject constructor(
+    private val clientIsAliveFlagFile: File,
+    private val sessionFlagFile: File,
+    private val compilerFullClasspath: List<File>,
+    private val targetPlatform: CompileService.TargetPlatform,
+    private val compilerArgs: Array<String>,
+    private val isVerbose: Boolean,
+    private val executionStrategy: String
+) : Runnable {
+    private val log = LoggerFactory.getLogger("KotlinCompilerRunnable")
+
+    override fun run() {
+        val exitCode = compileWithDaemonOrFallbackImpl()
+        throwGradleExceptionIfError(exitCode)
+    }
+
+    private fun compileWithDaemonOrFallbackImpl(
+        compilerClassName: String,
+        compilerArgs: CommonCompilerArguments,
+        environment: GradleCompilerEnvironment
+    ): ExitCode {
+        val argsArray = ArgumentUtils.convertArgumentsToStringList(compilerArgs).toTypedArray()
+
+        with(log) {
+            kotlinDebug { "Kotlin compiler class: $compilerClassName" }
+            kotlinDebug { "Kotlin compiler classpath: ${environment.compilerFullClasspath.map { it.canonicalPath }.joinToString()}" }
+            kotlinDebug { "Kotlin compiler args: ${argsArray.joinToString(" ")}" }
+        }
+
+        if (executionStrategy == DAEMON_EXECUTION_STRATEGY) {
+            val daemonExitCode = compileWithDaemon(compilerClassName, compilerArgs, environment)
+
+            if (daemonExitCode != null) {
+                return daemonExitCode
+            } else {
+                log.warn("Could not connect to kotlin daemon. Using fallback strategy.")
+            }
+        }
+
+        val isGradleDaemonUsed = System.getProperty("org.gradle.daemon")?.let(String::toBoolean)
+        return if (executionStrategy == IN_PROCESS_EXECUTION_STRATEGY || isGradleDaemonUsed == false) {
+            compileInProcess(argsArray, compilerClassName, environment)
+        } else {
+            compileOutOfProcess(argsArray, compilerClassName, environment)
+        }
+    }
+
+    private fun compileWithDaemon(
+        compilerClassName: String,
+        compilerArgs: CommonCompilerArguments,
+        environment: GradleCompilerEnvironment
+    ): ExitCode? {
+        val connection =
+            try {
+                getDaemonConnection(environment)
+            } catch (e: Throwable) {
+                log.warn("Caught an exception trying to connect to Kotlin Daemon")
+                e.printStackTrace()
+                null
+            }
+        if (connection == null) {
+            if (environment is GradleIncrementalCompilerEnvironment) {
+                log.warn("Could not perform incremental compilation: $COULD_NOT_CONNECT_TO_DAEMON_MESSAGE")
+            } else {
+                log.warn(COULD_NOT_CONNECT_TO_DAEMON_MESSAGE)
+            }
+            return null
+        }
+
+        val (daemon, sessionId) = connection
+        val targetPlatform = when (compilerClassName) {
+            KotlinCompilerClass.JVM -> CompileService.TargetPlatform.JVM
+            KotlinCompilerClass.JS -> CompileService.TargetPlatform.JS
+            KotlinCompilerClass.METADATA -> CompileService.TargetPlatform.METADATA
+            else -> throw IllegalArgumentException("Unknown compiler type $compilerClassName")
+        }
+        val exitCode = try {
+            val res = if (environment is GradleIncrementalCompilerEnvironment) {
+                incrementalCompilationWithDaemon(daemon, sessionId, targetPlatform, environment)
+            } else {
+                nonIncrementalCompilationWithDaemon(daemon, sessionId, targetPlatform, environment)
+            }
+            exitCodeFromProcessExitCode(res.get())
+        } catch (e: Throwable) {
+            log.warn("Compilation with Kotlin compile daemon was not successful")
+            e.printStackTrace()
+            null
+        }
+        // todo: can we clear cache on the end of session?
+        // often source of the NoSuchObjectException and UnmarshalException, probably caused by the failed/crashed/exited daemon
+        // TODO: implement a proper logic to avoid remote calls in such cases
+        try {
+            daemon.clearJarCache()
+        } catch (e: RemoteException) {
+            log.warn("Unable to clear jar cache after compilation, maybe daemon is already down: $e")
+        }
+        logFinish(DAEMON_EXECUTION_STRATEGY)
+        return exitCode
+    }
+
+    private fun nonIncrementalCompilationWithDaemon(
+        daemon: CompileService,
+        sessionId: Int,
+        targetPlatform: CompileService.TargetPlatform,
+        environment: GradleCompilerEnvironment
+    ): CompileService.CallResult<Int> {
+        val verbose = environment.compilerArgs.verbose
+        val compilationOptions = CompilationOptions(
+            compilerMode = CompilerMode.NON_INCREMENTAL_COMPILER,
+            targetPlatform = targetPlatform,
+            reportCategories = reportCategories(verbose),
+            reportSeverity = reportSeverity(verbose),
+            requestedCompilationResults = emptyArray()
+        )
+        val servicesFacade = GradleCompilerServicesFacadeImpl(project, environment.messageCollector)
+        val argsArray = ArgumentUtils.convertArgumentsToStringList(environment.compilerArgs).toTypedArray()
+        return daemon.compile(sessionId, argsArray, compilationOptions, servicesFacade, compilationResults = null)
+    }
+
+    private fun incrementalCompilationWithDaemon(
+        daemon: CompileService,
+        sessionId: Int,
+        targetPlatform: CompileService.TargetPlatform,
+        environment: GradleIncrementalCompilerEnvironment
+    ): CompileService.CallResult<Int> {
+        val knownChangedFiles = environment.changedFiles as? ChangedFiles.Known
+
+        val verbose = environment.compilerArgs.verbose
+        val compilationOptions = IncrementalCompilationOptions(
+            areFileChangesKnown = knownChangedFiles != null,
+            modifiedFiles = knownChangedFiles?.modified,
+            deletedFiles = knownChangedFiles?.removed,
+            workingDir = environment.workingDir,
+            reportCategories = reportCategories(verbose),
+            reportSeverity = reportSeverity(verbose),
+            requestedCompilationResults = arrayOf(CompilationResultCategory.IC_COMPILE_ITERATION.code),
+            compilerMode = CompilerMode.INCREMENTAL_COMPILER,
+            targetPlatform = targetPlatform,
+            usePreciseJavaTracking = environment.usePreciseJavaTracking,
+            localStateDirs = environment.localStateDirs,
+            multiModuleICSettings = environment.multiModuleICSettings,
+            modulesInfo = buildModulesInfo(project.gradle)
+        )
+
+        log.info("Options for KOTLIN DAEMON: $compilationOptions")
+        val servicesFacade = GradleIncrementalCompilerServicesFacadeImpl(project, environment)
+        val argsArray = ArgumentUtils.convertArgumentsToStringList(environment.compilerArgs).toTypedArray()
+        return daemon.compile(sessionId, argsArray, compilationOptions, servicesFacade, GradleCompilationResults(project))
+    }
+
+    private fun compileOutOfProcess(
+        argsArray: Array<String>,
+        compilerClassName: String,
+        environment: GradleCompilerEnvironment
+    ): ExitCode {
+        return runToolInSeparateProcess(argsArray, compilerClassName, environment.compilerFullClasspath, log, loggingMessageCollector)
+    }
+
+    private fun compileInProcess(
+        argsArray: Array<String>,
+        compilerClassName: String,
+        environment: GradleCompilerEnvironment
+    ): ExitCode {
+        val stream = ByteArrayOutputStream()
+        val out = PrintStream(stream)
+        // todo: cache classloader?
+        val classLoader = URLClassLoader(environment.compilerClasspathURLs.toTypedArray())
+        val servicesClass = Class.forName(Services::class.java.canonicalName, true, classLoader)
+        val emptyServices = servicesClass.getField("EMPTY").get(servicesClass)
+        val compiler = Class.forName(compilerClassName, true, classLoader)
+
+        val exec = compiler.getMethod(
+            "execAndOutputXml",
+            PrintStream::class.java,
+            servicesClass,
+            Array<String>::class.java
+        )
+
+        val res = exec.invoke(compiler.newInstance(), out, emptyServices, argsArray)
+        val exitCode = ExitCode.valueOf(res.toString())
+        processCompilerOutput(environment, stream, exitCode)
+        logFinish(IN_PROCESS_EXECUTION_STRATEGY)
+        return exitCode
+    }
+
+    private fun logFinish(strategy: String) = log.logFinish(strategy)
 }

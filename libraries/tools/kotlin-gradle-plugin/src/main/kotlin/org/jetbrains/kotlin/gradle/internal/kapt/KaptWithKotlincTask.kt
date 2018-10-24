@@ -69,7 +69,7 @@ open class KaptWithKotlincTask : KaptTask(), CompilerArgumentAwareWithInput<K2JV
         }
 
         val compilerRunner = GradleCompilerRunner(project)
-        val exitCode = compilerRunner.runJvmCompiler(
+        compilerRunner.runJvmCompiler(
             sourcesToCompile = emptyList(),
             commonSources = emptyList(),
             javaSourceRoots = javaSourceRoots,
@@ -77,7 +77,6 @@ open class KaptWithKotlincTask : KaptTask(), CompilerArgumentAwareWithInput<K2JV
             args = args,
             environment = environment
         )
-        throwGradleExceptionIfError(exitCode)
     }
 
     private val isAtLeastJava9: Boolean

@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.compilerRunner
 
 import org.gradle.api.Project
 import org.gradle.api.logging.Logger
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.daemon.client.reportFromDaemon
 import org.jetbrains.kotlin.daemon.common.*
@@ -32,6 +33,34 @@ internal open class GradleCompilerServicesFacadeImpl(
             }
             ReportCategory.DAEMON_MESSAGE -> {
                 log.kotlinDebug { "[DAEMON] $message" }
+            }
+            else -> {
+                compilerMessageCollector.reportFromDaemon(
+                    outputsCollector = null,
+                    category = category,
+                    severity = severity,
+                    message = message,
+                    attachment = attachment
+                )
+            }
+        }
+    }
+}
+
+internal open class GradleWorkerCompilerServicesFacadeImpl(
+    private val compilerMessageCollector: MessageCollector,
+    port: Int = SOCKET_ANY_FREE_PORT
+) : UnicastRemoteObject(port, LoopbackNetworkInterface.clientLoopbackSocketFactory, LoopbackNetworkInterface.serverLoopbackSocketFactory),
+    CompilerServicesFacadeBase,
+    Remote {
+
+    override fun report(category: Int, severity: Int, message: String?, attachment: Serializable?) {
+        when (ReportCategory.fromCode(category)) {
+            ReportCategory.IC_MESSAGE -> {
+                compilerMessageCollector.report(CompilerMessageSeverity.LOGGING, "[IC] $message")
+            }
+            ReportCategory.DAEMON_MESSAGE -> {
+                compilerMessageCollector.report(CompilerMessageSeverity.LOGGING, "[DAEMON] $message")
             }
             else -> {
                 compilerMessageCollector.reportFromDaemon(
