@@ -18,7 +18,6 @@ import org.jetbrains.kotlin.gradle.report.TaskExecutionResult
 import org.jetbrains.kotlin.gradle.tasks.throwGradleExceptionIfError
 import org.jetbrains.kotlin.gradle.utils.stackTraceAsString
 import org.jetbrains.kotlin.incremental.ChangedFiles
-import org.jetbrains.kotlin.incremental.DELETE_MODULE_FILE_PROPERTY
 import org.slf4j.LoggerFactory
 import java.io.*
 import java.net.URLClassLoader
@@ -52,10 +51,10 @@ internal class GradleKotlinCompilerWorkArguments(
     val isVerbose: Boolean,
     val incrementalCompilationEnvironment: IncrementalCompilationEnvironment?,
     val incrementalModuleInfo: IncrementalModuleInfo?,
-    val buildFile: File?,
     val outputFiles: List<File>,
     val taskPath: String,
-    val buildReportMode: BuildReportMode?
+    val buildReportMode: BuildReportMode?,
+    val kotlinScriptExtensions: Array<String>
 ) : Serializable {
     companion object {
         const val serialVersionUID: Long = 0
@@ -90,10 +89,10 @@ internal class GradleKotlinCompilerWork @Inject constructor(
     private val isVerbose = config.isVerbose
     private val incrementalCompilationEnvironment = config.incrementalCompilationEnvironment
     private val incrementalModuleInfo = config.incrementalModuleInfo
-    private val buildFile = config.buildFile
     private val outputFiles = config.outputFiles
     private val taskPath = config.taskPath
     private val buildReportMode = config.buildReportMode
+    private val kotlinScriptExtensions = config.kotlinScriptExtensions
 
     private val log: KotlinLogger =
         TaskLoggers.get(taskPath)?.let { GradleKotlinLogger(it).apply { debug("Using '$taskPath' logger") } }
@@ -113,14 +112,7 @@ internal class GradleKotlinCompilerWork @Inject constructor(
 
     override fun run() {
         val messageCollector = GradlePrintingMessageCollector(log)
-        val exitCode = try {
-            compileWithDaemonOrFallbackImpl(messageCollector)
-        } finally {
-            if (buildFile != null && System.getProperty(DELETE_MODULE_FILE_PROPERTY) != "false") {
-                buildFile.delete()
-            }
-        }
-
+        val exitCode = compileWithDaemonOrFallbackImpl(messageCollector)
         if (incrementalCompilationEnvironment?.disableMultiModuleIC == true) {
             incrementalCompilationEnvironment.multiModuleICSettings.buildHistoryFile.delete()
         }
@@ -229,7 +221,8 @@ internal class GradleKotlinCompilerWork @Inject constructor(
             targetPlatform = targetPlatform,
             reportCategories = reportCategories(isVerbose),
             reportSeverity = reportSeverity(isVerbose),
-            requestedCompilationResults = emptyArray()
+            requestedCompilationResults = emptyArray(),
+            kotlinScriptExtensions = kotlinScriptExtensions
         )
         val servicesFacade = GradleCompilerServicesFacadeImpl(log, bufferingMessageCollector)
         return try {
@@ -273,7 +266,8 @@ internal class GradleKotlinCompilerWork @Inject constructor(
             usePreciseJavaTracking = icEnv.usePreciseJavaTracking,
             outputFiles = outputFiles,
             multiModuleICSettings = icEnv.multiModuleICSettings,
-            modulesInfo = incrementalModuleInfo!!
+            modulesInfo = incrementalModuleInfo!!,
+            kotlinScriptExtensions = kotlinScriptExtensions
         )
 
         log.info("Options for KOTLIN DAEMON: $compilationOptions")
