@@ -250,7 +250,7 @@ abstract class AbstractKotlinCompile<T : CommonCompilerArguments>() : AbstractKo
     }
 
     internal open fun compilerRunner(): GradleCompilerRunner =
-        GradleCompilerRunner(project)
+        GradleCompilerRunner(this)
 
     override fun compile() {
         assert(false, { "unexpected call to compile()" })
