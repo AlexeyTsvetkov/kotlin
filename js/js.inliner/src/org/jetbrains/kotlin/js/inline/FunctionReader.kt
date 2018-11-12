@@ -91,6 +91,9 @@ class FunctionReader(
     private val moduleNameToInfo by lazy {
         val result = HashMultimap.create<String, ModuleInfo>()
 
+        val moduleInfoCache = 
+
+
         JsLibraryUtils.traverseJsLibraries(config.libraries.map(::File)) { (content, path, sourceMapContent, file) ->
             var current = 0
 

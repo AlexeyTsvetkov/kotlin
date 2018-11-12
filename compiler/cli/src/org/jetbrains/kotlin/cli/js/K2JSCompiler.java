@@ -51,6 +51,7 @@ import org.jetbrains.kotlin.incremental.components.ExpectActualTracker;
 import org.jetbrains.kotlin.incremental.components.LookupTracker;
 import org.jetbrains.kotlin.incremental.js.IncrementalDataProvider;
 import org.jetbrains.kotlin.incremental.js.IncrementalResultsConsumer;
+import org.jetbrains.kotlin.incremental.js.ModuleInfoCache;
 import org.jetbrains.kotlin.incremental.js.TranslationResultValue;
 import org.jetbrains.kotlin.js.analyze.TopDownAnalyzerFacadeForJS;
 import org.jetbrains.kotlin.js.analyzer.JsAnalysisResult;
@@ -423,6 +424,11 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
         IncrementalResultsConsumer incrementalResultsConsumer = services.get(IncrementalResultsConsumer.class);
         if (incrementalResultsConsumer != null) {
             configuration.put(JSConfigurationKeys.INCREMENTAL_RESULTS_CONSUMER, incrementalResultsConsumer);
+        }
+
+        ModuleInfoCache moduleInfoCache = services.get(ModuleInfoCache.class);
+        if (moduleInfoCache != null) {
+            configuration.put(JSConfigurationKeys.MODULE_INFO_CACHE, moduleInfoCache);
         }
 
         LookupTracker lookupTracker = services.get(LookupTracker.class);
