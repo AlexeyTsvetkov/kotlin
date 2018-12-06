@@ -10,7 +10,6 @@ import com.android.build.gradle.api.AndroidSourceSet
 import com.android.builder.model.SourceProvider
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.tasks.SourceSet
@@ -237,7 +236,7 @@ class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
     }
 
     // This method should be called no more than once for each Kapt3SubpluginContext
-    private fun Kapt3SubpluginContext.buildOptions(aptMode: String): List<SubpluginOption> {
+    private fun Kapt3SubpluginContext.buildOptions(task: KaptTask, aptMode: String): List<SubpluginOption> {
         val pluginOptions = mutableListOf<SubpluginOption>()
 
         val generatedFilesDir = getKaptGeneratedSourcesDir(project, sourceSetName)
@@ -265,6 +264,11 @@ class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
         pluginOptions += CompositeSubpluginOption("apoptions", lazy { encodeList(apOptions.associate { it.key to it.value }) }, apOptions)
 
         pluginOptions += SubpluginOption("javacArguments", encodeList(kaptExtension.getJavacOptions()))
+
+        kaptExtension.discoverAnnotationProcessorsInCompileClasspath.let {
+            task.discoverAnnotationProcessorsInCompileClasspath = it
+            pluginOptions += SubpluginOption("discoverAnnotationProcessorsInCompileClasspath", it.toString())
+        }
 
         addMiscOptions(pluginOptions)
 
@@ -303,9 +307,9 @@ class Kapt3KotlinGradleSubplugin : KotlinGradleSubplugin<KotlinCompile> {
                 subluginOptionsFromProvidedApOptions
     }
 
-    private fun Kapt3SubpluginContext.buildAndAddOptionsTo(task: Task, container: CompilerPluginOptions, aptMode: String) {
+    private fun Kapt3SubpluginContext.buildAndAddOptionsTo(task: KaptTask, container: CompilerPluginOptions, aptMode: String) {
         val compilerPluginId = getCompilerPluginId()
-        val kaptSubpluginOptions = buildOptions(aptMode)
+        val kaptSubpluginOptions = buildOptions(task, aptMode)
         task.registerSubpluginOptionsAsInputs(compilerPluginId, kaptSubpluginOptions)
 
         for (option in kaptSubpluginOptions) {

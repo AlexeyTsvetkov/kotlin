@@ -54,10 +54,27 @@ abstract class KaptTask : ConventionTask() {
     @get:Nested
     internal val annotationProcessorOptionProviders: MutableList<Any> = mutableListOf()
 
-    @get:Classpath
-    @get:InputFiles
+    @get:Input
+    internal var discoverAnnotationProcessorsInCompileClasspath: Boolean = true
+
+    // @Internal because _abiClasspath and _nonAbiClasspath are used for actual checks
+    @get:Internal
     val classpath: FileCollection
         get() = kotlinCompileTask.classpath
+
+    // used only for up-to-date checks
+    @Deprecated("_abiClasspath should not be used. Use 'classpath' property instead.")
+    @CompileClasspath
+    @InputFiles
+    internal fun _abiClasspath(): FileCollection =
+        kotlinCompileTask.classpath.takeIf { !discoverAnnotationProcessorsInCompileClasspath }.orEmpty()
+
+    // used only for up-to-date checks
+    @Deprecated("_nonAbiClasspath should not be used. Use 'classpath' property instead.")
+    @Classpath
+    @InputFiles
+    internal fun _nonAbiClasspath(): FileCollection =
+        kotlinCompileTask.classpath.takeIf { discoverAnnotationProcessorsInCompileClasspath }.orEmpty()
 
     @get:Internal
     var useBuildCache: Boolean = false
@@ -82,4 +99,7 @@ abstract class KaptTask : ConventionTask() {
         file.exists() &&
                 !FileUtil.isAncestor(destinationDir, file, /* strict = */ false) &&
                 !FileUtil.isAncestor(classesDir, file, /* strict = */ false)
+
+    private fun FileCollection?.orEmpty(): FileCollection =
+        this ?: project.files()
 }
