@@ -22,6 +22,17 @@ class A {
             val aNestedMethodLambda: (Int) -> Int = { it * it }
         }
     }
+
+    private companion object {
+        class ACompanionNested
+        object ACompanionNestedObject
+
+        fun aCompanionMethod() {
+            class ACompanionMethodLocal
+
+            val ACompanionMethodLambda: (Int) -> Int = { it * it }
+        }
+    }
 }
 
 private class B {
