@@ -44,6 +44,11 @@ public class CompileAgainstJvmAbiTestGenerated extends AbstractCompileAgainstJvm
         runTest("plugins/jvm-abi-gen/testData/compile/clinit/");
     }
 
+    @TestMetadata("inlineFunctionLambda")
+    public void testInlineFunctionLambda() throws Exception {
+        runTest("plugins/jvm-abi-gen/testData/compile/inlineFunctionLambda/");
+    }
+
     @TestMetadata("privateOnlyConstructors")
     public void testPrivateOnlyConstructors() throws Exception {
         runTest("plugins/jvm-abi-gen/testData/compile/privateOnlyConstructors/");
