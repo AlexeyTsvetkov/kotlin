@@ -11,6 +11,7 @@ import java.io.File
 import java.io.Serializable
 
 data class ModuleInfoValue(
+    val name: String,
     val filePath: String,
     val fileContent: String,
     val moduleVariable: String,

@@ -8,7 +8,13 @@ package org.jetbrains.kotlin.incremental.js
 import java.io.File
 
 interface ModuleInfoCache {
-    operator fun get(file: File): ModuleInfoValue?
-    operator fun set(file: File, moduleInfoValue: ModuleInfoValue)
+    operator fun get(file: File): Collection<ModuleInfoValue>?
+    operator fun set(file: File, moduleInfoValue: Collection<ModuleInfoValue>)
     fun flush()
+
+    object Empty : ModuleInfoCache {
+        override fun get(file: File): Collection<ModuleInfoValue>? = null
+        override fun set(file: File, moduleInfoValue: Collection<ModuleInfoValue>) {}
+        override fun flush() {}
+    }
 }

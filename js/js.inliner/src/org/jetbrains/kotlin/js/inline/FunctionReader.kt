@@ -21,6 +21,7 @@ import com.google.gwt.dev.js.ThrowExceptionOnErrorReporter
 import com.intellij.util.containers.SLRUCache
 import org.jetbrains.kotlin.builtins.isFunctionTypeOrSubtype
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.incremental.js.ModuleInfoCache
 import org.jetbrains.kotlin.js.backend.ast.*
 import org.jetbrains.kotlin.js.backend.ast.metadata.*
 import org.jetbrains.kotlin.js.config.JSConfigurationKeys
@@ -35,8 +36,8 @@ import org.jetbrains.kotlin.js.translate.utils.JsAstUtils
 import org.jetbrains.kotlin.js.translate.utils.JsDescriptorUtils.getModuleName
 import org.jetbrains.kotlin.resolve.descriptorUtil.isExtension
 import org.jetbrains.kotlin.resolve.inline.InlineStrategy
+import org.jetbrains.kotlin.utils.JsLibrary
 import org.jetbrains.kotlin.utils.JsLibraryUtils
-import org.jetbrains.kotlin.utils.sure
 import java.io.File
 import java.io.StringReader
 
@@ -72,14 +73,15 @@ class FunctionReader(
      *     The default variable is Kotlin, but it can be renamed by minifier.
      */
     class ModuleInfo(
-            val filePath: String,
-            val fileContent: String,
-            val moduleVariable: String,
-            val kotlinVariable: String,
-            val specialFunctions: Map<String, SpecialFunction>,
-            offsetToSourceMappingProvider: () -> OffsetToSourceMapping,
-            val sourceMap: SourceMap?,
-            val outputDir: File?
+        val name: String,
+        val filePath: String,
+        val fileContent: String,
+        val moduleVariable: String,
+        val kotlinVariable: String,
+        val specialFunctions: Map<String, SpecialFunction>,
+        offsetToSourceMappingProvider: () -> OffsetToSourceMapping,
+        val sourceMap: SourceMap?,
+        val outputDir: File?
     ) {
         val offsetToSourceMapping by lazy(offsetToSourceMappingProvider)
 
@@ -88,12 +90,86 @@ class FunctionReader(
                 ?.let { Regex("\\s*$it\\s*\\(\\s*").toPattern() }
     }
 
+    private fun JsLibrary.readModules(): Collection<ModuleInfo> {
+        val result = arrayListOf<ModuleInfo>()
+        var current = 0
+        while (true) {
+            var index = content.indexOf(DEFINE_MODULE_FIND_PATTERN, current)
+            if (index < 0) break
+
+            current = index + 1
+            index = rewindToIdentifierStart(content, index)
+            val preciseMatcher = DEFINE_MODULE_PATTERN.matcher(offset(content, index))
+            if (!preciseMatcher.lookingAt()) continue
+
+            val moduleName = preciseMatcher.group(3)
+            val moduleVariable = preciseMatcher.group(4)
+            val kotlinVariable = preciseMatcher.group(1)
+
+            val matcher = SPECIAL_FUNCTION_PATTERN.matcher(content)
+            val specialFunctions = mutableMapOf<String, SpecialFunction>()
+            while (matcher.find()) {
+                if (matcher.group(2) == kotlinVariable) {
+                    specialFunctions[matcher.group(1)] = specialFunctionsByName[matcher.group(3)]!!
+                }
+            }
+
+            val sourceMap = sourceMapContent?.let {
+                val sourceMapResult = SourceMapParser.parse(StringReader(it))
+                when (sourceMapResult) {
+                    is SourceMapSuccess -> sourceMapResult.value
+                    is SourceMapError -> {
+                        reporter.warning("Error parsing source map file for $path: ${sourceMapResult.message}")
+                        null
+                    }
+                }
+            }
+
+            val moduleInfo = ModuleInfo(
+                name = moduleName,
+                filePath = path,
+                fileContent = content,
+                moduleVariable = moduleVariable,
+                kotlinVariable = kotlinVariable,
+                specialFunctions = specialFunctions,
+                offsetToSourceMappingProvider = { OffsetToSourceMapping(content) },
+                sourceMap = sourceMap,
+                outputDir = file?.parentFile
+            )
+            result.add(moduleInfo)
+        }
+
+        return result
+    }
+
     private val moduleNameToInfo by lazy {
         val result = HashMultimap.create<String, ModuleInfo>()
 
-        val moduleInfoCache = 
+        val moduleInfoCache = config.configuration.get(JSConfigurationKeys.MODULE_INFO_CACHE) ?: ModuleInfoCache.Empty
+        for (path in config.libraries) {
+            val file = File(path)
+            val modulesFromCache = moduleInfoCache[file]
+            val modules: Collection<ModuleInfo> = if (modulesFromCache != null) {
+                modulesFromCache.map {
+                    ModuleInfo(
+                        name = it.name,
+                        filePath = it.filePath,
+                        fileContent = it.fileContent,
+                        moduleVariable = it.moduleVariable,
+                        kotlinVariable = it.kotlinVariable,
+                        specialFunctions = it.specialFunctions,
+                        offsetToSourceMappingProvider = { OffsetToSourceMapping(it.fileContent) },
+                        sourceMap = it.sourceMap,
+                        outputDir = file?.parentFile
+                    )
+                }
 
+            } else {
 
+            }
+            modules.forEach { result.put(it.name, it) }
+
+        }
         JsLibraryUtils.traverseJsLibraries(config.libraries.map(::File)) { (content, path, sourceMapContent, file) ->
             var current = 0
 
@@ -130,14 +206,15 @@ class FunctionReader(
                 }
 
                 val moduleInfo = ModuleInfo(
-                        filePath = path,
-                        fileContent = content,
-                        moduleVariable = moduleVariable,
-                        kotlinVariable = kotlinVariable,
-                        specialFunctions = specialFunctions,
-                        offsetToSourceMappingProvider = { OffsetToSourceMapping(content) },
-                        sourceMap = sourceMap,
-                        outputDir = file?.parentFile
+                    name = moduleName,
+                    filePath = path,
+                    fileContent = content,
+                    moduleVariable = moduleVariable,
+                    kotlinVariable = kotlinVariable,
+                    specialFunctions = specialFunctions,
+                    offsetToSourceMappingProvider = { OffsetToSourceMapping(content) },
+                    sourceMap = sourceMap,
+                    outputDir = file?.parentFile
                 )
 
                 result.put(moduleName, moduleInfo)

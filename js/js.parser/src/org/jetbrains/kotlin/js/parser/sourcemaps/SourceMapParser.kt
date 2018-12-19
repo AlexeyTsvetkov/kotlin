@@ -86,7 +86,7 @@ object SourceMapParser {
         var sourceColumn = 0
         var sourceIndex = 0
         val stream = MappingStream(mappings.value)
-        val sourceMap = SourceMap { sourcePathToContent[it]?.let { StringReader(it) } }
+        val sourceMap = SourceMap { sourcePathToContent[it] }
         var currentGroup = SourceMapGroup().also { sourceMap.groups += it }
 
         while (!stream.isEof) {

@@ -16,15 +16,13 @@
 
 package org.jetbrains.kotlin.js.backend.ast
 
-import java.io.Reader
-
 data class JsLocation(
         override val file: String,
         override val startLine: Int,
         override val startChar: Int
 ) : JsLocationWithSource {
     override val identityObject: Any? = null
-    override val sourceProvider: () -> Reader? = { null }
+    override val source: () -> String? = { null }
 
     override fun asSimpleLocation(): JsLocation = this
 }
@@ -34,7 +32,7 @@ interface JsLocationWithSource {
     val startLine: Int
     val startChar: Int
     val identityObject: Any?
-    val sourceProvider: () -> Reader?
+    val source: () -> String?
 
     fun asSimpleLocation(): JsLocation
 }
@@ -42,5 +40,5 @@ interface JsLocationWithSource {
 class JsLocationWithEmbeddedSource(
         private val location: JsLocation,
         override val identityObject: Any?,
-        override val sourceProvider: () -> Reader?
+        override val source: () -> String?
 ) : JsLocationWithSource by location

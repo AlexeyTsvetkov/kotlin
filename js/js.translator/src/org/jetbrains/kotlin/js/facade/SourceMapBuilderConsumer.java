@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.js.facade;
 
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import kotlin.io.TextStreamsKt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.js.backend.SourceLocationConsumer;
@@ -91,11 +92,11 @@ public class SourceMapBuilderConsumer implements SourceLocationConsumer {
                 JsLocation location = PsiUtils.extractLocationFromPsi(element, pathResolver);
                 PsiFile psiFile = element.getContainingFile();
                 File file = new File(psiFile.getViewProvider().getVirtualFile().getPath());
-                Supplier<Reader> contentSupplier;
+                Supplier<String> contentSupplier;
                 if (provideCurrentModuleContent) {
                     contentSupplier = () -> {
                         try {
-                            return new InputStreamReader(new FileInputStream(file), Charset.forName("UTF-8"));
+                            return TextStreamsKt.readText(new InputStreamReader(new FileInputStream(file), Charset.forName("UTF-8")));
                         }
                         catch (IOException e) {
                             return null;
@@ -113,7 +114,7 @@ public class SourceMapBuilderConsumer implements SourceLocationConsumer {
         }
         else if (sourceInfo instanceof JsLocationWithSource) {
             JsLocationWithSource location = (JsLocationWithSource) sourceInfo;
-            Supplier<Reader> contentSupplier = provideExternalModuleContent ? location.getSourceProvider()::invoke : () -> null;
+            Supplier<String> contentSupplier = provideExternalModuleContent ? location::getSource : () -> null;
             String path;
 
             File absFile = new File(location.getFile()).isAbsolute() ?

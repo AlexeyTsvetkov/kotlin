@@ -20,7 +20,7 @@ import java.io.File
 import java.io.PrintStream
 import java.io.Reader
 
-class SourceMap(val sourceContentResolver: (String) -> Reader?) {
+class SourceMap(val sourceContentResolver: (String) -> String?) {
     val groups = mutableListOf<SourceMapGroup>()
 
     fun debug(writer: PrintStream = System.out) {

@@ -45,7 +45,7 @@ public class SourceMap3Builder implements SourceMapBuilder {
     };
 
     private final List<String> orderedSources = new ArrayList<>();
-    private final List<Supplier<Reader>> orderedSourceContentSuppliers = new ArrayList<>();
+    private final List<Supplier<String>> orderedSourceContentSuppliers = new ArrayList<>();
 
     private int previousGeneratedColumn = -1;
     private int previousSourceIndex;
@@ -91,9 +91,9 @@ public class SourceMap3Builder implements SourceMapBuilder {
 
     private void appendSourcesContent(JsonObject json) {
         JsonArray array = new JsonArray();
-        for (Supplier<Reader> contentSupplier : orderedSourceContentSuppliers) {
-            Reader reader = contentSupplier.get();
-            array.getElements().add(reader != null ? new JsonString(TextStreamsKt.readText(reader)) : JsonNull.INSTANCE);
+        for (Supplier<String> contentSupplier : orderedSourceContentSuppliers) {
+            String content = contentSupplier.get();
+            array.getElements().add(content != null ? new JsonString(content) : JsonNull.INSTANCE);
         }
         json.getProperties().put("sourcesContent", array);
     }
@@ -109,7 +109,7 @@ public class SourceMap3Builder implements SourceMapBuilder {
         out.insert(0, StringUtil.repeatSymbol(';', count));
     }
 
-    private int getSourceIndex(String source, Object identityObject, Supplier<Reader> contentSupplier) {
+    private int getSourceIndex(String source, Object identityObject, Supplier<String> contentSupplier) {
         SourceKey key = new SourceKey(source, identityObject);
         int sourceIndex = sources.get(key);
         if (sourceIndex == -1) {
@@ -124,7 +124,7 @@ public class SourceMap3Builder implements SourceMapBuilder {
 
     @Override
     public void addMapping(
-            @NotNull String source, @Nullable Object identityObject, @NotNull Supplier<Reader> sourceContent,
+            @NotNull String source, @Nullable Object identityObject, @NotNull Supplier<String> sourceContent,
             int sourceLine, int sourceColumn
     ) {
         source = source.replace(File.separatorChar, '/');

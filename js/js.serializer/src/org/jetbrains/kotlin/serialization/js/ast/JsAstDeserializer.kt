@@ -36,6 +36,12 @@ class JsAstDeserializer(program: JsProgram, private val sourceRoots: Iterable<Fi
     private val nameTable = mutableListOf<Name>()
     private val nameCache = mutableListOf<JsName?>()
     private val fileStack: Deque<String> = ArrayDeque()
+    private val content by lazy {
+        val contentFile = sourceRoots
+            .map { File(it, file) }
+            .firstOrNull { it.exists() }
+        contentFile?.let { InputStreamReader(FileInputStream(contentFile), "UTF-8").readText() }
+    }
 
     fun deserialize(input: InputStream): JsProgramFragment {
         return deserialize(Chunk.parseFrom(CodedInputStream.newInstance(input).apply { setRecursionLimit(4096) }))
@@ -555,7 +561,9 @@ class JsAstDeserializer(program: JsProgram, private val sourceRoots: Iterable<Fi
                     .map { File(it, file) }
                     .firstOrNull { it.exists() }
             node.source = if (contentFile != null) {
-                JsLocationWithEmbeddedSource(deserializedLocation, null) { InputStreamReader(FileInputStream(contentFile), "UTF-8") }
+                JsLocationWithEmbeddedSource(deserializedLocation, null) {
+                    InputStreamReader(FileInputStream(contentFile), "UTF-8").readText()
+                }
             }
             else {
                 deserializedLocation
