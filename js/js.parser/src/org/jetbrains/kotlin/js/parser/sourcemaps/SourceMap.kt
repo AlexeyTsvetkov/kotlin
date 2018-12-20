@@ -20,9 +20,7 @@ import java.io.File
 import java.io.PrintStream
 import java.io.Reader
 
-class SourceMap(val sourceContentResolver: (String) -> String?) {
-    val groups = mutableListOf<SourceMapGroup>()
-
+class SourceMap(val sourceContent: Map<String, String?>, val groups: MutableList<SourceMapGroup> = arrayListOf()) {
     fun debug(writer: PrintStream = System.out) {
         for ((index, group) in groups.withIndex()) {
             writer.print("${index + 1}:")
@@ -58,9 +56,7 @@ data class SourceMapSegment(
     val sourceColumnNumber: Int
 )
 
-class SourceMapGroup {
-    val segments = mutableListOf<SourceMapSegment>()
-}
+class SourceMapGroup(val segments: MutableList<SourceMapSegment> = arrayListOf())
 
 sealed class SourceMapParseResult
 

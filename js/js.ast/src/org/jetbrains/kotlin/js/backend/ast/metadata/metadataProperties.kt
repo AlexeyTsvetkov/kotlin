@@ -161,7 +161,12 @@ enum class SpecialFunction(val suggestedName: String) {
     COROUTINE_RESULT("coroutineResult"),
     COROUTINE_CONTROLLER("coroutineController"),
     COROUTINE_RECEIVER("coroutineReceiver"),
-    SET_COROUTINE_RESULT("setCoroutineResult")
+    SET_COROUTINE_RESULT("setCoroutineResult");
+
+    companion object {
+        // increment value when values are modified or reordered
+        const val version = 0
+    }
 }
 
 enum class BoxingKind {

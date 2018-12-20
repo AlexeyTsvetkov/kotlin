@@ -114,7 +114,7 @@ public class SourceMapBuilderConsumer implements SourceLocationConsumer {
         }
         else if (sourceInfo instanceof JsLocationWithSource) {
             JsLocationWithSource location = (JsLocationWithSource) sourceInfo;
-            Supplier<String> contentSupplier = provideExternalModuleContent ? location::getSource : () -> null;
+            Supplier<String> contentSupplier = provideExternalModuleContent ? location.getSource()::invoke : () -> null;
             String path;
 
             File absFile = new File(location.getFile()).isAbsolute() ?
