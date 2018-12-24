@@ -72,6 +72,10 @@ class IncrementalJsCompilerRunner(
     reporter,
         buildHistoryFile = buildHistoryFile
 ) {
+    companion object {
+        private val moduleInfoCache = InMemoryModuleInfoCacheImpl()
+    }
+
     override fun isICEnabled(): Boolean =
         IncrementalCompilation.isEnabledForJs()
 
@@ -120,7 +124,7 @@ class IncrementalJsCompilerRunner(
     ): Services.Builder =
         super.makeServices(args, lookupTracker, expectActualTracker, caches, compilationMode).apply {
             register(IncrementalResultsConsumer::class.java, IncrementalResultsConsumerImpl())
-            register(ModuleInfoCache::class.java, caches.moduleInfo)
+            register(ModuleInfoCache::class.java, moduleInfoCache)
 
             if (compilationMode is CompilationMode.Incremental) {
                 register(
