@@ -120,6 +120,7 @@ class IncrementalJsCompilerRunner(
     ): Services.Builder =
         super.makeServices(args, lookupTracker, expectActualTracker, caches, compilationMode).apply {
             register(IncrementalResultsConsumer::class.java, IncrementalResultsConsumerImpl())
+            register(ModuleInfoCache::class.java, caches.moduleInfo)
 
             if (compilationMode is CompilationMode.Incremental) {
                 register(
