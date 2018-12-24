@@ -126,7 +126,9 @@ class FunctionReader(
             } else {
                 val modules = arrayListOf<ModuleInfo>()
                 JsLibraryUtils.traverseJsLibrary(file) { lib -> lib.readModulesTo(modules) }
-                moduleInfoCache[file] = modules.map { it.toModuleInfoValue() }
+                if (file.extension.equals("jar", ignoreCase = true)) {
+                    moduleInfoCache[file] = modules.map { it.toModuleInfoValue() }
+                }
                 modules
             }
             modules.forEach { result.put(it.name, it) }
