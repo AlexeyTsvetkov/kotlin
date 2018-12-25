@@ -96,7 +96,7 @@ class ModuleInfoCacheImpl(cachesDir: File) : BasicMapsOwner(cachesDir), ModuleIn
         }
 
         override fun save(output: DataOutput, modules: Collection<ModuleInfoValue>) {
-            output.write(modules.size)
+            output.writeInt(modules.size)
             modules.forEach { ModuleInfoValue.saveModuleInfo(output, it) }
         }
     }

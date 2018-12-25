@@ -5,7 +5,6 @@
 
 package org.jetbrains.kotlin.incremental.js
 
-import com.intellij.util.io.IOUtil
 import org.jetbrains.kotlin.js.backend.ast.metadata.SpecialFunction
 import org.jetbrains.kotlin.js.parser.sourcemaps.SourceMap
 import org.jetbrains.kotlin.js.parser.sourcemaps.SourceMapGroup
@@ -29,22 +28,21 @@ data class ModuleInfoValue(
         private const val serialVersionUID = 0
 
         fun readModuleInfo(input: DataInput): ModuleInfoValue = with(input) {
-            val name = input.readString()!!
-            val filePath = input.readString()!!
-            val fileContent = input.readString()!!
-            val moduleVariable = input.readString()!!
-            val kotlinVariable = input.readString()!!
+            val name = input.readUTF()
+            val filePath = input.readUTF()
+            val fileContent = input.readLongUTF()!!
+            val moduleVariable = input.readUTF()
+            val kotlinVariable = input.readUTF()
             val specialFunctionsSize = input.readInt()
             val specialFunctions = HashMap<String, SpecialFunction>(specialFunctionsSize)
             repeat(specialFunctionsSize) {
-                val k = readString()!!
+                val k = readUTF()
                 val v = readInt()
                 specialFunctions[k] = SpecialFunction.values()[v]
             }
             val hasSourceMap = readBoolean()
             val sourceMap = if (hasSourceMap) readSourceMap() else null
-            val hasOutputDir = readBoolean()
-            val outputDir = if (hasOutputDir) File(readString()) else null
+            val outputDir = readNullableUTF()?.let(::File)
 
             ModuleInfoValue(
                 name = name,
@@ -60,14 +58,14 @@ data class ModuleInfoValue(
 
         fun saveModuleInfo(output: DataOutput, module: ModuleInfoValue) {
             with(output) {
-                writeString(module.name)
-                writeString(module.filePath)
-                writeString(module.fileContent)
-                writeString(module.moduleVariable)
-                writeString(module.kotlinVariable)
+                writeUTF(module.name)
+                writeUTF(module.filePath)
+                writeLongUTF(module.fileContent)
+                writeUTF(module.moduleVariable)
+                writeUTF(module.kotlinVariable)
                 writeInt(module.specialFunctions.size)
                 module.specialFunctions.forEach { (k, v) ->
-                    writeString(k)
+                    writeUTF(k)
                     writeInt(v.ordinal)
                 }
                 val sourceMap = module.sourceMap
@@ -75,12 +73,7 @@ data class ModuleInfoValue(
                 if (sourceMap != null) {
                     saveSourceMap(sourceMap)
                 }
-
-                val outputDir = module.outputDir
-                writeBoolean(outputDir != null)
-                if (outputDir != null) {
-                    writeString(outputDir.canonicalPath)
-                }
+                writeNullableUTF(module.outputDir?.canonicalPath)
             }
         }
 
@@ -93,8 +86,8 @@ data class ModuleInfoValue(
             val contentSize = readInt()
             val content = HashMap<String, String?>(contentSize)
             repeat(contentSize) {
-                val k = readString()!!
-                val v = readString()
+                val k = readUTF()
+                val v = readLongUTF()
                 content[k] = v
             }
             return SourceMap(content, groups)
@@ -107,8 +100,8 @@ data class ModuleInfoValue(
             val content = sourceMap.sourceContent
             writeInt(content.size)
             content.forEach { k, v ->
-                writeString(k)
-                writeString(v)
+                writeUTF(k)
+                writeLongUTF(v)
             }
         }
 
@@ -132,8 +125,7 @@ data class ModuleInfoValue(
             val sourceLineNumber = readInt()
             val sourceColumnNumber = readInt()
             val generatedColumnNumber = readInt()
-            val hasSourceFileName = readBoolean()
-            val sourceFileName = if (hasSourceFileName) readString() else null
+            val sourceFileName = readNullableUTF()
             return SourceMapSegment(
                 sourceLineNumber = sourceLineNumber,
                 sourceColumnNumber = sourceColumnNumber,
@@ -146,17 +138,40 @@ data class ModuleInfoValue(
             writeInt(segment.sourceLineNumber)
             writeInt(segment.sourceColumnNumber)
             writeInt(segment.generatedColumnNumber)
-            val sourceFileName = segment.sourceFileName
-            writeBoolean(sourceFileName != null)
-            if (sourceFileName != null) {
-                writeString(segment.sourceFileName)
+            writeNullableUTF(segment.sourceFileName)
+        }
+
+        private fun DataInput.readNullableUTF(): String? {
+            val value = readBoolean()
+            return if (value) readUTF() else null
+        }
+
+        private fun DataOutput.writeNullableUTF(value: String?) {
+            val hasValue = value != null
+            writeBoolean(hasValue)
+            if (hasValue) {
+                writeUTF(value)
             }
         }
 
-        private fun DataInput.readString(): String? = IOUtil.readString(this)
+        private fun DataInput.readLongUTF(): String? {
+            val size = readInt()
+            if (size < 0) return null
 
-        private fun DataOutput.writeString(value: String?) {
-            IOUtil.writeString(value, this)
+            val bytes = ByteArray(size)
+            readFully(bytes)
+            return bytes.toString(Charsets.UTF_8)
+        }
+
+        private fun DataOutput.writeLongUTF(value: String?) {
+            if (value == null) {
+                writeInt(-1)
+                return
+            }
+
+            val bytes = value.toByteArray(Charsets.UTF_8)
+            writeInt(bytes.size)
+            write(bytes)
         }
     }
 }
