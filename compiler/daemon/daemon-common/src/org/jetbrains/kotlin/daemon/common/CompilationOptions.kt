@@ -64,7 +64,8 @@ class IncrementalCompilationOptions(
          */
         val localStateDirs: List<File>,
         val multiModuleICSettings: MultiModuleICSettings,
-        val modulesInfo: IncrementalModuleInfo
+        val modulesInfo: IncrementalModuleInfo,
+        val jsICSettings: JsICSettings?
 ) : CompilationOptions(compilerMode, targetPlatform, reportCategories, reportSeverity, requestedCompilationResults) {
     companion object {
         const val serialVersionUID: Long = 0
@@ -80,6 +81,7 @@ class IncrementalCompilationOptions(
                "multiModuleICSettings=$multiModuleICSettings, " +
                "usePreciseJavaTracking=$usePreciseJavaTracking" +
                "localStateDirs=$localStateDirs" +
+               "jsICSettings=$jsICSettings" +
                ")"
     }
 }
@@ -88,6 +90,12 @@ data class MultiModuleICSettings(
     val buildHistoryFile: File,
     val useModuleDetection: Boolean
 ) : Serializable {
+    companion object {
+        const val serialVersionUID: Long = 0
+    }
+}
+
+data class JsICSettings(val cacheModuleInfo: Boolean = false) : Serializable {
     companion object {
         const val serialVersionUID: Long = 0
     }

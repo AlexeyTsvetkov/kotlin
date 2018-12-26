@@ -521,6 +521,9 @@ open class Kotlin2JsCompile : AbstractKotlinCompile<K2JSCompilerArguments>(), Ko
             ?.let { if (LibraryUtils.isKotlinJavascriptLibrary(it)) it else null }
             ?.absolutePath
 
+    @get:Input
+    internal var cacheModuleInfo: Boolean = false
+
     override fun callCompilerAsync(args: K2JSCompilerArguments, sourceRoots: SourceRoots, changedFiles: ChangedFiles) {
         sourceRoots as SourceRoots.KotlinOnly
 
@@ -554,7 +557,8 @@ open class Kotlin2JsCompile : AbstractKotlinCompile<K2JSCompilerArguments>(), Ko
             IncrementalCompilationEnvironment(
                 if (hasFilesInTaskBuildDirectory()) changedFiles else ChangedFiles.Unknown(),
                 taskBuildDirectory,
-                multiModuleICSettings = multiModuleICSettings
+                multiModuleICSettings = multiModuleICSettings,
+                cacheJsModuleInfo = cacheModuleInfo
             )
         } else null
 

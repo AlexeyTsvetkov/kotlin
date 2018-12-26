@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.js.K2JSCompiler
 import org.jetbrains.kotlin.config.IncrementalCompilation
 import org.jetbrains.kotlin.config.Services
+import org.jetbrains.kotlin.daemon.common.JsICSettings
 import org.jetbrains.kotlin.incremental.components.ExpectActualTracker
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.incremental.js.*
@@ -38,14 +39,17 @@ fun makeJsIncrementally(
         reporter: ICReporter = EmptyICReporter
 ) {
     val allKotlinFiles = sourceRoots.asSequence().flatMap { it.walk() }
-            .filter { it.isFile && it.extension.equals("kt", ignoreCase = true) }.toList()
+        .filter { it.isFile && it.extension.equals("kt", ignoreCase = true) }.toList()
     val buildHistoryFile = File(cachesDir, "build-history.bin")
+    val jsICSettings = JsICSettings(cacheModuleInfo = false)
 
     withJsIC {
         val compiler = IncrementalJsCompilerRunner(
             cachesDir, reporter,
             buildHistoryFile = buildHistoryFile,
-            modulesApiHistory = EmptyModulesApiHistory)
+            modulesApiHistory = EmptyModulesApiHistory,
+            jsICSettings = jsICSettings
+        )
         compiler.compile(allKotlinFiles, args, messageCollector, providedChangedFiles = null)
     }
 }
@@ -64,13 +68,14 @@ inline fun <R> withJsIC(fn: () -> R): R {
 class IncrementalJsCompilerRunner(
     workingDir: File,
     reporter: ICReporter,
-        buildHistoryFile: File,
-        private val modulesApiHistory: ModulesApiHistory
+    buildHistoryFile: File,
+    private val modulesApiHistory: ModulesApiHistory,
+    private val jsICSettings: JsICSettings
 ) : IncrementalCompilerRunner<K2JSCompilerArguments, IncrementalJsCachesManager>(
     workingDir,
     "caches-js",
     reporter,
-        buildHistoryFile = buildHistoryFile
+    buildHistoryFile = buildHistoryFile
 ) {
     override fun isICEnabled(): Boolean =
         IncrementalCompilation.isEnabledForJs()
@@ -125,7 +130,9 @@ class IncrementalJsCompilerRunner(
     ): Services.Builder =
         super.makeServices(args, lookupTracker, expectActualTracker, caches, compilationMode).apply {
             register(IncrementalResultsConsumer::class.java, IncrementalResultsConsumerImpl())
-            register(ModuleInfoCache::class.java, caches.moduleInfo)
+            if (jsICSettings.cacheModuleInfo) {
+                register(ModuleInfoCache::class.java, caches.moduleInfo)
+            }
 
             if (compilationMode is CompilationMode.Incremental) {
                 register(

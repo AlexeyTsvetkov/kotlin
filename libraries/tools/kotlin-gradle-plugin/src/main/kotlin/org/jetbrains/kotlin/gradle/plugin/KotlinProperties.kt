@@ -36,6 +36,7 @@ internal fun PropertiesProvider.mapKotlinTaskProperties(task: AbstractKotlinComp
 
     if (task is Kotlin2JsCompile) {
         incrementalJs?.let { task.incremental = it }
+        cacheModuleInfo?.let { task.incremental = it }
     }
 }
 
@@ -59,6 +60,9 @@ internal class PropertiesProvider(private val project: Project) {
 
     val incrementalJs: Boolean?
         get() = booleanProperty("kotlin.incremental.js")
+
+    val cacheModuleInfo: Boolean?
+        get() = booleanProperty("kotlin.js.cacheModuleInfo")
 
     val incrementalMultiplatform: Boolean?
         get() = booleanProperty("kotlin.incremental.multiplatform")

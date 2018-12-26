@@ -233,6 +233,9 @@ internal class GradleKotlinCompilerWork @Inject constructor(
     ): CompileService.CallResult<Int> {
         val icEnv = incrementalCompilationEnvironment ?: error("incrementalCompilationEnvironment is null!")
         val knownChangedFiles = icEnv.changedFiles as? ChangedFiles.Known
+        val jsICSettings =
+            if (targetPlatform != CompileService.TargetPlatform.JS) null
+            else JsICSettings(cacheModuleInfo = icEnv.cacheJsModuleInfo)
 
         val compilationOptions = IncrementalCompilationOptions(
             areFileChangesKnown = knownChangedFiles != null,
@@ -247,7 +250,8 @@ internal class GradleKotlinCompilerWork @Inject constructor(
             usePreciseJavaTracking = icEnv.usePreciseJavaTracking,
             localStateDirs = localStateDirectories,
             multiModuleICSettings = icEnv.multiModuleICSettings,
-            modulesInfo = incrementalModuleInfo!!
+            modulesInfo = incrementalModuleInfo!!,
+            jsICSettings = jsICSettings
         )
 
         log.info("Options for KOTLIN DAEMON: $compilationOptions")
