@@ -148,7 +148,8 @@ class IncrementalJvmCompilerRunner(
         val lastBuildInfo = BuildInfo.read(lastBuildInfoFile) ?: return CompilationMode.Rebuild { "No information on previous build" }
         reporter.report { "Last Kotlin Build info -- $lastBuildInfo" }
 
-        val classpathChanges = getClasspathChanges(args.classpathAsList, changedFiles, lastBuildInfo, modulesApiHistory, reporter)
+        val classpathFilesDiff = ClasspathFilesDiff(args.classpathAsList, changedFiles)
+        val classpathChanges = getClasspathChanges(classpathFilesDiff, lastBuildInfo, modulesApiHistory, reporter)
 
         @Suppress("UNUSED_VARIABLE") // for sealed when
         val unused = when (classpathChanges) {

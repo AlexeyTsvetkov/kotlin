@@ -52,6 +52,10 @@ class ModuleInfoCacheImpl(cachesDir: File) : BasicMapsOwner(cachesDir), ModuleIn
         moduleInfoMap.get(file)
 
     override fun set(file: File, moduleInfoValue: Collection<ModuleInfoValue>) {
+        if (!file.extension.equals("jar", ignoreCase = true)) {
+            return
+        }
+
         moduleInfoMap.set(file, moduleInfoValue)
     }
 

@@ -10,35 +10,44 @@ import org.jetbrains.kotlin.incremental.util.Either
 import org.jetbrains.kotlin.name.FqName
 import java.io.File
 
-internal fun getClasspathChanges(
+internal class ClasspathFilesDiff(
     classpath: List<File>,
-    changedFiles: ChangedFiles.Known,
+    changedFiles: ChangedFiles.Known
+) {
+    val modified: Set<File>
+    val removed: Set<File>
+
+    init {
+        val classpathSet = HashSet<File>()
+        for (file in classpath) {
+            when {
+                file.isFile -> classpathSet.add(file)
+                file.isDirectory -> file.walk().filterTo(classpathSet) { it.isFile }
+            }
+        }
+
+        modified = changedFiles.modified.filterTo(HashSet()) { it in classpathSet }
+        removed = changedFiles.removed.filterTo(HashSet()) { it in classpathSet }
+    }
+}
+
+internal fun getClasspathChanges(
+    classpathDiff: ClasspathFilesDiff,
     lastBuildInfo: BuildInfo,
     modulesApiHistory: ModulesApiHistory,
     reporter: ICReporter?
 ): ChangesEither {
-    val classpathSet = HashSet<File>()
-    for (file in classpath) {
-        when {
-            file.isFile -> classpathSet.add(file)
-            file.isDirectory -> file.walk().filterTo(classpathSet) { it.isFile }
-        }
-    }
-
-    val modifiedClasspath = changedFiles.modified.filterTo(HashSet()) { it in classpathSet }
-    val removedClasspath = changedFiles.removed.filterTo(HashSet()) { it in classpathSet }
-
     // todo: removed classes could be processed normally
-    if (removedClasspath.isNotEmpty()) return ChangesEither.Unknown("Some files are removed from classpath $removedClasspath")
+    if (classpathDiff.removed.isNotEmpty()) return ChangesEither.Unknown("Some files are removed from classpath ${classpathDiff.removed}")
 
-    if (modifiedClasspath.isEmpty()) return ChangesEither.Known()
+    if (classpathDiff.modified.isEmpty()) return ChangesEither.Known()
 
     val lastBuildTS = lastBuildInfo.startTS
 
     val symbols = HashSet<LookupSymbol>()
     val fqNames = HashSet<FqName>()
 
-    val historyFilesEither = modulesApiHistory.historyFilesForChangedFiles(modifiedClasspath)
+    val historyFilesEither = modulesApiHistory.historyFilesForChangedFiles(classpathDiff.modified)
     val historyFiles = when (historyFilesEither) {
         is Either.Success<Set<File>> -> historyFilesEither.value
         is Either.Error -> return ChangesEither.Unknown(historyFilesEither.reason)

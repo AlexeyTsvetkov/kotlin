@@ -89,7 +89,12 @@ class IncrementalJsCompilerRunner(
         initDirtyFiles(dirtyFiles, changedFiles)
 
         val libs = (args.libraries ?: "").split(File.pathSeparator).map { File(it) }
-        val classpathChanges = getClasspathChanges(libs, changedFiles, lastBuildInfo, modulesApiHistory, reporter)
+        val classpathFilesDiff = ClasspathFilesDiff(libs, changedFiles).apply {
+            (removed.asSequence() + modified.asSequence()).forEach {
+                caches.moduleInfo.remove(it)
+            }
+        }
+        val classpathChanges = getClasspathChanges(classpathFilesDiff, lastBuildInfo, modulesApiHistory, reporter)
 
         @Suppress("UNUSED_VARIABLE") // for sealed when
         val unused = when (classpathChanges) {
