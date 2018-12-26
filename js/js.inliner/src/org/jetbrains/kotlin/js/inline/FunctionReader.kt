@@ -91,18 +91,6 @@ class FunctionReader(
                 ?.let { Regex("\\s*$it\\s*\\(\\s*").toPattern() }
     }
 
-    private fun ModuleInfo.toModuleInfoValue() =
-        ModuleInfoValue(
-            name = name,
-            filePath = filePath,
-            fileContent = fileContent,
-            moduleVariable = moduleVariable,
-            kotlinVariable = kotlinVariable,
-            specialFunctions = specialFunctions,
-            sourceMap = sourceMap,
-            outputDir = outputDir
-        )
-
     private val moduleNameToInfo by lazy {
         val result = HashMultimap.create<String, ModuleInfo>()
         val moduleInfoCache = config.configuration.get(JSConfigurationKeys.MODULE_INFO_CACHE) ?: ModuleInfoCache.Empty
@@ -124,14 +112,27 @@ class FunctionReader(
                     )
                 }
             } else {
-                arrayListOf<ModuleInfo>().also { modules ->
-                    JsLibraryUtils.traverseJsLibrary(file) { lib -> lib.readModulesTo(modules) }
-                }
+                val modules = arrayListOf<ModuleInfo>()
+                JsLibraryUtils.traverseJsLibrary(file) { lib -> lib.readModulesTo(modules) }
+                moduleInfoCache[file] = modules.map { it.toModuleInfoValue() }
+                modules
             }
             modules.forEach { result.put(it.name, it) }
         }
         result
     }
+
+    private fun ModuleInfo.toModuleInfoValue() =
+        ModuleInfoValue(
+            name = name,
+            filePath = filePath,
+            fileContent = fileContent,
+            moduleVariable = moduleVariable,
+            kotlinVariable = kotlinVariable,
+            specialFunctions = specialFunctions,
+            sourceMap = sourceMap,
+            outputDir = outputDir
+        )
 
     private fun JsLibrary.readModulesTo(modules: MutableCollection<ModuleInfo>) {
         var current = 0
