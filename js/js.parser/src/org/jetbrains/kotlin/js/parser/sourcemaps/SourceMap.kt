@@ -18,9 +18,16 @@ package org.jetbrains.kotlin.js.parser.sourcemaps
 
 import java.io.File
 import java.io.PrintStream
-import java.io.Reader
 
-class SourceMap(val sourceContent: Map<String, String?>, val groups: MutableList<SourceMapGroup> = arrayListOf()) {
+class SourceMap(val sourceContent: Map<String, String?>, private val myGroups: MutableList<SourceMapGroup> = arrayListOf()) {
+    val groups: List<SourceMapGroup>
+        get() = myGroups
+
+    fun addGroup(segments: List<SourceMapSegment>) {
+        val group = if (segments.isEmpty()) EmptySourceMapGroup else SourceMapGroup(segments)
+        myGroups.add(group)
+    }
+
     fun debug(writer: PrintStream = System.out) {
         for ((index, group) in groups.withIndex()) {
             writer.print("${index + 1}:")
@@ -56,7 +63,9 @@ data class SourceMapSegment(
     val sourceColumnNumber: Int
 )
 
-class SourceMapGroup(val segments: MutableList<SourceMapSegment> = arrayListOf())
+open class SourceMapGroup(val segments: List<SourceMapSegment>)
+
+object EmptySourceMapGroup : SourceMapGroup(emptyList())
 
 sealed class SourceMapParseResult
 

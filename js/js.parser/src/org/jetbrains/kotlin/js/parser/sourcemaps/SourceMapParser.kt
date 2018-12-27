@@ -16,9 +16,9 @@
 
 package org.jetbrains.kotlin.js.parser.sourcemaps
 
+import org.jetbrains.kotlin.utils.SmartList
 import java.io.IOException
 import java.io.Reader
-import java.io.StringReader
 
 object SourceMapParser {
     @Throws(IOException::class)
@@ -87,11 +87,16 @@ object SourceMapParser {
         var sourceIndex = 0
         val stream = MappingStream(mappings.value)
         val sourceMap = SourceMap(sourcePathToContent)
-        var currentGroup = SourceMapGroup().also { sourceMap.groups += it }
+        var currentSegments = SmartList<SourceMapSegment>()
+
+        fun newGroup() {
+            sourceMap.addGroup(currentSegments)
+            currentSegments = SmartList()
+        }
 
         while (!stream.isEof) {
             if (stream.isGroupTerminator) {
-                currentGroup = SourceMapGroup().also { sourceMap.groups += it }
+                newGroup()
                 jsColumn = 0
                 stream.skipChar()
                 continue
@@ -110,16 +115,16 @@ object SourceMapParser {
                 if (sourceIndex !in sources.indices) {
                     return stream.createError("Source index $sourceIndex is out of bounds ${sources.indices}")
                 }
-                currentGroup.segments += SourceMapSegment(jsColumn, sourceRoot + sources[sourceIndex], sourceLine, sourceColumn)
+                currentSegments.add(SourceMapSegment(jsColumn, sourceRoot + sources[sourceIndex], sourceLine, sourceColumn))
             }
             else {
-                currentGroup.segments += SourceMapSegment(jsColumn, null, -1, -1)
+                currentSegments.add(SourceMapSegment(jsColumn, null, -1, -1))
             }
 
             when {
                 stream.isEof -> return stream.createError("Unexpected EOF, ',' or ';' expected")
                 stream.isGroupTerminator -> {
-                    currentGroup = SourceMapGroup().also { sourceMap.groups += it }
+                    newGroup()
                     jsColumn = 0
                 }
                 !stream.isSegmentTerminator -> return stream.createError("Unexpected char, ',' or ';' expected")
