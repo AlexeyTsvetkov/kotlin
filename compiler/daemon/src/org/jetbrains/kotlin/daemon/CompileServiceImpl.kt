@@ -516,7 +516,7 @@ class CompileServiceImpl(
             reporter = reporter,
             buildHistoryFile = incrementalCompilationOptions.multiModuleICSettings.buildHistoryFile,
             modulesApiHistory = modulesApiHistory,
-            jsICSettings = incrementalCompilationOptions.jsICSettings
+            jsICSettings = incrementalCompilationOptions.jsICSettings!!
         )
         return compiler.compile(allKotlinFiles, args, compilerMessageCollector, changedFiles)
     }
