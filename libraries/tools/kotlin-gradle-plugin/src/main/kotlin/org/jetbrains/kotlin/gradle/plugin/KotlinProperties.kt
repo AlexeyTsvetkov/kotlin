@@ -55,8 +55,8 @@ internal class PropertiesProvider(private val project: Project) {
     val coroutines: Coroutines?
         get() = property("kotlin.coroutines")?.let { Coroutines.byCompilerArgument(it) }
 
-    val perfReportDir: File?
-        get() = property(PERFORMANCE_REPORT_DIR_PROPERTY)?.let { File(it) }
+    val buildReport: File?
+        get() = property(BUILD_REPORT_DIR_PROPERTY)?.let { File(it) }
 
     val incrementalJvm: Boolean?
         get() = booleanProperty("kotlin.incremental")
@@ -92,6 +92,6 @@ internal class PropertiesProvider(private val project: Project) {
         }
 
     companion object {
-        internal const val PERFORMANCE_REPORT_DIR_PROPERTY = "kotlin.performance.report.dir"
+        internal const val BUILD_REPORT_DIR_PROPERTY = "kotlin.build.report.dir"
     }
 }

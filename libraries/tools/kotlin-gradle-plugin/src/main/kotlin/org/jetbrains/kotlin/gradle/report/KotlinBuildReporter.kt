@@ -9,17 +9,19 @@ import org.gradle.BuildAdapter
 import org.gradle.BuildResult
 import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionListener
+import org.gradle.api.invocation.Gradle
 import org.gradle.api.tasks.TaskState
+import org.jetbrains.kotlin.compilerRunner.GradleCompilerRunner
 import org.jetbrains.kotlin.gradle.plugin.internal.state.TaskExecutionResults
 import java.io.File
 import java.lang.StringBuilder
 import kotlin.math.max
 
-internal class KotlinPerformanceReporter(private val perfReportFile: File) : BuildAdapter(), TaskExecutionListener {
+internal class KotlinBuildReporter(private val perfReportFile: File) : BuildAdapter(), TaskExecutionListener {
     init {
         val dir = perfReportFile.parentFile
         check(dir.isDirectory) { "$dir does not exist or is a file" }
-        check(!perfReportFile.isFile) { "Performance report log file $perfReportFile exists already" }
+        check(!perfReportFile.isFile) { "Build report log file $perfReportFile exists already" }
     }
 
     private val taskStartNs = HashMap<Task, Long>()
@@ -73,9 +75,9 @@ internal class KotlinPerformanceReporter(private val perfReportFile: File) : Bui
         val logger = result.gradle?.rootProject?.logger
         try {
             perfReportFile.writeText(taskOverview() + tasksSb.toString())
-            logger?.lifecycle("Kotlin performance report is written to ${perfReportFile.canonicalPath}")
+            logger?.lifecycle("Kotlin build report is written to ${perfReportFile.canonicalPath}")
         } catch (e: Throwable) {
-            logger?.error("Could not write Kotlin performance report to ${perfReportFile.canonicalPath}", e)
+            logger?.error("Could not write Kotlin build report to ${perfReportFile.canonicalPath}", e)
         }
     }
 
