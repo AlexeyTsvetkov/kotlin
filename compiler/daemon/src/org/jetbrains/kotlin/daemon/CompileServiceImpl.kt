@@ -511,6 +511,7 @@ class CompileServiceImpl(
 
         val workingDir = incrementalCompilationOptions.workingDir
         val modulesApiHistory = ModulesApiHistoryJs(incrementalCompilationOptions.modulesInfo)
+
         val compiler = IncrementalJsCompilerRunner(
             workingDir = workingDir,
             reporter = reporter,
@@ -574,6 +575,8 @@ class CompileServiceImpl(
         val workingDir = incrementalCompilationOptions.workingDir
 
         val modulesApiHistory = incrementalCompilationOptions.run {
+            reporter.report { "Use module detection: ${multiModuleICSettings.useModuleDetection}" }
+
             if (!multiModuleICSettings.useModuleDetection) {
                 ModulesApiHistoryJvm(modulesInfo)
             } else {
