@@ -49,6 +49,11 @@ public class CompileAgainstJvmAbiTestGenerated extends AbstractCompileAgainstJvm
         runTest("plugins/jvm-abi-gen/testData/compile/inlineReifiedFunction/");
     }
 
+    @TestMetadata("kt-29471")
+    public void testKt_29471() throws Exception {
+        runTest("plugins/jvm-abi-gen/testData/compile/kt-29471/");
+    }
+
     @TestMetadata("privateOnlyConstructors")
     public void testPrivateOnlyConstructors() throws Exception {
         runTest("plugins/jvm-abi-gen/testData/compile/privateOnlyConstructors/");
