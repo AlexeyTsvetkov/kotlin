@@ -90,7 +90,7 @@ internal class KotlinBuildReporter(private val perfReportFile: File) : BuildAdap
         if (skipMessage != null) {
             tasksSb.appendln("$task was skipped: $skipMessage")
         } else {
-            tasksSb.appendln("$task executed in ${formatTime(timeNs)}")
+            tasksSb.appendln("$task finished in ${formatTime(timeNs)}")
         }
 
         val path = task.path
@@ -121,7 +121,7 @@ internal class KotlinBuildReporter(private val perfReportFile: File) : BuildAdap
         val kotlinTotalTimeNs = kotlinTaskTimeNs.values.sum()
         val ktTaskPercent = (kotlinTotalTimeNs.toDouble() / allTasksTimeNs * 100).asString(1)
 
-        sb.appendln("Total execution time for Kotlin tasks: ${formatTime(kotlinTotalTimeNs)} ($ktTaskPercent % of all tasks time)")
+        sb.appendln("Total time for Kotlin tasks: ${formatTime(kotlinTotalTimeNs)} ($ktTaskPercent % of all tasks time)")
 
         val table = TextTable("Time", "% of Kotlin time", "Task")
         kotlinTaskTimeNs.entries
