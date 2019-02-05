@@ -57,7 +57,7 @@ internal class PropertiesProvider(private val project: Project) {
         get() = property("kotlin.coroutines")?.let { Coroutines.byCompilerArgument(it) }
 
     val buildReportEnabled: Boolean
-        get() = booleanProperty("kotlin.build.report.enabled") ?: false
+        get() = booleanProperty("kotlin.build.report.enable") ?: false
 
     val buildReportDir: File?
         get() = property("kotlin.build.report.dir")?.let { File(it) }
