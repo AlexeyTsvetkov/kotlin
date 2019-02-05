@@ -26,7 +26,7 @@ internal fun configureBuildReporter(gradle: Gradle, log: Logger) {
     val rootProject = gradle.rootProject
     val properties = PropertiesProvider(rootProject)
 
-    if (properties.buildReportEnabled != true) return
+    if (!properties.buildReportEnabled) return
 
     val perfLogDir = properties.buildReportDir
         ?: rootProject.buildDir.resolve("reports/kotlin-build").apply { mkdirs() }
