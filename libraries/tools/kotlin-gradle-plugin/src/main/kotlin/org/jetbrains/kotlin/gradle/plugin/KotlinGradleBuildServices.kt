@@ -127,7 +127,7 @@ internal class KotlinGradleBuildServices private constructor(
 
     private fun configureBuildReporter(gradle: Gradle, perfLogDir: File, log: Logger) {
         if (perfLogDir.isFile) {
-            log.error("Kotlin build report cannot be created: '$BUILD_REPORT_DIR_PROPERTY' is a file")
+            log.error("Kotlin build report cannot be created: '$BUILD_REPORT_DIR_PROPERTY=$perfLogDir' is a file")
         } else {
             perfLogDir.mkdirs()
             val ts = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(Calendar.getInstance().time)
