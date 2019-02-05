@@ -25,9 +25,9 @@ import org.jetbrains.kotlin.compilerRunner.DELETED_SESSION_FILE_PREFIX
 import org.jetbrains.kotlin.compilerRunner.GradleCompilerRunner
 import org.jetbrains.kotlin.gradle.plugin.internal.state.TaskLoggers
 import org.jetbrains.kotlin.gradle.logging.kotlinDebug
-import org.jetbrains.kotlin.gradle.plugin.PropertiesProvider.Companion.BUILD_REPORT_DIR_PROPERTY
 import org.jetbrains.kotlin.gradle.plugin.internal.state.TaskExecutionResults
 import org.jetbrains.kotlin.gradle.report.KotlinBuildReporter
+import org.jetbrains.kotlin.gradle.report.configureBuildReporter
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 import org.jetbrains.kotlin.gradle.utils.relativeToRoot
 import org.jetbrains.kotlin.utils.addToStdlib.sumByLong
@@ -82,10 +82,7 @@ internal class KotlinGradleBuildServices private constructor(
         TaskLoggers.clear()
         TaskExecutionResults.clear()
 
-        PropertiesProvider(gradle.rootProject).buildReport?.let {
-            configureBuildReporter(gradle, it, log)
-            log.kotlinDebug { "Configured Kotlin build reporter" }
-        }
+        configureBuildReporter(gradle, log)
     }
 
     override fun buildFinished(result: BuildResult) {
@@ -125,25 +122,6 @@ internal class KotlinGradleBuildServices private constructor(
         log.kotlinDebug(DISPOSE_MESSAGE)
     }
 
-    private fun configureBuildReporter(gradle: Gradle, perfLogDir: File, log: Logger) {
-        if (perfLogDir.isFile) {
-            log.error("Kotlin build report cannot be created: '$BUILD_REPORT_DIR_PROPERTY=$perfLogDir' is a file")
-        } else {
-            perfLogDir.mkdirs()
-            val ts = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(Calendar.getInstance().time)
-
-            val perfReportFile = perfLogDir.resolve("${gradle.rootProject.name}-build-$ts.txt")
-            val reporter = KotlinBuildReporter(perfReportFile)
-            gradle.addBuildListener(reporter)
-
-            gradle.taskGraph.whenReady { graph ->
-                graph.allTasks.asSequence()
-                    .filterIsInstance<AbstractKotlinCompile<*>>()
-                    .forEach { it.reportExecutionResult = true }
-            }
-        }
-    }
-
     private fun getUsedMemoryKb(): Long? {
         if (!shouldReportMemoryUsage) return null
 
@@ -160,3 +138,4 @@ internal class KotlinGradleBuildServices private constructor(
     private fun getGcCount(): Long =
         ManagementFactory.getGarbageCollectorMXBeans().sumByLong { Math.max(0, it.collectionCount) }
 }
+

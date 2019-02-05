@@ -10,12 +10,47 @@ import org.gradle.BuildResult
 import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionListener
 import org.gradle.api.invocation.Gradle
+import org.gradle.api.logging.Logger
 import org.gradle.api.tasks.TaskState
-import org.jetbrains.kotlin.compilerRunner.GradleCompilerRunner
+import org.jetbrains.kotlin.gradle.logging.kotlinDebug
+import org.jetbrains.kotlin.gradle.plugin.PropertiesProvider
 import org.jetbrains.kotlin.gradle.plugin.internal.state.TaskExecutionResults
+import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 import java.io.File
 import java.lang.StringBuilder
+import java.text.SimpleDateFormat
+import java.util.*
 import kotlin.math.max
+
+internal fun configureBuildReporter(gradle: Gradle, log: Logger) {
+    val rootProject = gradle.rootProject
+    val properties = PropertiesProvider(rootProject)
+
+    if (properties.buildReportEnabled != true) return
+
+    val perfLogDir = properties.buildReportDir
+        ?: rootProject.buildDir.resolve("reports/kotlin-build").apply { mkdirs() }
+
+    if (perfLogDir.isFile) {
+        log.error("Kotlin build report cannot be created: '$perfLogDir' is a file")
+        return
+    }
+
+    perfLogDir.mkdirs()
+    val ts = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(Calendar.getInstance().time)
+
+    val perfReportFile = perfLogDir.resolve("${gradle.rootProject.name}-build-$ts.txt")
+    val reporter = KotlinBuildReporter(perfReportFile)
+    gradle.addBuildListener(reporter)
+
+    gradle.taskGraph.whenReady { graph ->
+        graph.allTasks.asSequence()
+            .filterIsInstance<AbstractKotlinCompile<*>>()
+            .forEach { it.reportExecutionResult = true }
+    }
+
+    log.kotlinDebug { "Configured Kotlin build reporter" }
+}
 
 internal class KotlinBuildReporter(private val perfReportFile: File) : BuildAdapter(), TaskExecutionListener {
     init {

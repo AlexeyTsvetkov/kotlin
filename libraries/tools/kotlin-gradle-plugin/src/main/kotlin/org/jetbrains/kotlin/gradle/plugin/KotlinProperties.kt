@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.gradle.plugin
 
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.dsl.Coroutines
+import org.jetbrains.kotlin.gradle.report.BuildReportMode
 import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -55,8 +56,11 @@ internal class PropertiesProvider(private val project: Project) {
     val coroutines: Coroutines?
         get() = property("kotlin.coroutines")?.let { Coroutines.byCompilerArgument(it) }
 
-    val buildReport: File?
-        get() = property(BUILD_REPORT_DIR_PROPERTY)?.let { File(it) }
+    val buildReportEnabled: Boolean?
+        get() = booleanProperty("kotlin.build.report.enabled")
+
+    val buildReportDir: File?
+        get() = property("kotlin.build.report.dir")?.let { File(it) }
 
     val incrementalJvm: Boolean?
         get() = booleanProperty("kotlin.incremental")
@@ -90,8 +94,4 @@ internal class PropertiesProvider(private val project: Project) {
         } else {
             localProperties.getProperty(propName)
         }
-
-    companion object {
-        internal const val BUILD_REPORT_DIR_PROPERTY = "kotlin.build.report.dir"
-    }
 }
