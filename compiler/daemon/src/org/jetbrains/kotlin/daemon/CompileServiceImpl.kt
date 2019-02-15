@@ -522,7 +522,6 @@ class CompileServiceImpl(
         }
     }
 
-    // todo: non-IC non-KTS scripts?
     private fun execIncrementalCompiler(
         k2jvmArgs: K2JVMCompilerArguments,
         incrementalCompilationOptions: IncrementalCompilationOptions,
