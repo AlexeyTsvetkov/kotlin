@@ -134,6 +134,7 @@ object TopDownAnalyzerFacadeForJVM {
         val lookupTracker = configuration.get(CommonConfigurationKeys.LOOKUP_TRACKER) ?: LookupTracker.DO_NOTHING
         val expectActualTracker = configuration.get(CommonConfigurationKeys.EXPECT_ACTUAL_TRACKER) ?: ExpectActualTracker.DoNothing
         val targetIds = configuration.get(JVMConfigurationKeys.MODULES)?.map(::TargetId)
+            ?: incrementalComponents?.getTargetIds()
 
         val separateModules = !configuration.getBoolean(JVMConfigurationKeys.USE_SINGLE_MODULE)
 

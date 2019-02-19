@@ -25,4 +25,6 @@ import org.jetbrains.kotlin.daemon.common.Profiler
 
 class RemoteIncrementalCompilationComponentsClient(val facade: CompilerCallbackServicesFacade, eventManager: EventManager, val profiler: Profiler = DummyProfiler()) : IncrementalCompilationComponents {
     override fun getIncrementalCache(target: TargetId): IncrementalCache = RemoteIncrementalCacheClient(facade, target, profiler)
+
+    override fun getTargetIds(): Collection<TargetId>? = null
 }

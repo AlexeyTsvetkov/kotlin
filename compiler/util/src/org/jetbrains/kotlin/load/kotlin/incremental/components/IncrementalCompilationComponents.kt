@@ -20,4 +20,5 @@ import org.jetbrains.kotlin.modules.TargetId
 
 interface IncrementalCompilationComponents {
     fun getIncrementalCache(target: TargetId): IncrementalCache
+    fun getTargetIds(): Collection<TargetId>?
 }
