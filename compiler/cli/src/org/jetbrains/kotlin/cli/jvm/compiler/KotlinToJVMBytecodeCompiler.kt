@@ -374,12 +374,18 @@ object KotlinToJVMBytecodeCompiler {
         val analyzerWithCompilerReport = AnalyzerWithCompilerReport(collector, environment.configuration.languageVersionSettings)
         analyzerWithCompilerReport.analyzeAndReport(sourceFiles) {
             val project = environment.project
-            val moduleOutputs = environment.configuration.get(JVMConfigurationKeys.MODULES)?.mapNotNullTo(hashSetOf()) { module ->
-                environment.findLocalFile(module.getOutputDirectory())
-            }.orEmpty()
+            val config = environment.configuration
+            val incrementalComponents = config.get(JVMConfigurationKeys.INCREMENTAL_COMPILATION_COMPONENTS)
+            val modules = config.get(JVMConfigurationKeys.MODULES)
+            val moduleOutputsFiles: List<String> = when {
+                modules != null -> modules.map { it.getOutputDirectory() }
+                incrementalComponents != null -> listOfNotNull(config.get(JVMConfigurationKeys.OUTPUT_DIRECTORY)?.absolutePath)
+                else -> emptyList()
+            }
             val sourcesOnly = TopDownAnalyzerFacadeForJVM.newModuleSearchScope(project, sourceFiles)
             // To support partial and incremental compilation, we add the scope which contains binaries from output directories
             // of the compiled modules (.class) to the list of scopes of the source module
+            val moduleOutputs = moduleOutputsFiles.mapNotNullTo(HashSet()) { environment.findLocalFile(it) }
             val scope = if (moduleOutputs.isEmpty()) sourcesOnly else sourcesOnly.uniteWith(DirectoriesScope(project, moduleOutputs))
             TopDownAnalyzerFacadeForJVM.analyzeFilesWithJavaIntegration(
                 project,
