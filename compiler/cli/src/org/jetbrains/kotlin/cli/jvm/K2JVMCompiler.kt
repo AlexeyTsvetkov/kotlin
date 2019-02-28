@@ -22,15 +22,19 @@ import org.jetbrains.kotlin.cli.common.*
 import org.jetbrains.kotlin.cli.common.ExitCode.*
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.cli.common.config.addKotlinSourceRoot
+import org.jetbrains.kotlin.cli.common.config.kotlinSourceRoots
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
 import org.jetbrains.kotlin.cli.common.messages.FilteringMessageCollector
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.MessageUtil
 import org.jetbrains.kotlin.cli.common.messages.OutputMessageUtil
+import org.jetbrains.kotlin.cli.common.modules.ModuleBuilder
+import org.jetbrains.kotlin.cli.common.modules.ModuleChunk
 import org.jetbrains.kotlin.cli.jvm.compiler.CompileEnvironmentUtil
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler
+import org.jetbrains.kotlin.cli.jvm.config.JavaSourceRoot
 import org.jetbrains.kotlin.cli.jvm.config.addJavaSourceRoot
 import org.jetbrains.kotlin.cli.jvm.plugins.PluginCliParser
 import org.jetbrains.kotlin.cli.jvm.repl.ReplFromTerminal
@@ -44,6 +48,8 @@ import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
 import org.jetbrains.kotlin.metadata.deserialization.BinaryVersion
 import org.jetbrains.kotlin.metadata.jvm.deserialization.JvmMetadataVersion
+import org.jetbrains.kotlin.modules.JavaRootPath
+import org.jetbrains.kotlin.modules.Module
 import org.jetbrains.kotlin.script.ScriptDefinitionProvider
 import org.jetbrains.kotlin.script.StandardScriptDefinition
 import org.jetbrains.kotlin.utils.KotlinPaths
@@ -70,26 +76,8 @@ class K2JVMCompiler : CLICompiler<K2JVMCompilerArguments>() {
         val pluginLoadResult = loadPlugins(arguments, configuration)
         if (pluginLoadResult != ExitCode.OK) return pluginLoadResult
 
-        val commonSources = arguments.commonSources?.toSet().orEmpty()
-        if (!arguments.script && arguments.buildFile == null) {
-            for (arg in arguments.freeArgs) {
-                val file = File(arg)
-                if (file.extension == JavaFileType.DEFAULT_EXTENSION) {
-                    configuration.addJavaSourceRoot(file, arguments.javaPackagePrefix)
-                } else {
-                    configuration.addKotlinSourceRoot(arg, isCommon = arg in commonSources)
-                    if (file.isDirectory) {
-                        configuration.addJavaSourceRoot(file, arguments.javaPackagePrefix)
-                    }
-                }
-            }
-
-            for (path in arguments.javaSourceRoots ?: emptyArray()) {
-                configuration.addJavaSourceRoot(File(path), arguments.javaPackagePrefix)
-            }
-        }
-
-        configuration.put(CommonConfigurationKeys.MODULE_NAME, arguments.moduleName ?: JvmAbi.DEFAULT_MODULE_NAME)
+        val moduleName = arguments.moduleName ?: JvmAbi.DEFAULT_MODULE_NAME
+        configuration.put(CommonConfigurationKeys.MODULE_NAME, moduleName)
 
         configuration.configureExplicitContentRoots(arguments)
         configuration.configureStandardLibs(paths, arguments)
@@ -107,39 +95,7 @@ class K2JVMCompiler : CLICompiler<K2JVMCompilerArguments>() {
 
         messageCollector.report(LOGGING, "Configuring the compilation environment")
         try {
-            val destination = arguments.destination
-
-            if (arguments.buildFile != null) {
-                fun strongWarning(message: String) {
-                    messageCollector.report(STRONG_WARNING, message)
-                }
-                if (destination != null) {
-                    strongWarning("The '-d' option with a directory destination is ignored because '-Xbuild-file' is specified")
-                }
-                if (arguments.javaSourceRoots != null) {
-                    strongWarning("The '-Xjava-source-roots' option is ignored because '-Xbuild-file' is specified")
-                }
-                if (arguments.javaPackagePrefix != null) {
-                    strongWarning("The '-Xjava-package-prefix' option is ignored because '-Xbuild-file' is specified")
-                }
-
-                val sanitizedCollector = FilteringMessageCollector(messageCollector, VERBOSE::contains)
-                val buildFile = File(arguments.buildFile)
-                val moduleChunk = CompileEnvironmentUtil.loadModuleChunk(buildFile, sanitizedCollector)
-
-                configuration.put(JVMConfigurationKeys.MODULE_XML_FILE, buildFile)
-
-                KotlinToJVMBytecodeCompiler.configureSourceRoots(configuration, moduleChunk.modules, buildFile)
-
-                val environment = createCoreEnvironment(rootDisposable, configuration, messageCollector)
-                    ?: return COMPILATION_ERROR
-
-                environment.registerJavacIfNeeded(arguments).let {
-                    if (!it) return COMPILATION_ERROR
-                }
-
-                KotlinToJVMBytecodeCompiler.compileModules(environment, buildFile, moduleChunk.modules)
-            } else if (arguments.script) {
+            if (arguments.script) {
                 val sourcePath = arguments.freeArgs.first()
                 configuration.addKotlinSourceRoot(sourcePath)
 
@@ -164,37 +120,57 @@ class K2JVMCompiler : CLICompiler<K2JVMCompilerArguments>() {
 
                 val scriptArgs = arguments.freeArgs.subList(1, arguments.freeArgs.size)
                 return KotlinToJVMBytecodeCompiler.compileAndExecuteScript(environment, scriptArgs)
+            }
+
+            val destination = arguments.destination?.let { File(it) }
+            val buildFile = arguments.buildFile?.let { File(it) }
+
+            val moduleChunk = if (buildFile != null) {
+                fun strongWarning(message: String) {
+                    messageCollector.report(STRONG_WARNING, message)
+                }
+                if (destination != null) {
+                    strongWarning("The '-d' option with a directory destination is ignored because '-Xbuild-file' is specified")
+                }
+                if (arguments.javaSourceRoots != null) {
+                    strongWarning("The '-Xjava-source-roots' option is ignored because '-Xbuild-file' is specified")
+                }
+                if (arguments.javaPackagePrefix != null) {
+                    strongWarning("The '-Xjava-package-prefix' option is ignored because '-Xbuild-file' is specified")
+                }
+
+                val sanitizedCollector = FilteringMessageCollector(messageCollector, VERBOSE::contains)
+                configuration.put(JVMConfigurationKeys.MODULE_XML_FILE, buildFile)
+                CompileEnvironmentUtil.loadModuleChunk(buildFile, sanitizedCollector)
             } else {
                 if (destination != null) {
-                    if (destination.endsWith(".jar")) {
-                        configuration.put(JVMConfigurationKeys.OUTPUT_JAR, File(destination))
+                    if (destination.path.endsWith(".jar")) {
+                        configuration.put(JVMConfigurationKeys.OUTPUT_JAR, destination)
                     } else {
-                        configuration.put(JVMConfigurationKeys.OUTPUT_DIRECTORY, File(destination))
+                        configuration.put(JVMConfigurationKeys.OUTPUT_DIRECTORY, destination)
                     }
                 }
 
-                val environment = createCoreEnvironment(rootDisposable, configuration, messageCollector)
-                    ?: return COMPILATION_ERROR
+                val module = ModuleBuilder(moduleName, destination?.path ?: ".", "java-production")
+                module.configureFromArgs(arguments)
 
-                environment.registerJavacIfNeeded(arguments).let {
-                    if (!it) return COMPILATION_ERROR
-                }
+                if (module.getSourceFiles().isEmpty()) {
+                    if (arguments.version) return OK
 
-                if (environment.getSourceFiles().isEmpty()) {
-                    if (arguments.version) {
-                        return OK
-                    }
                     messageCollector.report(ERROR, "No source files")
                     return COMPILATION_ERROR
                 }
 
-                KotlinToJVMBytecodeCompiler.compileBunchOfSources(environment)
-
-                compileJavaFilesIfNeeded(environment, arguments).let {
-                    if (!it) return COMPILATION_ERROR
-                }
+                ModuleChunk(listOf(module))
             }
 
+            KotlinToJVMBytecodeCompiler.configureSourceRoots(configuration, moduleChunk.modules, buildFile)
+            val environment = createCoreEnvironment(rootDisposable, configuration, messageCollector)
+                ?: return COMPILATION_ERROR
+            environment.registerJavacIfNeeded(arguments).let {
+                if (!it) return COMPILATION_ERROR
+            }
+            KotlinToJVMBytecodeCompiler.compileModules(environment, buildFile, moduleChunk.modules)
             return OK
         } catch (e: CompilationException) {
             messageCollector.report(
@@ -203,6 +179,30 @@ class K2JVMCompiler : CLICompiler<K2JVMCompilerArguments>() {
                 MessageUtil.psiElementToMessageLocation(e.element)
             )
             return INTERNAL_ERROR
+        }
+    }
+
+    private fun ModuleBuilder.configureFromArgs(args: K2JVMCompilerArguments) {
+        args.friendPaths?.forEach { addFriendDir(it) }
+        args.classpath?.split(File.pathSeparator)?.forEach { addClasspathEntry(it) }
+        args.javaSourceRoots?.forEach {
+            addJavaSourceRoot(JavaRootPath(it, args.javaPackagePrefix))
+        }
+
+        val commonSources = args.commonSources?.toSet().orEmpty()
+        for (arg in args.freeArgs) {
+            if (arg.endsWith(JavaFileType.DOT_DEFAULT_EXTENSION)) {
+                addJavaSourceRoot(JavaRootPath(arg, args.javaPackagePrefix))
+            } else {
+                addSourceFiles(arg)
+                if (arg in commonSources) {
+                    addCommonSourceFiles(arg)
+                }
+
+                if (File(arg).isDirectory) {
+                    addJavaSourceRoot(JavaRootPath(arg, args.javaPackagePrefix))
+                }
+            }
         }
     }
 

@@ -103,7 +103,7 @@ object KotlinToJVMBytecodeCompiler {
         }
     }
 
-    internal fun compileModules(environment: KotlinCoreEnvironment, buildFile: File, chunk: List<Module>): Boolean {
+    internal fun compileModules(environment: KotlinCoreEnvironment, buildFile: File?, chunk: List<Module>): Boolean {
         ProgressIndicatorAndCompilationCanceledStatus.checkCanceled()
 
         val moduleVisibilityManager = ModuleVisibilityManager.SERVICE.getInstance(environment.project)
@@ -182,7 +182,7 @@ object KotlinToJVMBytecodeCompiler {
         }
     }
 
-    internal fun configureSourceRoots(configuration: CompilerConfiguration, chunk: List<Module>, buildFile: File) {
+    internal fun configureSourceRoots(configuration: CompilerConfiguration, chunk: List<Module>, buildFile: File? = null) {
         for (module in chunk) {
             val commonSources = getAbsolutePaths(buildFile, module.getCommonSourceFiles()).toSet()
 
@@ -228,9 +228,9 @@ object KotlinToJVMBytecodeCompiler {
         configuration.addAll(JVMConfigurationKeys.MODULES, chunk)
     }
 
-    private fun getAbsolutePaths(buildFile: File, sourceFilePaths: List<String>): List<String> =
+    private fun getAbsolutePaths(buildFile: File?, sourceFilePaths: List<String>): List<String> =
         sourceFilePaths.map { path ->
-            (File(path).takeIf(File::isAbsolute) ?: buildFile.resolveSibling(path)).absolutePath
+            (File(path).takeIf(File::isAbsolute) ?: (buildFile ?: error("$path is not absolute")).resolveSibling(path)).absolutePath
         }
 
     private fun findMainClass(generationState: GenerationState, files: List<KtFile>): FqName? {
