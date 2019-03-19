@@ -254,7 +254,7 @@ open class A {
         }
 
         projectDir.getFileByName("C.kt").apply {
-            modify { it.checkedReplace("class C : A()", "class C") }
+            modify { it.checkedReplace("class C {", "class C : A() {") }
         }
 
         build("build") {

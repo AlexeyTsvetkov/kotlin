@@ -5,6 +5,6 @@
 
 package bar
 
-open class C : A() {
+open class C {
     fun c() {}
 }
