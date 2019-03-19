@@ -255,15 +255,14 @@ open class A {
         }
 
         val bKt = project.projectDir.getFileByName("B.kt")
-        val bKtContent = bKt.readText()
-        bKt.delete()
+        bKt.modify { it.checkedReplace("fun b", "private fun b") }
 
         fun runFailingBuild() {
             project.build("build") {
                 assertFailed()
-                assertContains("B.kt has been removed")
+                //assertContains("B.kt has been removed")
                 assertTasksFailed(":lib:$compileKotlinTaskName")
-                val affectedFiles = project.projectDir.getFilesByNames("barUseAB.kt", "barUseB.kt")
+                val affectedFiles = project.projectDir.getFilesByNames("B.kt", "barUseAB.kt", "barUseB.kt")
                 assertCompiledKotlinSources(project.relativize(affectedFiles))
             }
         }
@@ -271,7 +270,7 @@ open class A {
         runFailingBuild()
         runFailingBuild()
 
-        bKt.writeText(bKtContent.replace("fun b", "open fun b"))
+        bKt.modify { it.checkedReplace("private fun b", "open fun b") }
 
         project.build("build") {
             assertSuccessful()
