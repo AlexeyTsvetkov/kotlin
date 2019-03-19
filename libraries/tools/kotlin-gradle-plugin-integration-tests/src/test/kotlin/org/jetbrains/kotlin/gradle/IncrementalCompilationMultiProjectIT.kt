@@ -248,6 +248,26 @@ open class A {
     }
 
     @Test
+    fun testInterProjectSubclasses() = with(defaultProject()) {
+        build("build") {
+            assertSuccessful()
+        }
+
+        projectDir.getFileByName("C.kt").apply {
+            modify { it.checkedReplace("class C : A()", "class C") }
+        }
+
+        build("build") {
+            assertSuccessful()
+            val affectedFiles = project.projectDir.getFilesByNames(
+                "C.kt", "CC.kt", "CCC.kt",
+                "fooUseC.kt", "fooUseCC.kt", "fooUseCCC.kt"
+            )
+            assertCompiledKotlinSources(project.relativize(affectedFiles))
+        }
+    }
+
+    @Test
     fun testCompileErrorInLib() {
         val project = defaultProject()
         project.build("build") {

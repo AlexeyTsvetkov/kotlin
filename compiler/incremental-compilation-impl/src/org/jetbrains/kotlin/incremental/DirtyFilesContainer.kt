@@ -45,6 +45,15 @@ class DirtyFilesContainer(
                 listOf(caches.platformCache)
             )
         }
+
+        val dirtyLookupSymbols = HashSet<LookupSymbol>()
+        for (classFqName in fqNamesWithSubtypes) {
+            val scope = classFqName.parent().asString()
+            val name = classFqName.shortName().identifier
+            dirtyLookupSymbols.add(LookupSymbol(name, scope))
+        }
+        addByDirtySymbols(dirtyLookupSymbols)
+
         val dirtyFilesFromFqNames =
             mapClassesFqNamesToFiles(listOf(caches.platformCache), fqNamesWithSubtypes, reporter)
         // reason is null, because files are reported in mapClassesFqNamesToFiles
