@@ -280,6 +280,7 @@ open class A {
         fun runFailingBuild() {
             project.build("build") {
                 assertFailed()
+                // todo: fix
                 //assertContains("B.kt has been removed")
                 assertTasksFailed(":lib:$compileKotlinTaskName")
                 val affectedFiles = project.projectDir.getFilesByNames("B.kt", "barUseAB.kt", "barUseB.kt")
