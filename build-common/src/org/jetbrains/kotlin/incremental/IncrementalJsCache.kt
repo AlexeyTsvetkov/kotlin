@@ -107,7 +107,8 @@ open class IncrementalJsCache(cachesDir: File) : AbstractIncrementalCache<FqName
             translationResults.remove(it, changesCollector)
             inlineFunctions.remove(it)
         }
-        removeAllFromClassStorage(dirtyOutputClassesMap.getDirtyOutputClasses(), changesCollector)
+        val subclassesProvider = SubclassesProviderImpl(thisWithDependentCaches)
+        removeAllFromClassStorage(dirtyOutputClassesMap.getDirtyOutputClasses(), changesCollector, subclassesProvider)
         dirtySources.clear()
         dirtyOutputClassesMap.clean()
     }

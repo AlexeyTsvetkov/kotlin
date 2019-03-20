@@ -35,7 +35,9 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.jvm.JvmClassName
 import org.jetbrains.org.objectweb.asm.*
+import java.io.DataOutputStream
 import java.io.File
+import java.io.Serializable
 import java.security.MessageDigest
 import java.util.*
 
@@ -225,7 +227,8 @@ open class IncrementalJvmCache(
             javaSourcesProtoMap.remove(it, changesCollector)
         }
 
-        removeAllFromClassStorage(dirtyClasses.map { it.fqNameForClassNameWithoutDollars }, changesCollector)
+        val subclassesProvider = SubclassesProviderImpl(thisWithDependentCaches)
+        removeAllFromClassStorage(dirtyClasses.map { it.fqNameForClassNameWithoutDollars }, changesCollector, subclassesProvider)
         dirtyOutputClassesMap.clean()
     }
 
@@ -534,22 +537,12 @@ open class IncrementalJvmCache(
 private object PathCollectionExternalizer :
     CollectionExternalizer<String>(PathStringDescriptor, { THashSet(FileUtil.PATH_HASHING_STRATEGY) })
 
-sealed class ChangeInfo(val fqName: FqName) {
-    open class MembersChanged(fqName: FqName, val names: Collection<String>) : ChangeInfo(fqName) {
-        override fun toStringProperties(): String = super.toStringProperties() + ", names = $names"
-    }
-
-    class Removed(fqName: FqName, names: Collection<String>) : MembersChanged(fqName, names)
-
-    class SignatureChanged(fqName: FqName, val areSubclassesAffected: Boolean) : ChangeInfo(fqName)
-
-
-    protected open fun toStringProperties(): String = "fqName = $fqName"
-
-    override fun toString(): String {
-        return this::class.java.simpleName + "(${toStringProperties()})"
-    }
-}
+data class ChangeInfo(
+    val fqName: FqName,
+    val changedMembers: Set<String>,
+    val isSignatureChanged: Boolean,
+    val areSubclassesAffected: Boolean
+)
 
 private fun LocalFileKotlinClass.scopeFqName() =
     when (classHeader.kind) {

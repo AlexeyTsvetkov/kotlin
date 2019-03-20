@@ -118,14 +118,18 @@ abstract class AbstractIncrementalCache<ClassName>(workingDir: File) : BasicMaps
         classFqNameToSourceMap[child] = srcFile
     }
 
-    protected fun removeAllFromClassStorage(removedClasses: Collection<FqName>, changesCollector: ChangesCollector) {
+    protected fun removeAllFromClassStorage(
+        removedClasses: Collection<FqName>,
+        changesCollector: ChangesCollector,
+        subclassesProvider: SubclassesProvider
+    ) {
         if (removedClasses.isEmpty()) return
 
         val removedFqNames = removedClasses.toSet()
 
         for (removedClass in removedFqNames) {
-            for (affectedClass in withSubtypes(removedClass, thisWithDependentCaches)) {
-                changesCollector.collectSignature(affectedClass, areSubclassesAffected = false)
+            for (affectedClass in (subclassesProvider.subclasses(removedClass) + removedClass)) {
+                changesCollector.collectSignature(affectedClass, areSubclassesAffected = true)
             }
         }
 

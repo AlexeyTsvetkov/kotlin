@@ -120,46 +120,59 @@ fun LookupStorage.update(
 }
 
 data class DirtyData(
-        val dirtyLookupSymbols: Collection<LookupSymbol> = emptyList(),
-        val dirtyClassesFqNames: Collection<FqName> = emptyList()
+    val dirtyLookupSymbols: Collection<LookupSymbol> = emptyList(),
+    val dirtyClassesFqNames: Collection<FqName> = emptyList()
 )
 
 fun ChangesCollector.getDirtyData(
     caches: Iterable<IncrementalCacheCommon>,
     reporter: ICReporter
+): DirtyData =
+    getDirtyData(changes(), SubclassesProviderImpl(caches), reporter)
+
+fun getDirtyData(
+    changes: Collection<ChangeInfo>,
+    subclassesProvider: SubclassesProvider,
+    reporter: ICReporter
 ): DirtyData {
     val dirtyLookupSymbols = HashSet<LookupSymbol>()
     val dirtyClassesFqNames = HashSet<FqName>()
 
-    for (change in changes()) {
+    for (change in changes) {
         reporter.reportVerbose { "Process $change" }
+        val subclassesFqNames = subclassesProvider.subclasses(change.fqName)
 
-        if (change is ChangeInfo.SignatureChanged) {
-            val fqNames = if (!change.areSubclassesAffected) listOf(change.fqName) else withSubtypes(change.fqName, caches)
-            dirtyClassesFqNames.addAll(fqNames)
+        if (change.isSignatureChanged) {
+            // recompile modified class usages
+            dirtyLookupSymbols.add(change.fqName.toLookupSymbol())
 
-            for (classFqName in fqNames) {
-                assert(!classFqName.isRoot) { "$classFqName is root when processing $change" }
-
-                val scope = classFqName.parent().asString()
-                val name = classFqName.shortName().identifier
-                dirtyLookupSymbols.add(LookupSymbol(name, scope))
+            if (change.areSubclassesAffected) {
+                // recompile declarations of subclasses
+                dirtyClassesFqNames.addAll(subclassesFqNames)
+                // recompile usages of subclasses
+                subclassesFqNames.mapTo(dirtyLookupSymbols) { it.toLookupSymbol() }
             }
-        } else if (change is ChangeInfo.MembersChanged) {
-            val fqNames = withSubtypes(change.fqName, caches)
-            // need to recompile subtypes because changed member might break override
-            dirtyClassesFqNames.addAll(fqNames)
+        }
 
-            for (name in change.names) {
-                fqNames.mapTo(dirtyLookupSymbols) { LookupSymbol(name, it.asString()) }
+        if (change.changedMembers.isNotEmpty()) {
+            // recompile declarations of subclasses, because changed member might break override
+            dirtyClassesFqNames.addAll(subclassesFqNames)
+
+            // recompile usages of all members from all classes
+            val allChangedMembers = change.changedMembers + SAM_LOOKUP_NAME.asString()
+            for (classFqName in listOf(change.fqName) + subclassesFqNames) {
+                allChangedMembers.mapTo(dirtyLookupSymbols) { memberName ->
+                    LookupSymbol(scope = classFqName.asString(), name = memberName)
+                }
             }
-
-            fqNames.mapTo(dirtyLookupSymbols) { LookupSymbol(SAM_LOOKUP_NAME.asString(), it.asString()) }
         }
     }
 
     return DirtyData(dirtyLookupSymbols, dirtyClassesFqNames)
 }
+
+private fun FqName.toLookupSymbol(): LookupSymbol =
+    LookupSymbol(name = shortName().identifier, scope = parent().asString())
 
 fun mapLookupSymbolsToFiles(
     lookupStorage: LookupStorage,
@@ -202,24 +215,4 @@ fun mapClassesFqNamesToFiles(
     return fqNameToAffectedFiles.values.flattenTo(HashSet())
 }
 
-fun withSubtypes(
-        typeFqName: FqName,
-        caches: Iterable<IncrementalCacheCommon>
-): Set<FqName> {
-    val types = LinkedList(listOf(typeFqName))
-    val subtypes = hashSetOf<FqName>()
-
-    while (types.isNotEmpty()) {
-        val unprocessedType = types.pollFirst()
-
-        caches.asSequence()
-              .flatMap { it.getSubtypesOf(unprocessedType) }
-              .filter { it !in subtypes }
-              .forEach { types.addLast(it) }
-
-        subtypes.add(unprocessedType)
-    }
-
-    return subtypes
-}
 

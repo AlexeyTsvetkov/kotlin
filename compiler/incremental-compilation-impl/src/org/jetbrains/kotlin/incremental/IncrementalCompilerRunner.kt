@@ -209,6 +209,7 @@ abstract class IncrementalCompilerRunner<
         val buildDirtyLookupSymbols = HashSet<LookupSymbol>()
         val buildDirtyFqNames = HashSet<FqName>()
         val allSourcesToCompile = HashSet<File>()
+        val tracingSubclassesProvider = TracingSubclassesProvider(SubclassesProviderImpl(listOf(caches.platformCache)))
 
         var exitCode = ExitCode.OK
 
@@ -261,7 +262,8 @@ abstract class IncrementalCompilerRunner<
 
             if (compilationMode is CompilationMode.Rebuild) break
 
-            val (dirtyLookupSymbols, dirtyClassFqNames) = changesCollector.getDirtyData(listOf(caches.platformCache), reporter)
+            val changes = changesCollector.changes()
+            val (dirtyLookupSymbols, dirtyClassFqNames) = getDirtyData(changes, tracingSubclassesProvider, reporter)
             val compiledInThisIterationSet = sourcesToCompile.toHashSet()
 
             with (dirtySources) {
@@ -316,7 +318,7 @@ abstract class IncrementalCompilerRunner<
     protected open fun processChangesAfterBuild(
         compilationMode: CompilationMode,
         currentBuildInfo: BuildInfo,
-        dirtyData: DirtyData
+        changesInfo: Collection<ChangeInfo>
     ) {
         val prevDiffs = BuildDiffsStorage.readFromFile(buildHistoryFile, reporter)?.buildDiffs ?: emptyList()
         val newDiff = if (compilationMode is CompilationMode.Incremental) {

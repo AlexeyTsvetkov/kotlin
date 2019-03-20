@@ -24,27 +24,21 @@ import org.jetbrains.kotlin.protobuf.MessageLite
 import org.jetbrains.kotlin.serialization.deserialization.getClassId
 
 class ChangesCollector {
-    private val removedMembers = hashMapOf<FqName, MutableSet<String>>()
     private val changedMembers = hashMapOf<FqName, MutableSet<String>>()
     private val areSubclassesAffected = hashMapOf<FqName, Boolean>()
 
     fun changes(): List<ChangeInfo> {
         val changes = arrayListOf<ChangeInfo>()
 
-        for ((fqName, members) in removedMembers) {
-            if (members.isNotEmpty()) {
-                changes.add(ChangeInfo.Removed(fqName, members))
-            }
-        }
-
-        for ((fqName, members) in changedMembers) {
-            if (members.isNotEmpty()) {
-                changes.add(ChangeInfo.MembersChanged(fqName, members))
-            }
-        }
-
-        for ((fqName, areSubclassesAffected) in areSubclassesAffected) {
-            changes.add(ChangeInfo.SignatureChanged(fqName, areSubclassesAffected))
+        for (fqName in changedMembers.keys + areSubclassesAffected.keys) {
+            val subclassesAffected = areSubclassesAffected[fqName]
+            val changeInfo = ChangeInfo(
+                fqName = fqName,
+                changedMembers = changedMembers[fqName] ?: emptySet(),
+                isSignatureChanged = subclassesAffected != null,
+                areSubclassesAffected = subclassesAffected ?: false
+            )
+            changes.add(changeInfo)
         }
 
         return changes
@@ -58,7 +52,7 @@ class ChangesCollector {
     }
 
     private fun collectRemovedMember(scope: FqName, name: String) {
-        removedMembers.getSet(scope).add(name)
+        changedMembers.getSet(scope).add(name)
     }
 
     private fun collectChangedMembers(scope: FqName, names: Collection<String>) {
@@ -69,7 +63,7 @@ class ChangesCollector {
 
     private fun collectRemovedMembers(scope: FqName, names: Collection<String>) {
         if (names.isNotEmpty()) {
-            removedMembers.getSet(scope).addAll(names)
+            changedMembers.getSet(scope).addAll(names)
         }
     }
 
