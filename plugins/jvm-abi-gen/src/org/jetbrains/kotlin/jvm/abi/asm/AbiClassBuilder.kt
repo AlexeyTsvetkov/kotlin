@@ -13,7 +13,10 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.resolve.jvm.diagnostics.JvmDeclarationOrigin
 import org.jetbrains.org.objectweb.asm.*
 
-internal class AbiClassBuilder(private val cv: ClassVisitor) : AbstractClassBuilder() {
+internal class AbiClassBuilder(
+    private val cv: ClassVisitor,
+    private val reportInlineFunction: (MethodSignatureInfo) -> Unit
+) : AbstractClassBuilder() {
     override fun getVisitor(): ClassVisitor = cv
 
     override fun newMethod(
@@ -33,18 +36,11 @@ internal class AbiClassBuilder(private val cv: ClassVisitor) : AbstractClassBuil
         if (isPrivate(access) && descriptor != null && isPrivate(descriptor) || isClinit(name, access)) return EMPTY_METHOD_VISITOR
 
         val mv = super.newMethod(origin, access, name, desc, signature, exceptions)
-        // inline function bodies are part of ABI,
-        // but non-inline functions can be thrown out
-        if (descriptor is FunctionDescriptor && descriptor.isInline) return mv
+        if (descriptor is FunctionDescriptor && descriptor.isInline) {
+            reportInlineFunction(MethodSignatureInfo(thisName, name, desc))
+        }
 
-        return ReplaceWithEmptyMethodVisitor(
-            delegate = mv,
-            access = access,
-            name = name,
-            desc = desc,
-            signature = signature,
-            exceptions = exceptions
-        )
+        return mv
     }
 
     override fun newField(
