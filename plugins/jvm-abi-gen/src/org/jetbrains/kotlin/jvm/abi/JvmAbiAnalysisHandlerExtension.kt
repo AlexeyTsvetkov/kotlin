@@ -22,9 +22,7 @@ import org.jetbrains.kotlin.config.JVMConfigurationKeys
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.incremental.isClassFile
-import org.jetbrains.kotlin.jvm.abi.asm.AbiClassBuilder
-import org.jetbrains.kotlin.jvm.abi.asm.FilterInnerClassesVisitor
-import org.jetbrains.kotlin.jvm.abi.asm.InnerClassesCollectingVisitor
+import org.jetbrains.kotlin.jvm.abi.asm.*
 import org.jetbrains.kotlin.load.kotlin.FileBasedKotlinClass
 import org.jetbrains.kotlin.load.kotlin.header.KotlinClassHeader
 import org.jetbrains.kotlin.metadata.ProtoBuf
@@ -58,9 +56,11 @@ class JvmAbiAnalysisHandlerExtension(
             type = "java-production"
         )
 
+        val inlineFunctions = HashSet<MethodSignatureInfo>()
+
         val generationState = GenerationState.Builder(
             project,
-            AbiBinaries,
+            AbiBinaries(reportInlineFunction = { inlineFunctions.add(it) }),
             module,
             bindingContext,
             files.toList(),
@@ -76,6 +76,7 @@ class JvmAbiAnalysisHandlerExtension(
             outputs.add(AbiOutput(file, outputFile.sourceFiles, outputFile.asByteArray()))
         }
 
+        val processedOutputs = process(outputs, inlineFunctions.groupBy { it.owner })
         // private/local/synthetic class removal is temporarily turned off, because the implementation
         // was not correct: it was not taking into account that private/local classes could be used
         // from inline functions
@@ -89,8 +90,103 @@ class JvmAbiAnalysisHandlerExtension(
             OutputItemsCollector { sourceFiles, outputFile ->
                 messageCollector.report(CompilerMessageSeverity.OUTPUT, OutputMessageUtil.formatOutputMessage(sourceFiles, outputFile))
             }.takeIf { reportOutputFiles }
-        outputs.forEach { it.flush(outputItemsCollector) }
+        processedOutputs.forEach { it.flush(outputItemsCollector) }
         return null
+    }
+
+    private fun process(outputs: Iterable<AbiOutput>, inlineFuns: Map<String, List<MethodSignatureInfo>>): Iterable<AbiOutput> {
+        /*val localOrSyntheticClasses = HashSet<String>()
+        val nonAbiClasses = HashSet<String>()
+        val fileToJvmName = HashMap<File, JvmClassName>()
+        val jvmNameToFile = HashMap<JvmClassName, File>()
+
+        for (output in outputs) {
+            if (!output.file.isClassFile()) continue
+            val classData = output.classData() ?: continue
+            val jvmClassName = JvmClassName.byClassId(classData.classId)
+            fileToJvmName[output.file] = jvmClassName
+            jvmNameToFile[jvmClassName] = output.file
+
+            val header = classData.classHeader
+            val internalName = jvmClassName.internalName
+            when (header.kind) {
+                KotlinClassHeader.Kind.CLASS -> {
+                    val (_, classProto) = JvmProtoBufUtil.readClassDataFrom(header.data!!, header.strings!!)
+                    val visibility = Flags.VISIBILITY.get(classProto.flags)
+                    when (visibility) {
+                        ProtoBuf.Visibility.LOCAL -> {
+                            localOrSyntheticClasses.add(internalName)
+                            nonAbiClasses.add(internalName)
+                        }
+                        ProtoBuf.Visibility.PRIVATE -> {
+                            nonAbiClasses.add(internalName)
+                        }
+                    }
+                }
+                KotlinClassHeader.Kind.SYNTHETIC_CLASS -> {
+                    localOrSyntheticClasses.add(internalName)
+                    nonAbiClasses.add(internalName)
+                }
+            }
+        }
+
+        val excludedClasses = HashSet<String>()
+        val visitedClasses = HashSet<String>()
+        val namesToProcess = ArrayDeque<String>()
+        namesToProcess.addAll(inlineFuns.keys)
+        while (namesToProcess.isNotEmpty()) {
+            val internalName = namesToProcess.poll()
+            if (visitedClasses.add(internalName)) {
+                if (internalName in inlineFuns) {
+
+                }
+            }
+        }*/
+
+        return outputs.map { output ->
+            if (!output.file.isClassFile()) output
+            else {
+                output.map { internalName, cw ->
+                    AbiClassTransformingVisitor(inlineFuns = inlineFuns[internalName] ?: emptySet(), cv = cw)
+                }
+            }
+        }
+    }
+
+    private class AbiClassTransformingVisitor(
+        inlineFuns: Collection<MethodSignatureInfo>,
+        cv: ClassVisitor
+    ) : ClassVisitor(Opcodes.API_VERSION, cv) {
+        private val nameToDescs: Map<String, Set<String>>
+
+        init {
+            val result = HashMap<String, MutableSet<String>>(inlineFuns.size).apply {
+                for (info in inlineFuns) {
+                    getOrPut(info.name) { HashSet() }.add(info.desc)
+                }
+            }
+
+            nameToDescs = result
+        }
+
+        override fun visitMethod(
+            access: Int,
+            name: String,
+            desc: String,
+            signature: String?,
+            exceptions: Array<out String>?
+        ): MethodVisitor? {
+            val mv: MethodVisitor? = super.visitMethod(access, name, desc, signature, exceptions)
+
+            return if (desc !in (nameToDescs[name] ?: emptySet())) ReplaceWithEmptyMethodVisitor(
+                delegate = mv!!,
+                access = access,
+                name = name,
+                desc = desc,
+                signature = signature,
+                exceptions = exceptions
+            ) else mv
+        }
     }
 
     /**
@@ -155,19 +251,19 @@ class JvmAbiAnalysisHandlerExtension(
             if (output.file in classFilesToRemove) {
                 output.delete()
             } else {
-                output.transform { writer ->
+                output.transform { _, writer ->
                     FilterInnerClassesVisitor(classesToRemove, Opcodes.API_VERSION, writer)
                 }
             }
         }
     }
 
-    private object AbiBinaries : ClassBuilderFactory {
+    private class AbiBinaries(private val reportInlineFunction: (MethodSignatureInfo) -> Unit) : ClassBuilderFactory {
         override fun getClassBuilderMode(): ClassBuilderMode =
             ClassBuilderMode.ABI
 
         override fun newClassBuilder(origin: JvmDeclarationOrigin): ClassBuilder =
-            AbiClassBuilder(ClassWriter(0))
+            AbiClassBuilder(ClassWriter(0), reportInlineFunction)
 
         override fun asText(builder: ClassBuilder): String =
             throw UnsupportedOperationException("AbiBinaries generator asked for text")
@@ -186,7 +282,7 @@ class JvmAbiAnalysisHandlerExtension(
         val classHeader: KotlinClassHeader
     )
 
-    private class AbiOutput(
+    private data class AbiOutput(
         val file: File,
         val sources: List<File>,
         // null bytes means that file should not be written
@@ -205,14 +301,17 @@ class JvmAbiAnalysisHandlerExtension(
             bytes = null
         }
 
-        fun transform(fn: (writer: ClassWriter) -> ClassVisitor) {
+        fun transform(fn: (internalName: String, writer: ClassWriter) -> ClassVisitor) {
             val bytes = bytes ?: return
             val cr = ClassReader(bytes)
             val cw = ClassWriter(0)
-            val visitor = fn(cw)
+            val visitor = fn(cr.className, cw)
             cr.accept(visitor, 0)
             this.bytes = cw.toByteArray()
         }
+
+        fun map(fn: (internalName: String, writer: ClassWriter) -> ClassVisitor): AbiOutput =
+            copy().also { it.transform(fn) }
 
         fun accept(visitor: ClassVisitor) {
             val bytes = bytes ?: return
