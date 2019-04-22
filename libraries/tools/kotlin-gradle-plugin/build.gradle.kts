@@ -32,16 +32,9 @@ pill {
 dependencies {
     compile(project(":kotlin-gradle-plugin-api"))
     compile(project(":kotlin-gradle-plugin-model"))
-    compileOnly(project(":compiler:daemon-common"))
 
     compile(kotlinStdlib())
     compile(project(":kotlin-native:kotlin-native-utils"))
-    compileOnly(project(":kotlin-reflect-api"))
-    compileOnly(project(":kotlin-android-extensions"))
-    compileOnly(project(":kotlin-compiler-runner"))
-    compileOnly(project(":kotlin-annotation-processing"))
-    compileOnly(project(":kotlin-annotation-processing-gradle"))
-    compileOnly(project(":kotlin-scripting-compiler-impl"))
 
     compile("com.google.code.gson:gson:${rootProject.extra["versions.jar.gson"]}")
     
@@ -51,8 +44,6 @@ dependencies {
     compileOnly("com.android.tools.build:builder-model:2.0.0")
     compileOnly("org.codehaus.groovy:groovy-all:2.4.12")
     compileOnly(gradleApi())
-
-    compileOnly(intellijCoreDep()) { includeJars("intellij-core") }
 
     runtime(projectRuntimeJar(":kotlin-compiler-embeddable"))
     runtime(projectRuntimeJar(":kotlin-annotation-processing-gradle"))
