@@ -32,15 +32,12 @@ pill {
 dependencies {
     compile(project(":kotlin-gradle-plugin-api"))
     compile(project(":kotlin-gradle-plugin-model"))
-    compileOnly(project(":compiler"))
-    compileOnly(project(":compiler:incremental-compilation-impl"))
     compileOnly(project(":compiler:daemon-common"))
 
     compile(kotlinStdlib())
     compile(project(":kotlin-native:kotlin-native-utils"))
     compileOnly(project(":kotlin-reflect-api"))
     compileOnly(project(":kotlin-android-extensions"))
-    compileOnly(project(":kotlin-build-common"))
     compileOnly(project(":kotlin-compiler-runner"))
     compileOnly(project(":kotlin-annotation-processing"))
     compileOnly(project(":kotlin-annotation-processing-gradle"))
