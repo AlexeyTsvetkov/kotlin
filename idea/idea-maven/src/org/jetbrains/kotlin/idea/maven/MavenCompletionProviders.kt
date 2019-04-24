@@ -19,7 +19,7 @@ package org.jetbrains.kotlin.idea.maven
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.text.StringUtil
 import org.jetbrains.idea.maven.plugins.api.MavenFixedValueReferenceProvider
-import org.jetbrains.kotlin.cli.common.arguments.DefaultValues
+import org.jetbrains.kotlin.cli.common.arguments.JsDefaultValues
 import org.jetbrains.kotlin.config.JvmTarget
 import org.jetbrains.kotlin.config.LanguageVersion
 
@@ -36,9 +36,9 @@ class MavenJvmTargetsCompletionProvider : MavenFixedValueReferenceProvider(
 )
 
 class MavenJsModuleKindsCompletionProvider : MavenFixedValueReferenceProvider(
-    DefaultValues.JsModuleKinds.possibleValues!!.map(StringUtil::unquoteString).toTypedArray()
+    JsDefaultValues.JsModuleKinds.possibleValues!!.map(StringUtil::unquoteString).toTypedArray()
 )
 
 class MavenJsMainCallCompletionProvider : MavenFixedValueReferenceProvider(
-    DefaultValues.JsMain.possibleValues!!.map(StringUtil::unquoteString).toTypedArray()
+    JsDefaultValues.JsMain.possibleValues!!.map(StringUtil::unquoteString).toTypedArray()
 )
