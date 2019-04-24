@@ -6,9 +6,8 @@ plugins {
 jvmTarget = "1.8"
 
 dependencies {
-    compile(kotlinStdlib())
-    compile(project(":compiler:cli-config-base"))
-    compileOnly(intellijDep()) { includeJars("asm-all", rootProject = rootProject) }
+    compileOnly(kotlinStdlib())
+    compile(project(":core:util.runtime"))
 }
 
 sourceSets {

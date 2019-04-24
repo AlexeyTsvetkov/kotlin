@@ -6,9 +6,11 @@ plugins {
 jvmTarget = "1.8"
 
 dependencies {
-    compile(kotlinStdlib())
+    compileOnly(kotlinStdlib())
+    compileOnly(project(":kotlin-reflect-api"))
+    compileOnly(intellijCoreDep()) { includeJars("intellij-core") }
     compile(project(":compiler:cli-config-base"))
-    compileOnly(intellijDep()) { includeJars("asm-all", rootProject = rootProject) }
+    compile(project(":compiler:cli-messages"))
 }
 
 sourceSets {

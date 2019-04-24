@@ -7,6 +7,7 @@ dependencies {
     compile(project(":core:descriptors"))
     compile(project(":core:descriptors.jvm"))
     compile(project(":compiler:util"))
+    compile(project(":compiler:cli-config-jvm"))
     if (Platform[182].orHigher()) {
         compile("javax.annotation:jsr250-api:1.0")
     }

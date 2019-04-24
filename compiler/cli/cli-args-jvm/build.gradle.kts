@@ -7,7 +7,7 @@ jvmTarget = "1.8"
 
 dependencies {
     compile(kotlinStdlib())
-    compile(project(":compiler:cli-args"))
+    compile(project(":compiler:cli-args-base"))
     compile(project(":compiler:cli-config-jvm"))
 }
 
