@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.compilerRunner;
+package org.jetbrains.kotlin.cli.common.arguments;
 
 import kotlin.collections.CollectionsKt;
 import kotlin.jvm.JvmClassMappingKt;
@@ -38,8 +38,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class ArgumentUtils {
-    private ArgumentUtils() {}
+public class ArgumentSerializationUtil {
+    private ArgumentSerializationUtil() {}
 
     @NotNull
     public static List<String> convertArgumentsToStringList(@NotNull CommonToolArguments arguments)

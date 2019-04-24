@@ -22,6 +22,7 @@ import org.gradle.api.invocation.Gradle
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.jvm.tasks.Jar
+import org.jetbrains.kotlin.cli.common.arguments.ArgumentSerializationUtil
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
@@ -119,7 +120,7 @@ internal open class GradleCompilerRunner(protected val task: Task) {
             )
             compilerArgs.version = false
         }
-        val argsArray = ArgumentUtils.convertArgumentsToStringList(compilerArgs).toTypedArray()
+        val argsArray = ArgumentSerializationUtil.convertArgumentsToStringList(compilerArgs).toTypedArray()
         val incrementalCompilationEnvironment = environment.incrementalCompilationEnvironment
         val modulesInfo = incrementalCompilationEnvironment?.let { buildModulesInfo(project.gradle) }
         val workArgs = GradleKotlinCompilerWorkArguments(

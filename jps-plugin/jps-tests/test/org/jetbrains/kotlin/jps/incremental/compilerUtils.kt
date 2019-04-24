@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.jps.incremental
 
 import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.arguments.ArgumentSerializationUtil
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.js.K2JSCompiler
@@ -45,7 +46,7 @@ fun createTestingCompilerEnvironment(
 }
 
 fun runJSCompiler(args: K2JSCompilerArguments, env: JpsCompilerEnvironment): ExitCode? {
-    val argsArray = ArgumentUtils.convertArgumentsToStringList(args).toTypedArray()
+    val argsArray = ArgumentSerializationUtil.convertArgumentsToStringList(args).toTypedArray()
 
     val stream = ByteArrayOutputStream()
     val out = PrintStream(stream)

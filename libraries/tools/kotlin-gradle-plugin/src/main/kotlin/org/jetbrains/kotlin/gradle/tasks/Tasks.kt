@@ -15,6 +15,7 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 import org.gradle.workers.WorkerExecutor
 import org.jetbrains.kotlin.build.DEFAULT_KOTLIN_SOURCE_FILES_EXTENSIONS
+import org.jetbrains.kotlin.cli.common.arguments.ArgumentSerializationUtil
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.CommonToolArguments
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
@@ -595,7 +596,7 @@ open class Kotlin2JsCompile : AbstractKotlinCompile<K2JSCompilerArguments>(), Ko
             args.sourceMapBaseDirs = project.projectDir.absolutePath
         }
 
-        logger.kotlinDebug("compiling with args ${ArgumentUtils.convertArgumentsToStringList(args)}")
+        logger.kotlinDebug("compiling with args ${ArgumentSerializationUtil.convertArgumentsToStringList(args)}")
 
         val messageCollector = GradlePrintingMessageCollector(logger)
         val outputItemCollector = OutputItemsCollectorImpl()

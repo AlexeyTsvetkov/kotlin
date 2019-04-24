@@ -29,7 +29,7 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.util.text.StringUtil
 import org.jetbrains.kotlin.cli.common.arguments.*
-import org.jetbrains.kotlin.compilerRunner.ArgumentUtils
+import org.jetbrains.kotlin.cli.common.arguments.ArgumentSerializationUtil
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.idea.compiler.configuration.Kotlin2JvmCompilerArgumentsHolder
 import org.jetbrains.kotlin.idea.compiler.configuration.KotlinCommonCompilerArgumentsHolder
@@ -318,7 +318,7 @@ fun applyCompilerArgumentsToFacet(
 
         val additionalArgumentsString = with(compilerArguments::class.java.newInstance()) {
             copyFieldsSatisfying(compilerArguments, this) { exposeAsAdditionalArgument(it) && it.name !in ignoredFields }
-            ArgumentUtils.convertArgumentsToStringList(this).joinToString(separator = " ") {
+            ArgumentSerializationUtil.convertArgumentsToStringList(this).joinToString(separator = " ") {
                 if (StringUtil.containsWhitespaces(it) || it.startsWith('"')) {
                     StringUtil.wrapWithDoubleQuote(StringUtil.escapeQuotes(it))
                 } else it

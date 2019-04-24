@@ -19,19 +19,19 @@ package org.jetbrains.kotlin.gradle.internal
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.jetbrains.kotlin.cli.common.arguments.CommonToolArguments
-import org.jetbrains.kotlin.compilerRunner.ArgumentUtils
+import org.jetbrains.kotlin.cli.common.arguments.ArgumentSerializationUtil
 
 interface CompilerArgumentAware<T : CommonToolArguments> {
     val serializedCompilerArguments: List<String>
-        get() = ArgumentUtils.convertArgumentsToStringList(prepareCompilerArguments())
+        get() = ArgumentSerializationUtil.convertArgumentsToStringList(prepareCompilerArguments())
 
     val serializedCompilerArgumentsIgnoreClasspathIssues: List<String>
-        get() = ArgumentUtils.convertArgumentsToStringList(prepareCompilerArguments(ignoreClasspathResolutionErrors = true))
+        get() = ArgumentSerializationUtil.convertArgumentsToStringList(prepareCompilerArguments(ignoreClasspathResolutionErrors = true))
 
     val defaultSerializedCompilerArguments: List<String>
         get() = createCompilerArgs()
             .also { setupCompilerArgs(it, defaultsOnly = true) }
-            .let(ArgumentUtils::convertArgumentsToStringList)
+            .let(ArgumentSerializationUtil::convertArgumentsToStringList)
 
     val filteredArgumentsMap: Map<String, String>
         get() = CompilerArgumentsGradleInput.createInputsMap(prepareCompilerArguments())

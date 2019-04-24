@@ -143,18 +143,18 @@ class JpsKotlinCompilerRunner {
         friendModules: List<String>,
         outputFile: File
     ) {
-        log.debug("K2JS: common arguments: " + ArgumentUtils.convertArgumentsToStringList(commonArguments))
-        log.debug("K2JS: JS arguments: " + ArgumentUtils.convertArgumentsToStringList(k2jsArguments))
+        log.debug("K2JS: common arguments: " + ArgumentSerializationUtil.convertArgumentsToStringList(commonArguments))
+        log.debug("K2JS: JS arguments: " + ArgumentSerializationUtil.convertArgumentsToStringList(k2jsArguments))
 
         val arguments = mergeBeans(commonArguments, XmlSerializerUtil.createCopy(k2jsArguments))
-        log.debug("K2JS: merged arguments: " + ArgumentUtils.convertArgumentsToStringList(arguments))
+        log.debug("K2JS: merged arguments: " + ArgumentSerializationUtil.convertArgumentsToStringList(arguments))
 
         setupK2JsArguments(outputFile, allSourceFiles, commonSources, libraries, friendModules, arguments)
         if (arguments.sourceMap) {
             arguments.sourceMapBaseDirs = sourceMapRoots.joinToString(File.pathSeparator) { it.path }
         }
 
-        log.debug("K2JS: arguments after setup" + ArgumentUtils.convertArgumentsToStringList(arguments))
+        log.debug("K2JS: arguments after setup" + ArgumentSerializationUtil.convertArgumentsToStringList(arguments))
 
         withCompilerSettings(compilerSettings) {
             runCompiler(KotlinCompilerClass.JS, arguments, environment)
@@ -242,7 +242,7 @@ class JpsKotlinCompilerRunner {
     }
 
     private fun withAdditionalCompilerArgs(compilerArgs: CommonCompilerArguments): Array<String> {
-        val allArgs = ArgumentUtils.convertArgumentsToStringList(compilerArgs) +
+        val allArgs = ArgumentSerializationUtil.convertArgumentsToStringList(compilerArgs) +
                 (compilerSettings?.additionalArgumentsAsList ?: emptyList())
         return allArgs.toTypedArray()
     }
