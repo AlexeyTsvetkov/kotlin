@@ -29,6 +29,17 @@ pill {
     variant = PillExtension.Variant.FULL
 }
 
+val compilerModulesToInclude =
+    listOf(
+        ":core:util.runtime",
+        ":compiler:cli-messages",
+        ":compiler:cli-args-base",
+        ":compiler:cli-args-jvm",
+        ":compiler:cli-args-js",
+        ":compiler:cli-config-base",
+        ":compiler:cli-config-jvm"
+    )
+
 dependencies {
     compile(project(":kotlin-gradle-plugin-api"))
     compile(project(":kotlin-gradle-plugin-model"))
@@ -37,7 +48,10 @@ dependencies {
     compile(project(":kotlin-native:kotlin-native-utils"))
 
     compile("com.google.code.gson:gson:${rootProject.extra["versions.jar.gson"]}")
-    
+
+    compilerModulesToInclude.forEach {
+        compileOnly(project(it)) { isTransitive = false }
+    }
     compileOnly("com.android.tools.build:gradle:2.0.0")
     compileOnly("com.android.tools.build:gradle-core:2.0.0")
     compileOnly("com.android.tools.build:builder:2.0.0")
