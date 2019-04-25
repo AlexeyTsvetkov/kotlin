@@ -18,11 +18,10 @@ package org.jetbrains.kotlin.compilerRunner
 
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.config.Services
-import org.jetbrains.kotlin.utils.KotlinPaths
 
 open class CompilerEnvironment(
-        val services: Services,
-        val messageCollector: MessageCollector,
-        open val outputItemsCollector: OutputItemsCollector
+    val services: Services,
+    val messageCollector: MessageCollector,
+    open val outputItemsCollector: OutputItemsCollector
 )
 
