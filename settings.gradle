@@ -44,6 +44,7 @@ include ":kotlin-build-common",
         ":compiler:cli-args-base",
         ":compiler:cli-args-jvm",
         ":compiler:cli-args-js",
+        ":compiler:cli-args-metadata",
         ":compiler:cli-config-base",
         ":compiler:cli-config-jvm",
         ":compiler:ir.tree",
@@ -290,6 +291,7 @@ project(':compiler:cli-messages').projectDir = "$rootDir/compiler/cli/cli-messag
 project(':compiler:cli-args-base').projectDir = "$rootDir/compiler/cli/cli-args-base" as File
 project(':compiler:cli-args-jvm').projectDir = "$rootDir/compiler/cli/cli-args-jvm" as File
 project(':compiler:cli-args-js').projectDir = "$rootDir/compiler/cli/cli-args-js" as File
+project(':compiler:cli-args-metadata').projectDir = "$rootDir/compiler/cli/cli-args-metadata" as File
 project(':compiler:cli-config-base').projectDir = "$rootDir/compiler/cli/cli-config-base" as File
 project(':compiler:cli-config-jvm').projectDir = "$rootDir/compiler/cli/cli-config-jvm" as File
 project(':kotlin-runner').projectDir = "$rootDir/compiler/cli/cli-runner" as File

@@ -211,6 +211,7 @@ extra["compilerModules"] = arrayOf(
         ":compiler:cli-args-base",
         ":compiler:cli-args-jvm",
         ":compiler:cli-args-js",
+        ":compiler:cli-args-metadata",
         ":compiler:daemon-common",
         ":compiler:daemon",
         ":compiler:ir.tree",

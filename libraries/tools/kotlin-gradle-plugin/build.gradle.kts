@@ -36,6 +36,7 @@ val compilerModulesToInclude =
         ":compiler:cli-args-base",
         ":compiler:cli-args-jvm",
         ":compiler:cli-args-js",
+        ":compiler:cli-args-metadata",
         ":compiler:cli-config-base",
         ":compiler:cli-config-jvm"
     )
