@@ -40,6 +40,7 @@ import org.jetbrains.kotlin.jps.model.k2JvmCompilerArguments
 import org.jetbrains.kotlin.jps.model.kotlinCompilerSettings
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCache
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
+import org.jetbrains.kotlin.modules.DELETE_MODULE_FILE_PROPERTY
 import org.jetbrains.kotlin.modules.KotlinModuleXmlBuilder
 import org.jetbrains.kotlin.modules.TargetId
 import org.jetbrains.kotlin.utils.keysToMap

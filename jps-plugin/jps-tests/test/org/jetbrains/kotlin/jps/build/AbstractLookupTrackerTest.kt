@@ -35,13 +35,13 @@ import org.jetbrains.kotlin.incremental.components.Position
 import org.jetbrains.kotlin.incremental.components.ScopeKind
 import org.jetbrains.kotlin.incremental.isKotlinFile
 import org.jetbrains.kotlin.incremental.js.*
-import org.jetbrains.kotlin.incremental.makeModuleFile
 import org.jetbrains.kotlin.incremental.testingUtils.TouchPolicy
 import org.jetbrains.kotlin.incremental.testingUtils.copyTestSources
 import org.jetbrains.kotlin.incremental.testingUtils.getModificationsToPerform
 import org.jetbrains.kotlin.incremental.utils.TestMessageCollector
 import org.jetbrains.kotlin.jps.incremental.createTestingCompilerEnvironment
 import org.jetbrains.kotlin.jps.incremental.runJSCompiler
+import org.jetbrains.kotlin.modules.makeModuleFile
 import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.jetbrains.kotlin.utils.JsMetadataVersion
 import java.io.*
