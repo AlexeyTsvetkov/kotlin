@@ -20,6 +20,7 @@ sourceSets {
     "test" {}
 }
 
+// todo: stop publishing
 publish()
 
 val jar: Jar by tasks
