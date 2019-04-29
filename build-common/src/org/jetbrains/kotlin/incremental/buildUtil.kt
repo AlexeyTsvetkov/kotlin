@@ -33,20 +33,6 @@ import java.io.File
 import java.util.*
 import kotlin.collections.HashSet
 
-fun makeCompileServices(
-        incrementalCaches: Map<TargetId, IncrementalCache>,
-        lookupTracker: LookupTracker,
-        compilationCanceledStatus: CompilationCanceledStatus?
-): Services =
-    with(Services.Builder()) {
-        register(LookupTracker::class.java, lookupTracker)
-        register(IncrementalCompilationComponents::class.java, IncrementalCompilationComponentsImpl(incrementalCaches))
-        compilationCanceledStatus?.let {
-            register(CompilationCanceledStatus::class.java, it)
-        }
-        build()
-    }
-
 fun updateIncrementalCache(
     generatedFiles: Iterable<GeneratedFile>,
     cache: IncrementalJvmCache,
