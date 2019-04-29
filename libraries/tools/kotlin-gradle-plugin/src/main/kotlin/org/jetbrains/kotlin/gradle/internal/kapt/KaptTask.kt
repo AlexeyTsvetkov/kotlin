@@ -1,6 +1,5 @@
 package org.jetbrains.kotlin.gradle.internal
 
-import com.intellij.openapi.util.io.FileUtil
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.FileCollection
 import org.gradle.api.internal.ConventionTask
@@ -16,6 +15,7 @@ import org.jetbrains.kotlin.gradle.tasks.cacheOnlyIfEnabledForKotlin
 import org.jetbrains.kotlin.gradle.tasks.clearLocalState
 import org.jetbrains.kotlin.gradle.tasks.isBuildCacheSupported
 import org.jetbrains.kotlin.gradle.utils.isJavaFile
+import org.jetbrains.kotlin.gradle.utils.isParentOf
 import java.io.File
 import java.util.jar.JarFile
 
@@ -127,11 +127,8 @@ abstract class KaptTask : ConventionTask(), TaskWithLocalState {
 
     private fun isRootAllowed(file: File): Boolean =
         file.exists() &&
-                !FileUtil.isAncestor(destinationDir, file, /* strict = */ false) &&
-                !FileUtil.isAncestor(classesDir, file, /* strict = */ false)
-
-    private fun FileCollection?.orEmpty(): FileCollection =
-        this ?: project.files()
+                !destinationDir.isParentOf(file, strict = false) &&
+                !classesDir.isParentOf(file, strict = false)
 
     protected fun checkAnnotationProcessorClasspath() {
         if (!includeCompileClasspath) return

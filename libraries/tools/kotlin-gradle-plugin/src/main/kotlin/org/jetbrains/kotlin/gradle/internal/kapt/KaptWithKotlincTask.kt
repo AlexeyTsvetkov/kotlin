@@ -5,8 +5,8 @@
 
 package org.jetbrains.kotlin.gradle.internal
 
-import com.intellij.openapi.util.SystemInfo
 import org.gradle.api.GradleException
+import org.gradle.api.JavaVersion
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.InputFiles
@@ -90,7 +90,7 @@ open class KaptWithKotlincTask : KaptTask(), CompilerArgumentAwareWithInput<K2JV
             buildReportMode = kotlinCompileTask.buildReportMode,
             outputFiles = allOutputFiles()
         )
-        if (environment.toolsJar == null && !isAtLeastJava9) {
+        if (environment.toolsJar == null && isBelowJava9) {
             throw GradleException("Could not find tools.jar in system classpath, which is required for kapt to work")
         }
 
@@ -105,6 +105,6 @@ open class KaptWithKotlincTask : KaptTask(), CompilerArgumentAwareWithInput<K2JV
         )
     }
 
-    private val isAtLeastJava9: Boolean
-        get() = SystemInfo.isJavaVersionAtLeast(9, 0, 0)
+    private val isBelowJava9: Boolean
+        get() = JavaVersion.current() < JavaVersion.VERSION_1_9
 }
