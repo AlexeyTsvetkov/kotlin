@@ -6,7 +6,7 @@
 package org.jetbrains.kotlin.compilerRunner
 
 import org.jetbrains.kotlin.daemon.common.MultiModuleICSettings
-import org.jetbrains.kotlin.incremental.ChangedFiles
+import org.jetbrains.kotlin.gradle.incremental.ChangedFiles
 import java.io.File
 import java.io.Serializable
 

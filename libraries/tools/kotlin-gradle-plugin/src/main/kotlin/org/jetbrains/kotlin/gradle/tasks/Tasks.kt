@@ -39,7 +39,6 @@ import org.jetbrains.kotlin.gradle.report.BuildReportMode
 import org.jetbrains.kotlin.gradle.utils.isParentOf
 import org.jetbrains.kotlin.gradle.utils.pathsAsStringRelativeTo
 import org.jetbrains.kotlin.gradle.utils.toSortedPathsArray
-import org.jetbrains.kotlin.incremental.ChangedFiles
 import org.jetbrains.kotlin.utils.LibraryUtils
 import java.io.File
 import java.util.*
