@@ -29,7 +29,7 @@ pill {
     variant = PillExtension.Variant.FULL
 }
 
-val compilerModulesToInclude =
+val modulesToInclude =
     listOf(
         ":core:util.runtime",
         ":compiler:cli-messages",
@@ -38,21 +38,23 @@ val compilerModulesToInclude =
         ":compiler:cli-args-js",
         ":compiler:cli-args-metadata",
         ":compiler:cli-config-base",
-        ":compiler:cli-config-jvm"
+        ":compiler:cli-config-jvm",
+        ":kotlin-compiler-runner"
     )
 
 dependencies {
     compile(project(":kotlin-gradle-plugin-api"))
     compile(project(":kotlin-gradle-plugin-model"))
-    compile(project(":kotlin-compiler-runner"))
+    compile(project(":kotlin-daemon-client"))
+    compile(project(":kotlin-build-base"))
 
     compile(kotlinStdlib())
     compile(project(":kotlin-native:kotlin-native-utils"))
 
     compile("com.google.code.gson:gson:${rootProject.extra["versions.jar.gson"]}")
 
-    compilerModulesToInclude.forEach {
-        compileOnly(project(it)) { isTransitive = false }
+    modulesToInclude.forEach {
+        jarContents(compileOnly(project(it)) { isTransitive = false })
     }
 
     compileOnly("com.android.tools.build:gradle:2.0.0")
@@ -65,7 +67,6 @@ dependencies {
     runtime(projectRuntimeJar(":kotlin-compiler-embeddable"))
     runtime(projectRuntimeJar(":kotlin-annotation-processing-gradle"))
     runtime(projectRuntimeJar(":kotlin-android-extensions"))
-    runtime(projectRuntimeJar(":kotlin-compiler-runner"))
     runtime(projectRuntimeJar(":kotlin-scripting-compiler-embeddable"))
     runtime(projectRuntimeJar(":kotlin-scripting-compiler-impl-embeddable"))
     runtime(project(":kotlin-reflect"))
