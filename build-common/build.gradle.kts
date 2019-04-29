@@ -7,6 +7,7 @@ plugins {
 }
 
 dependencies {
+    compile(project(":kotlin-build-base"))
     compileOnly(project(":core:util.runtime"))
     compileOnly(project(":compiler:util"))
     compileOnly(project(":compiler:cli-common"))
