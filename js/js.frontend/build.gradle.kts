@@ -7,6 +7,7 @@ plugins {
 dependencies {
     compile(project(":compiler:util"))
     compile(project(":compiler:frontend"))
+    compile(project(":compiler:ic:ic-js-base"))
     compile(project(":js:js.ast"))
     compile(project(":js:js.parser"))
     compile(project(":js:js.serializer"))

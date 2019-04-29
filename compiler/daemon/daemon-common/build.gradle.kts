@@ -7,6 +7,7 @@ plugins {
 dependencies {
     implementation(project(":compiler:util"))
     implementation(project(":compiler:cli-common"))
+    implementation(project(":compiler:ic:ic-js-base"))
     compile(kotlinStdlib())
 }
 
