@@ -16,17 +16,14 @@
 
 package org.jetbrains.kotlin.cli.common.messages
 
-import com.intellij.openapi.util.text.StringUtil
-import com.intellij.util.containers.ContainerUtil
-
 import java.io.File
 import java.io.PrintWriter
 import java.io.Serializable
 import java.io.StringWriter
 
 object OutputMessageUtil {
-    private val SOURCE_FILES_PREFIX = "Sources:"
-    private val OUTPUT_FILES_PREFIX = "Output:"
+    private const val SOURCE_FILES_PREFIX = "Sources:"
+    private const val OUTPUT_FILES_PREFIX = "Output:"
 
     fun renderException(e: Throwable): String {
         val out = StringWriter()
@@ -34,10 +31,8 @@ object OutputMessageUtil {
         return out.toString()
     }
 
-    fun formatOutputMessage(sourceFiles: Collection<File>, outputFile: File): String {
-        return OUTPUT_FILES_PREFIX + "\n" + outputFile.path + "\n" +
-                SOURCE_FILES_PREFIX + "\n" + StringUtil.join(sourceFiles, "\n")
-    }
+    fun formatOutputMessage(sourceFiles: Collection<File>, outputFile: File): String =
+        OUTPUT_FILES_PREFIX + "\n" + outputFile.path + "\n" + SOURCE_FILES_PREFIX + "\n" + sourceFiles.joinToString("\n")
 
     fun parseOutputMessage(message: String): Output? {
         val strings = message.split("\n".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
@@ -56,12 +51,11 @@ object OutputMessageUtil {
             val outputFile = File(strings[1])
 
             return if (SOURCE_FILES_PREFIX != strings[2]) null else Output(parseSourceFiles(strings, 3), outputFile)
-
         }
     }
 
     private fun parseSourceFiles(strings: Array<String>, start: Int): Collection<File> {
-        val sourceFiles = ContainerUtil.newArrayList<File>()
+        val sourceFiles = arrayListOf<File>()
         for (i in start until strings.size) {
             sourceFiles.add(File(strings[i]))
         }
