@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
-import org.jetbrains.kotlin.cli.common.messages.MessageCollectorUtil.reportException
 import org.jetbrains.kotlin.cli.common.messages.OutputMessageUtil
 import org.xml.sax.Attributes
 import org.xml.sax.InputSource
@@ -65,19 +64,23 @@ object CompilerOutputParser {
                 // This will not close the reader (see the wrapper above)
                 wrappingReader.readText()
             } catch (ioException: IOException) {
-                reportException(messageCollector, ioException)
+                messageCollector.reportException(ioException)
             }
 
             val message = stringBuilder.toString()
-            reportException(messageCollector, IllegalStateException(message, e))
+            messageCollector.reportException(IllegalStateException(message, e))
             messageCollector.report(ERROR, message)
         } finally {
             try {
                 reader.close()
             } catch (e: IOException) {
-                reportException(messageCollector, e)
+                messageCollector.reportException(e)
             }
         }
+    }
+
+    private fun MessageCollector.reportException(exception: Throwable) {
+        report(CompilerMessageSeverity.EXCEPTION, OutputMessageUtil.renderException(exception), null)
     }
 
     private class CompilerOutputSAXHandler(private val messageCollector: MessageCollector, private val collector: OutputItemsCollector) :
