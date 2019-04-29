@@ -60,11 +60,11 @@ public class OutputMessageUtilTest extends TestCase {
 
     private static void doTest(File outputFile, File... sourceFileArray) {
         List<File> sourceFiles = Arrays.asList(sourceFileArray);
-        String message = OutputMessageUtil.formatOutputMessage(sourceFiles, outputFile);
-        OutputMessageUtil.Output output = OutputMessageUtil.parseOutputMessage(message);
+        String message = OutputMessageUtil.INSTANCE.formatOutputMessage(sourceFiles, outputFile);
+        OutputMessageUtil.Output output = OutputMessageUtil.INSTANCE.parseOutputMessage(message);
         assertNotNull("Output is null", output);
-        assertEquals(sourceFiles, output.sourceFiles);
-        assertEquals(outputFile, output.outputFile);
+        assertEquals(sourceFiles, output.getSourceFiles());
+        assertEquals(outputFile, output.getOutputFile());
     }
 
     public void testOneInOneOut() throws Exception {
@@ -87,14 +87,14 @@ public class OutputMessageUtilTest extends TestCase {
     }
 
     public void testWrongStart() throws Exception {
-        assertNull(OutputMessageUtil.parseOutputMessage("foo\nOutput:\nfoo"));
+        assertNull(OutputMessageUtil.INSTANCE.parseOutputMessage("foo\nOutput:\nfoo"));
     }
 
     public void testTwoOuts() throws Exception {
-        assertNull(OutputMessageUtil.parseOutputMessage("Output:\nfoo\nbar\nInputs:\n"));
+        assertNull(OutputMessageUtil.INSTANCE.parseOutputMessage("Output:\nfoo\nbar\nInputs:\n"));
     }
 
     public void testTooFewStrings() throws Exception {
-        assertNull(OutputMessageUtil.parseOutputMessage("Output:\nInputs:"));
+        assertNull(OutputMessageUtil.INSTANCE.parseOutputMessage("Output:\nInputs:"));
     }
 }
