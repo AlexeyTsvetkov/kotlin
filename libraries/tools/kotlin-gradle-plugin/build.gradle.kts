@@ -54,7 +54,7 @@ dependencies {
     modulesToInclude.forEach {
         jarContents(compileOnly(project(it)) { isTransitive = false })
     }
-    
+
     compileOnly(gradleApi())
     runtime(project(":kotlin-reflect"))
 
@@ -66,6 +66,7 @@ dependencies {
     compileOnly("com.android.tools.build:gradle:3.0.0") { isTransitive = false }
     compileOnly("com.android.tools.build:gradle-core:3.0.0") { isTransitive = false }
     compileOnly("com.android.tools.build:builder-model:3.0.0") { isTransitive = false }
+    compileOnly("com.android.tools.build:builder:3.0.0") { isTransitive = false }
 
     testCompileOnly (project(":compiler"))
     testCompile(projectTests(":kotlin-build-common"))
