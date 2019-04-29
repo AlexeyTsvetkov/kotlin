@@ -44,6 +44,7 @@ val compilerModulesToInclude =
 dependencies {
     compile(project(":kotlin-gradle-plugin-api"))
     compile(project(":kotlin-gradle-plugin-model"))
+    compile(project(":kotlin-compiler-runner"))
 
     compile(kotlinStdlib())
     compile(project(":kotlin-native:kotlin-native-utils"))
@@ -53,9 +54,6 @@ dependencies {
     compilerModulesToInclude.forEach {
         compileOnly(project(it)) { isTransitive = false }
     }
-
-    compileOnly(project(":compiler:daemon-common")) { isTransitive = false }
-    compileOnly(project(":kotlin-daemon-client")) { isTransitive = false }
 
     compileOnly("com.android.tools.build:gradle:2.0.0")
     compileOnly("com.android.tools.build:gradle-core:2.0.0")
