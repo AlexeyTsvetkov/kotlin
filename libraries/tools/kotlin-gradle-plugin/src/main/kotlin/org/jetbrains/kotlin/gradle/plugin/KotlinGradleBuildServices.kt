@@ -25,6 +25,7 @@ import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.jetbrains.kotlin.compilerRunner.DELETED_SESSION_FILE_PREFIX
 import org.jetbrains.kotlin.compilerRunner.GradleCompilerRunner
 import org.jetbrains.kotlin.gradle.logging.kotlinDebug
+import org.jetbrains.kotlin.gradle.logging.lazyInfo
 import org.jetbrains.kotlin.gradle.plugin.internal.state.TaskExecutionResults
 import org.jetbrains.kotlin.gradle.plugin.internal.state.TaskLoggers
 import org.jetbrains.kotlin.gradle.report.configureBuildReporter
@@ -37,13 +38,12 @@ internal class KotlinGradleBuildServices private constructor(
     private val gradle: Gradle
 ) : BuildAdapter() {
     companion object {
-        private val CLASS_NAME = KotlinGradleBuildServices::class.java.simpleName
         const val FORCE_SYSTEM_GC_MESSAGE = "Forcing System.gc()"
         const val SHOULD_REPORT_MEMORY_USAGE_PROPERTY = "kotlin.gradle.test.report.memory.usage"
 
-        val INIT_MESSAGE = "Initialized $CLASS_NAME"
-        val DISPOSE_MESSAGE = "Disposed $CLASS_NAME"
-        val ALREADY_INITIALIZED_MESSAGE = "$CLASS_NAME is already initialized"
+        private val pluginInfoString: String
+            get() = "Kotlin Gradle Plugin (version: ${KotlinBasePluginWrapper.context.pluginVersion})"
+
         @field:Volatile
         private var instance: KotlinGradleBuildServices? = null
 
@@ -52,15 +52,12 @@ internal class KotlinGradleBuildServices private constructor(
         fun getInstance(gradle: Gradle): KotlinGradleBuildServices {
             val log = Logging.getLogger(KotlinGradleBuildServices::class.java)
 
-            if (instance != null) {
-                log.kotlinDebug(ALREADY_INITIALIZED_MESSAGE)
-                return instance!!
-            }
+            if (instance != null) return instance!!
 
             val services = KotlinGradleBuildServices(gradle)
             gradle.addBuildListener(services)
             instance = services
-            log.kotlinDebug(INIT_MESSAGE)
+            log.lazyInfo { "Initialized $pluginInfoString" }
 
             services.buildStarted()
             return services
@@ -116,7 +113,7 @@ internal class KotlinGradleBuildServices private constructor(
 
         gradle.removeListener(this)
         instance = null
-        log.kotlinDebug(DISPOSE_MESSAGE)
+        log.lazyInfo { "Disposed $pluginInfoString" }
     }
 
     private fun getUsedMemoryKb(): Long? {

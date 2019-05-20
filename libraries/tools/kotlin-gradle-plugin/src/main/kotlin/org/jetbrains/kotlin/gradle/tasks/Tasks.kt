@@ -31,15 +31,11 @@ import org.jetbrains.kotlin.gradle.internal.prepareCompilerArguments
 import org.jetbrains.kotlin.gradle.internal.tasks.TaskWithLocalState
 import org.jetbrains.kotlin.gradle.internal.tasks.allOutputFiles
 import org.jetbrains.kotlin.gradle.logging.*
-import org.jetbrains.kotlin.gradle.plugin.COMPILER_CLASSPATH_CONFIGURATION_NAME
-import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
-import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformPluginBase
-import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
+import org.jetbrains.kotlin.gradle.plugin.*
 import org.jetbrains.kotlin.gradle.report.BuildReportMode
 import org.jetbrains.kotlin.gradle.utils.isParentOf
 import org.jetbrains.kotlin.gradle.utils.pathsAsStringRelativeTo
 import org.jetbrains.kotlin.gradle.utils.toSortedPathsArray
-import org.jetbrains.kotlin.utils.LibraryUtils
 import java.io.File
 import java.util.*
 import javax.inject.Inject
@@ -551,6 +547,10 @@ open class Kotlin2JsCompile : AbstractKotlinCompile<K2JSCompilerArguments>(), Ko
 
     override fun getSourceRoots() = SourceRoots.KotlinOnly.create(getSource(), sourceFilesExtensions)
 
+    private val isKotlinJsLib: (File) -> Boolean by lazy {
+        KotlinBasePluginWrapper.context.isKotlinJsLibraryFun(project)
+    }
+
     @get:InputFiles
     @get:Optional
     @get:PathSensitive(PathSensitivity.RELATIVE)
@@ -558,7 +558,7 @@ open class Kotlin2JsCompile : AbstractKotlinCompile<K2JSCompilerArguments>(), Ko
         get() = friendTaskName
             ?.let { project.getTasksByName(it, false).singleOrNull() as? Kotlin2JsCompile }
             ?.outputFile?.parentFile
-            ?.let { if (LibraryUtils.isKotlinJavascriptLibrary(it)) it else null }
+            ?.let { if (isKotlinJsLib(it)) it else null }
             ?.absolutePath
 
     override fun callCompilerAsync(args: K2JSCompilerArguments, sourceRoots: SourceRoots, changedFiles: ChangedFiles) {
@@ -576,7 +576,7 @@ open class Kotlin2JsCompile : AbstractKotlinCompile<K2JSCompilerArguments>(), Ko
             // TODO: Detect IR libraries
             libraryFilter = { true }
         } else {
-            libraryFilter = LibraryUtils::isKotlinJavascriptLibrary
+            libraryFilter = isKotlinJsLib
         }
 
         val dependencies = compileClasspath

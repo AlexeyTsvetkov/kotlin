@@ -15,9 +15,9 @@ import org.gradle.workers.WorkerExecutor
 import org.jetbrains.kotlin.gradle.internal.Kapt3KotlinGradleSubplugin.Companion.KAPT_WORKER_DEPENDENCIES_CONFIGURATION_NAME
 import org.jetbrains.kotlin.gradle.internal.kapt.incremental.KaptIncrementalChanges
 import org.jetbrains.kotlin.gradle.plugin.KotlinAndroidPluginWrapper
+import org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper
 import org.jetbrains.kotlin.gradle.tasks.findKotlinStdlibClasspath
 import org.jetbrains.kotlin.gradle.tasks.findToolsJar
-import org.jetbrains.kotlin.utils.PathUtil
 import java.io.File
 import java.io.Serializable
 import java.net.URL
@@ -59,7 +59,10 @@ open class KaptWithoutKotlincTask @Inject constructor(private val workerExecutor
 
         val compileClasspath = classpath.files.toMutableList()
         if (project.plugins.none { it is KotlinAndroidPluginWrapper }) {
-            compileClasspath.addAll(0, PathUtil.getJdkClassesRootsFromCurrentJre())
+            val classesFromJre = KotlinBasePluginWrapper.context.getJdkClassesRoots(project)
+            if (classesFromJre.isNotEmpty()) {
+                compileClasspath.addAll(0, classesFromJre)
+            }
         }
 
         val kaptFlagsForWorker = mutableSetOf<String>().apply {

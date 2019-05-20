@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.gradle.plugin
 
+import org.apache.tools.ant.taskdefs.Classloader
 import org.gradle.api.NamedDomainObjectFactory
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -34,6 +35,8 @@ import org.jetbrains.kotlin.gradle.tasks.KOTLIN_COMPILER_EMBEDDABLE
 import org.jetbrains.kotlin.gradle.tasks.KOTLIN_MODULE_GROUP
 import org.jetbrains.kotlin.gradle.utils.checkGradleCompatibility
 import org.jetbrains.kotlin.gradle.utils.loadPropertyFromResources
+import java.io.File
+import java.net.URLClassLoader
 import javax.inject.Inject
 import kotlin.reflect.KClass
 
@@ -89,6 +92,87 @@ abstract class KotlinBasePluginWrapper(
         project: Project,
         kotlinGradleBuildServices: KotlinGradleBuildServices
     ): Plugin<Project>
+
+    internal companion object {
+        internal val context: Context by lazy {
+            val pluginVersion = loadPropertyFromResources("project.properties", "project.version")
+            Context(pluginVersion)
+        }
+
+        /**
+         * DO NOT save references to build specific objects (this may cause leaks!).
+         * The lifetime is bound to the lifetime of plugin classes.
+         */
+        internal class Context(val pluginVersion: String) {
+            @Volatile
+            private var compilerClassloader: ClassLoader? = null
+
+            @Volatile
+            private var jdkClassesRoots: List<File>? = null
+
+            @Volatile
+            private var isJsLib: ((File) -> Boolean)? = null
+
+            /**
+             * Gets classloader for the compiler with the same version as the plugin's
+             */
+            @Synchronized
+            fun getCompilerClassloader(project: Project): ClassLoader {
+                if (compilerClassloader != null) return compilerClassloader!!
+
+                val compilerArtifact = "$KOTLIN_MODULE_GROUP:$KOTLIN_COMPILER_EMBEDDABLE:$pluginVersion"
+                val log = project.logger
+                log.kotlinDebug { "Trying to resolve '$compilerArtifact' artifact" }
+
+                val projects = generateSequence(project) { project.parent }.toList()
+
+                for (p in projects) {
+                    val buildscript = p.buildscript
+                    val dependency = buildscript.dependencies.create("$KOTLIN_MODULE_GROUP:$KOTLIN_COMPILER_EMBEDDABLE:$pluginVersion")
+                    val configuration = buildscript.configurations.detachedConfiguration(dependency)
+
+                    try {
+                        val files = configuration.resolve()
+                        val urls = files.map { it.toURI().toURL() }.toTypedArray()
+                        val systemClassloader = File::class.java.classLoader
+                        return URLClassLoader(urls, systemClassloader).also { compilerClassloader = it }
+                    } catch (e: Throwable) {
+                        log.kotlinDebug { "Could not resolve '$compilerArtifact' in '${project.path}' buildscript: $e" }
+                    }
+                }
+
+                error(
+                    "Could not resolve '$compilerArtifact' using buildscript dependencies of the following projects: " +
+                            "\n${projects.joinToString("\n")}"
+                )
+            }
+
+            @Synchronized
+            fun getJdkClassesRoots(project: Project): List<File> {
+                val calculatedRoots = jdkClassesRoots
+                if (calculatedRoots != null) return calculatedRoots
+
+                val compilerCL = getCompilerClassloader(project)
+                val pathUtilClass = compilerCL.loadClass("org.jetbrains.kotlin.utils.PathUtil")
+                val m = pathUtilClass.getMethod("getJdkClassesRootsFromCurrentJre", pathUtilClass)
+
+                @Suppress("UNCHECKED_CAST")
+                return (m.invoke(pathUtilClass) as List<File>).also { jdkClassesRoots = it }
+            }
+
+            @Synchronized
+            fun isKotlinJsLibraryFun(project: Project): (File) -> Boolean {
+                if (isJsLib == null) {
+                    val compilerCL = getCompilerClassloader(project)
+                    val libraryUtils = compilerCL.loadClass("org.jetbrains.kotlin.utils.LibraryUtils")
+                    val m = libraryUtils.getMethod("isKotlinJavascriptLibrary", libraryUtils, File::class.java)
+                    isJsLib = { f: File -> m.invoke(libraryUtils, f) as Boolean }
+                }
+
+                return isJsLib!!
+            }
+        }
+    }
 }
 
 open class KotlinPluginWrapper @Inject constructor(

@@ -34,6 +34,13 @@ internal inline fun KotlinLogger.kotlinDebug(fn: () -> String) {
     }
 }
 
+internal inline fun Logger.lazyInfo(fn: () -> String) {
+    if (isInfoEnabled) {
+        val msg = fn()
+        info(msg)
+    }
+}
+
 internal inline fun <T> KotlinLogger.logTime(action: String, fn: () -> T): T {
     val startNs = System.nanoTime()
     val result = fn()
