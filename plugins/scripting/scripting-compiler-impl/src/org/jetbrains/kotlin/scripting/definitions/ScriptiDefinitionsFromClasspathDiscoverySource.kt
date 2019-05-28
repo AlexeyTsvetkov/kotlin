@@ -36,6 +36,21 @@ class ScriptDefinitionsFromClasspathDiscoverySource(
             messageCollector
         )
     }
+
+    companion object {
+        /**
+         * Used in Gradle in isolated classloader.
+         * Since class sharing is problematic, the function returns
+         * map instead of strongly typed object (it can be thought of as JSON-like object).
+         *
+         *
+         */
+        @Suppress("unused")
+        @JvmStatic
+        fun discoverScriptExtensions(file: File): Map<String, Any?> {
+            return emptyMap()
+        }
+    }
 }
 
 fun discoverScriptTemplatesInClasspath(
