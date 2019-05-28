@@ -9,6 +9,7 @@ dependencies {
     compile(kotlinStdlib())
     compile(project(":compiler:cli-config-base"))
     compileOnly(intellijDep()) { includeJars("asm-all", rootProject = rootProject) }
+    compileOnly(commonDep("org.fusesource.jansi", "jansi"))
 }
 
 sourceSets {

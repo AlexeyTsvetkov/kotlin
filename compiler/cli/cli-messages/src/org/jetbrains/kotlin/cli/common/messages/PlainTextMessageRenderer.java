@@ -16,8 +16,6 @@
 
 package org.jetbrains.kotlin.cli.common.messages;
 
-import com.intellij.openapi.util.SystemInfo;
-import com.intellij.util.LineSeparator;
 import kotlin.text.StringsKt;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.internal.CLibrary;
@@ -25,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Set;
 
 import static org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*;
@@ -34,9 +33,12 @@ public abstract class PlainTextMessageRenderer implements MessageRenderer {
     public static final boolean COLOR_ENABLED;
 
     static {
+        String osName = System.getProperty("os.name").toLowerCase(Locale.US);
+        boolean isWindows = osName.startsWith("windows");
+
         boolean colorEnabled = false;
         // TODO: investigate why ANSI escape codes on Windows only work in REPL for some reason
-        if (!SystemInfo.isWindows && "true".equals(System.getProperty(KOTLIN_COLORS_ENABLED_PROPERTY))) {
+        if (!isWindows && "true".equals(System.getProperty(KOTLIN_COLORS_ENABLED_PROPERTY))) {
             try {
                 // AnsiConsole doesn't check isatty() for stderr (see https://github.com/fusesource/jansi/pull/35).
                 colorEnabled = CLibrary.isatty(CLibrary.STDERR_FILENO) != 0;
@@ -48,7 +50,7 @@ public abstract class PlainTextMessageRenderer implements MessageRenderer {
         COLOR_ENABLED = colorEnabled;
     }
 
-    private static final String LINE_SEPARATOR = LineSeparator.getSystemLineSeparator().getSeparatorString();
+    private static final String LINE_SEPARATOR = System.lineSeparator();
 
     private static final Set<CompilerMessageSeverity> IMPORTANT_MESSAGE_SEVERITIES = EnumSet.of(EXCEPTION, ERROR, STRONG_WARNING, WARNING);
 

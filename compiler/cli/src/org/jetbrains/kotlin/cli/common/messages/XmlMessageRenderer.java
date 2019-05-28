@@ -21,6 +21,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class XmlMessageRenderer implements MessageRenderer {
+    public static final MessageRenderer INSTANCE = new XmlMessageRenderer();
+
     @Override
     public String renderPreamble() {
         return "<MESSAGES>";

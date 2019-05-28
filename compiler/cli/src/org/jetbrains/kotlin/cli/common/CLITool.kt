@@ -40,7 +40,7 @@ abstract class CLITool<A : CommonToolArguments> {
         val rendererType = System.getProperty(MessageRenderer.PROPERTY_KEY)
 
         val messageRenderer = when (rendererType) {
-            MessageRenderer.XML.name -> MessageRenderer.XML
+            XmlMessageRenderer.INSTANCE.name -> XmlMessageRenderer.INSTANCE
             MessageRenderer.GRADLE_STYLE.name -> MessageRenderer.GRADLE_STYLE
             MessageRenderer.WITHOUT_PATHS.name -> MessageRenderer.WITHOUT_PATHS
             MessageRenderer.PLAIN_FULL_PATHS.name -> MessageRenderer.PLAIN_FULL_PATHS
