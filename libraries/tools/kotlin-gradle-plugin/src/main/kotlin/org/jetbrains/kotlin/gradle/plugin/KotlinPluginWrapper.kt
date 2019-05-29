@@ -113,6 +113,9 @@ abstract class KotlinBasePluginWrapper(
             @Volatile
             private var isJsLib: ((File) -> Boolean)? = null
 
+            @Volatile
+            private var discoverScriptExtensions: ((File) -> List<String>)? = null
+
             /**
              * Gets classloader for the compiler with the same version as the plugin's
              */
@@ -170,6 +173,21 @@ abstract class KotlinBasePluginWrapper(
                 }
 
                 return isJsLib!!
+            }
+
+            @Synchronized
+            fun discoverScriptExtensionsFun(project: Project): (File) -> List<String> {
+                if (discoverScriptExtensions == null) {
+                    val compilerCL = getCompilerClassloader(project)
+                    val libraryUtils = compilerCL.loadClass("org.jetbrains.kotlin.scripting.definitions.ScriptDefinitionsFromClasspathDiscoverySource")
+                    val m = libraryUtils.getMethod("discoverScriptExtensionsFromGradle", libraryUtils, File::class.java)
+                    discoverScriptExtensions = { f: File ->
+                        @Suppress("UNCHECKED_CAST")
+                        m.invoke(libraryUtils, f) as List<String>
+                    }
+                }
+
+                return discoverScriptExtensions!!
             }
         }
     }

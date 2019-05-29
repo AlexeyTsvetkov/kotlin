@@ -14,8 +14,6 @@ import org.gradle.api.artifacts.transform.ArtifactTransform
 import org.gradle.api.attributes.Attribute
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.compile.AbstractCompile
-import org.jetbrains.kotlin.cli.common.messages.MessageRenderer
-import org.jetbrains.kotlin.cli.common.messages.PrintingMessageCollector
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 import org.jetbrains.kotlin.gradle.dsl.multiplatformExtensionOrNull
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
@@ -24,7 +22,6 @@ import org.jetbrains.kotlin.gradle.scripting.ScriptingExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.useLazyTaskConfiguration
 import org.jetbrains.kotlin.gradle.utils.isGradleVersionAtLeast
-import org.jetbrains.kotlin.scripting.definitions.ScriptDefinitionsFromClasspathDiscoverySource
 import java.io.File
 
 private const val MISCONFIGURATION_MESSAGE_SUFFIX = "the plugin is probably applied by a mistake"
@@ -157,24 +154,32 @@ private fun configureDiscoveryTransformation(
 }
 
 internal class DiscoverScriptExtensionsTransform : ArtifactTransform() {
-
     override fun transform(input: File): List<File> {
-        val definitions =
-            ScriptDefinitionsFromClasspathDiscoverySource(
-                listOf(input), emptyMap(),
-                PrintingMessageCollector(System.out, MessageRenderer.WITHOUT_PATHS, false)
-            ).definitions
-        val extensions = definitions.mapTo(arrayListOf()) { it.fileExtension }
+        val extensions = discoverScriptExtensions!!(input)
         return if (extensions.isNotEmpty()) {
             val outputFile = outputDirectory.resolve("${input.nameWithoutExtension}.discoveredScriptsExtensions.txt")
             outputFile.writeText(extensions.joinToString("\n"))
             listOf(outputFile)
         } else emptyList()
     }
+
+    companion object {
+        @Synchronized
+        fun init(discoverFun: (File) -> List<String>) {
+            if (discoverScriptExtensions == null) {
+                discoverScriptExtensions = discoverFun
+            }
+        }
+
+        @Volatile
+        private var discoverScriptExtensions: ((File) -> List<String>)? = null
+    }
 }
 
 private
 fun Project.registerDiscoverScriptExtensionsTransform() {
+    DiscoverScriptExtensionsTransform.init(KotlinBasePluginWrapper.context.discoverScriptExtensionsFun(this))
+
     dependencies.apply {
         registerTransform {
             with(it) {

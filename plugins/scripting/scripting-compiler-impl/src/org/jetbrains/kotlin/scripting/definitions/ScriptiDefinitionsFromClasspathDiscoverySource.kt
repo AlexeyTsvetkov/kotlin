@@ -40,16 +40,16 @@ class ScriptDefinitionsFromClasspathDiscoverySource(
     companion object {
         /**
          * Used in Gradle in isolated classloader.
-         * Since class sharing is problematic, the function returns
-         * map instead of strongly typed object (it can be thought of as JSON-like object).
-         *
-         *
          */
         @Suppress("unused")
         @JvmStatic
-        fun discoverScriptExtensions(file: File): Map<String, Any?> {
-            return emptyMap()
-        }
+        fun discoverScriptExtensionsFromGradle(file: File): List<String> =
+            ScriptDefinitionsFromClasspathDiscoverySource(
+                classpath = listOf(file),
+                scriptResolverEnv = emptyMap(),
+                // todo fix
+                messageCollector = MessageCollector.NONE
+            ).definitions.mapTo(arrayListOf()) { it.fileExtension }
     }
 }
 
