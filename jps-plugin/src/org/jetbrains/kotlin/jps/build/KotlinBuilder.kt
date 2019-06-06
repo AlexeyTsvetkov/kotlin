@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
 import org.jetbrains.kotlin.cli.common.messages.MessageCollectorUtil
+import org.jetbrains.kotlin.cli.common.toBooleanLenient
 import org.jetbrains.kotlin.compilerRunner.*
 import org.jetbrains.kotlin.config.IncrementalCompilation
 import org.jetbrains.kotlin.config.KotlinModuleKind
@@ -54,6 +55,7 @@ import org.jetbrains.kotlin.preloading.ClassCondition
 import org.jetbrains.kotlin.utils.KotlinPaths
 import org.jetbrains.kotlin.utils.KotlinPathsFromHomeDir
 import org.jetbrains.kotlin.utils.PathUtil
+import org.jetbrains.org.objectweb.asm.ClassReader
 import java.io.File
 import java.util.*
 import kotlin.collections.HashSet
@@ -633,10 +635,25 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         return outputItemCollector.outputs.groupBy(SimpleOutputItem::target, SimpleOutputItem::toGeneratedFile)
     }
 
+    private val isInstrumentationEnabled: Boolean by lazy {
+        val value = System.getProperty("kotlin.jps.instrumentation.enable")?.toBoolean() ?: false
+        if (value) {
+            LOG.info("Bytecode instrumentation for Kotlin classes is experimental")
+        }
+        value
+    }
+
     private fun registerOutputItems(outputConsumer: OutputConsumer, outputItems: Map<ModuleBuildTarget, List<GeneratedFile>>) {
         for ((target, outputs) in outputItems) {
             for (output in outputs) {
-                outputConsumer.registerOutputFile(target, output.outputFile, output.sourceFiles.map { it.path })
+                if (output.outputFile.path.endsWith(".class", ignoreCase = true) && isInstrumentationEnabled) {
+                    val bytes = output.outputFile.readBytes()
+                    val binaryContent = BinaryContent(bytes)
+                    val compiledClass = CompiledClass(output.outputFile, output.sourceFiles, ClassReader(bytes).className, binaryContent)
+                    outputConsumer.registerCompiledClass(target, compiledClass)
+                } else {
+                    outputConsumer.registerOutputFile(target, output.outputFile, output.sourceFiles.map { it.path })
+                }
             }
         }
     }
