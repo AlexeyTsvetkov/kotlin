@@ -426,8 +426,11 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
         }
 
         val generatedFiles = getGeneratedFiles(context, chunk, environment.outputItemsCollector)
-
-        registerOutputItems(outputConsumer, generatedFiles)
+        val kotlinTargets = kotlinContext.targetsBinding
+        for ((target, outputItems) in generatedFiles) {
+            val kotlinTarget = kotlinTargets[target] ?: error("Could not find Kotlin target for JPS target $target")
+            kotlinTarget.registerOutputItems(outputConsumer, outputItems)
+        }
         kotlinChunk.saveVersions()
 
         if (targets.any { kotlinContext.hasKotlinMarker[it] == null }) {
@@ -633,29 +636,6 @@ class KotlinBuilder : ModuleLevelBuilder(BuilderCategory.SOURCE_PROCESSOR) {
                 ?: representativeTarget
 
         return outputItemCollector.outputs.groupBy(SimpleOutputItem::target, SimpleOutputItem::toGeneratedFile)
-    }
-
-    private val isInstrumentationEnabled: Boolean by lazy {
-        val value = System.getProperty("kotlin.jps.instrumentation.enable")?.toBoolean() ?: false
-        if (value) {
-            LOG.info("Bytecode instrumentation for Kotlin classes is experimental")
-        }
-        value
-    }
-
-    private fun registerOutputItems(outputConsumer: OutputConsumer, outputItems: Map<ModuleBuildTarget, List<GeneratedFile>>) {
-        for ((target, outputs) in outputItems) {
-            for (output in outputs) {
-                if (output.outputFile.path.endsWith(".class", ignoreCase = true) && isInstrumentationEnabled) {
-                    val bytes = output.outputFile.readBytes()
-                    val binaryContent = BinaryContent(bytes)
-                    val compiledClass = CompiledClass(output.outputFile, output.sourceFiles, ClassReader(bytes).className, binaryContent)
-                    outputConsumer.registerCompiledClass(target, compiledClass)
-                } else {
-                    outputConsumer.registerOutputFile(target, output.outputFile, output.sourceFiles.map { it.path })
-                }
-            }
-        }
     }
 
     private fun updateLookupStorage(
