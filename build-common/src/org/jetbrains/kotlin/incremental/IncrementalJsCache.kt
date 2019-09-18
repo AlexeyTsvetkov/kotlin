@@ -79,9 +79,7 @@ open class IncrementalJsCache(
         dirtySources.addAll(removedAndCompiledSources)
     }
 
-    fun compare(incrementalResults: IncrementalResultsConsumerImpl, changesCollector: ChangesCollector) {
-        val translatedFiles = incrementalResults.packageParts
-
+    fun compare(translatedFiles: Map<File, TranslationResultValue>, changesCollector: ChangesCollector) {
         for ((srcFile, data) in translatedFiles) {
             val oldProtoMap = translationResults[srcFile]?.metadata?.let { getProtoData(srcFile, it) } ?: emptyMap()
             val newProtoMap = getProtoData(srcFile, data.metadata)

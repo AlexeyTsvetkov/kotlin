@@ -129,20 +129,14 @@ class IncrementalJsCompilerRunner(
     ): Services.Builder =
         super.makeServices(args, lookupTracker, expectActualTracker, caches, dirtySources, isIncremental).apply {
             if (isIncremental) {
-                when (scopeExpansion) {
-                    CompileScopeExpansionMode.ALWAYS -> {
-                        val comparingResultsConsumer = ComparingResultsConsumer(caches, dirtySources)
-                        register(IncrementalResultsConsumer::class.java, comparingResultsConsumer)
-                        register(IncrementalNextRoundChecker::class.java, comparingResultsConsumer)
-                    }
-                    CompileScopeExpansionMode.NEVER -> {
-                        register(IncrementalResultsConsumer::class.java, IncrementalResultsConsumerImpl())
-                    }
+                if (scopeExpansion == CompileScopeExpansionMode.ALWAYS) {
+                    val nextRoundChecker = IncrementalNextRoundCheckerImpl(caches, dirtySources)
+                    register(IncrementalNextRoundChecker::class.java, nextRoundChecker)
                 }
                 register(IncrementalDataProvider::class.java, IncrementalDataProviderFromCache(caches.platformCache))
-            } else {
-                register(IncrementalResultsConsumer::class.java, IncrementalResultsConsumerImpl())
             }
+
+            register(IncrementalResultsConsumer::class.java, IncrementalResultsConsumerImpl())
         }
 
     override fun updateCaches(
@@ -182,25 +176,27 @@ class IncrementalJsCompilerRunner(
         generatedFiles: List<GeneratedFile>,
         services: Services
     ): Iterable<File> {
-        val results = services[IncrementalResultsConsumer::class.java] as? ComparingResultsConsumer
+        val results = services[IncrementalResultsConsumer::class.java] as? IncrementalNextRoundCheckerImpl
         return results?.newDirtySources ?: super.additionalDirtyFiles(caches, generatedFiles, services)
     }
 
-    inner class ComparingResultsConsumer(
+    inner class IncrementalNextRoundCheckerImpl(
         private val caches: IncrementalJsCachesManager,
         private val sourcesToCompile: Set<File>
     ) : IncrementalNextRoundChecker {
         val newDirtySources = HashSet<File>()
-        private val packageParts = HashMap<File, ByteArray>()
+
+        private val emptyByteArray = ByteArray(0)
+        private val translatedFiles = HashMap<File, TranslationResultValue>()
 
         override fun checkProtoChanges(sourceFile: File, packagePartMetadata: ByteArray) {
-            packageParts[sourceFile] = packagePartMetadata
+            translatedFiles[sourceFile] = TranslationResultValue(packagePartMetadata, emptyByteArray, emptyByteArray)
         }
 
         override fun shouldGoToNextRound(): Boolean {
             val changesCollector = ChangesCollector()
             // todo: split compare and update (or cache comparing)
-            caches.platformCache.compare(this, changesCollector)
+            caches.platformCache.compare(translatedFiles, changesCollector)
             val (dirtyLookupSymbols, dirtyClassFqNames) = changesCollector.getDirtyData(listOf(caches.platformCache), reporter)
             // todo unify with main cycle
             newDirtySources.addAll(mapLookupSymbolsToFiles(caches.lookupCache, dirtyLookupSymbols, reporter, excludes = sourcesToCompile))
